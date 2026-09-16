@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -10,7 +10,8 @@ export default async function BrowseCoursesPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [courses, enrollments, requests] = await Promise.all([
+  const [student, courses, enrollments, requests] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { studentStatus: true } }),
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.enrollment.findMany({ where: { studentId: userId }, select: { courseId: true } }),
     prisma.enrollmentRequest.findMany({
@@ -19,6 +20,7 @@ export default async function BrowseCoursesPage() {
     }),
   ]);
 
+  const isActive = student?.studentStatus === "ACTIVE";
   const enrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
   const latestRequestByCourse = new Map<string, (typeof requests)[number]>();
   for (const req of requests) {
@@ -27,6 +29,15 @@ export default async function BrowseCoursesPage() {
 
   return (
     <DashboardShell title="Browse Courses" subtitle="Course catalog" navLinks={navLinks}>
+      {!isActive && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-indigo">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <span>
+            Your registration is still awaiting company approval. You&apos;ll be able to request
+            courses once it&apos;s approved.
+          </span>
+        </div>
+      )}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => {
           const enrolled = enrolledCourseIds.has(course.id);
@@ -54,14 +65,25 @@ export default async function BrowseCoursesPage() {
                       <XCircle className="size-3.5" /> Request declined
                     </span>
                     <form action={requestEnrollment.bind(null, course.id)}>
-                      <Button type="submit" size="sm" variant="outline" className="w-full border-border text-indigo">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        variant="outline"
+                        disabled={!isActive}
+                        className="w-full border-border text-indigo disabled:opacity-50"
+                      >
                         Request again
                       </Button>
                     </form>
                   </div>
                 ) : (
                   <form action={requestEnrollment.bind(null, course.id)}>
-                    <Button type="submit" size="sm" className="w-full bg-indigo text-white hover:bg-indigo/90">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={!isActive}
+                      className="w-full bg-indigo text-white hover:bg-indigo/90 disabled:opacity-50"
+                    >
                       Request Enrollment
                     </Button>
                   </form>

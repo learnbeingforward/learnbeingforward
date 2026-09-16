@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { signUpSchema, type SignUpInput } from "@/lib/validation";
+import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validation";
 
 type College = { id: string; name: string };
 
-export function SignUpForm({ colleges }: { colleges: College[] }) {
-  const router = useRouter();
+export function ForgotPasswordForm({ colleges, onBack }: { colleges: College[]; onBack: () => void }) {
+  const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -29,14 +27,13 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<SignUpInput>({
-    resolver: zodResolver(signUpSchema),
+  } = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
   });
 
-  const onSubmit = async (data: SignUpInput) => {
+  const onSubmit = async (data: ForgotPasswordInput) => {
     setServerError(null);
-
-    const res = await fetch("/api/auth/register", {
+    const res = await fetch("/api/auth/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -48,63 +45,64 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
       return;
     }
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
-
-    if (!result || result.error) {
-      setServerError("Account created — please log in.");
-      return;
-    }
-
-    router.push("/lms/student");
-    router.refresh();
+    setSubmitted(true);
   };
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <CheckCircle2 className="size-10 text-gold" />
+        <h3 className="font-semibold text-indigo">Request sent</h3>
+        <p className="text-sm text-muted-foreground">
+          Learn Being Forward will verify your details and email a new password to the address you
+          provided once it&apos;s ready.
+        </p>
+        <button type="button" onClick={onBack} className="mt-2 text-sm text-indigo underline">
+          Back to login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <p className="rounded-lg bg-cream px-3 py-2.5 text-xs text-muted-foreground">
-        Only students who&apos;ve already been added by their college can sign up here. Colleges
-        and companies get accounts provisioned directly by Learn Being Forward.
+      <div>
+        <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-indigo">
+          &larr; Back to login
+        </button>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Password resets are only available for student accounts. Enter your details exactly as
+        your college registered them.
       </p>
 
       <div>
-        <Label htmlFor="signup-name">Name</Label>
-        <Input id="signup-name" className="mt-1.5" {...register("name")} />
+        <Label htmlFor="forgot-name">Name</Label>
+        <Input id="forgot-name" className="mt-1.5" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="signup-email">Email</Label>
-        <Input id="signup-email" type="email" className="mt-1.5" {...register("email")} />
+        <Label htmlFor="forgot-email">Email</Label>
+        <Input id="forgot-email" type="email" className="mt-1.5" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="signup-password">Password</Label>
-        <Input id="signup-password" type="password" className="mt-1.5" {...register("password")} />
-        {errors.password && (
-          <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="signup-college">College</Label>
+        <Label htmlFor="forgot-college">College</Label>
         <Controller
           control={control}
-          name="collegeId"
+          name="collegeName"
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger className="mt-1.5 w-full">
                 <SelectValue placeholder="Select your college">
-                  {(value: string | null) => colleges.find((c) => c.id === value)?.name ?? "Select your college"}
+                  {(value: string | null) => value || "Select your college"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {colleges.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+                  <SelectItem key={c.id} value={c.name}>
                     {c.name}
                   </SelectItem>
                 ))}
@@ -112,8 +110,8 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
             </Select>
           )}
         />
-        {errors.collegeId && (
-          <p className="mt-1 text-xs text-destructive">{errors.collegeId.message}</p>
+        {errors.collegeName && (
+          <p className="mt-1 text-xs text-destructive">{errors.collegeName.message}</p>
         )}
       </div>
 
@@ -121,7 +119,7 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
 
       <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo text-white hover:bg-indigo/90">
         {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Create Account
+        Send Request
       </Button>
     </form>
   );

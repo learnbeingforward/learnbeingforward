@@ -14,8 +14,11 @@ export const collegeNavLinks = [
 
 export const companyNavLinks = [
   { href: "/lms/company", label: "Requests" },
+  { href: "/lms/company/registrations", label: "New Registrations" },
   { href: "/lms/company/attendance", label: "Attendance" },
   { href: "/lms/company/approvals", label: "Approvals from College" },
+  { href: "/lms/company/password-resets", label: "Password Resets" },
   { href: "/lms/company/accounts", label: "Add Account" },
+  { href: "/lms/company/manage-accounts", label: "Manage Accounts" },
   { href: "/lms/company/edit-site", label: "Edit Site" },
 ];

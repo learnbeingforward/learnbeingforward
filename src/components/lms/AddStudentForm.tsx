@@ -22,6 +22,31 @@ export function AddStudentForm({ colleges }: { colleges?: College[] }) {
     null
   );
 
+  if (state?.ok && state.roster) {
+    return (
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-6">
+        <div className="flex items-center gap-2 text-green-700">
+          <CheckCircle2 className="size-5" />
+          <p className="font-semibold">Student added to roster</p>
+        </div>
+        <p className="text-sm text-green-800">
+          <span className="font-mono font-semibold">{state.email}</span> can now sign up on the
+          login page — their name, email, and college must match exactly what you entered here.
+          Once they sign up, approve their registration under &ldquo;New Registrations&rdquo; in
+          the Company dashboard before they can request courses.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.location.reload()}
+          className="border-green-300 text-green-700"
+        >
+          Add another
+        </Button>
+      </div>
+    );
+  }
+
   if (state?.ok) {
     return (
       <div className="flex flex-col items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-6">

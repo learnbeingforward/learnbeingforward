@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, XCircle, BookOpen, Rocket, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, BookOpen, Rocket, Clock } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -13,7 +13,8 @@ export default async function StudentDashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [enrollments, pendingRequests] = await Promise.all([
+  const [student, enrollments, pendingRequests] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { studentStatus: true } }),
     prisma.enrollment.findMany({
       where: { studentId: userId },
       include: {
@@ -31,6 +32,16 @@ export default async function StudentDashboardPage() {
 
   return (
     <DashboardShell title="Student Dashboard" subtitle="Welcome back" navLinks={navLinks}>
+      {student?.studentStatus === "PENDING_APPROVAL" && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-indigo">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <span>
+            Your registration is awaiting company approval. You&apos;ll be able to request courses
+            once it&apos;s approved — this usually doesn&apos;t take long.
+          </span>
+        </div>
+      )}
+
       {pendingRequests.length > 0 && (
         <div className="mb-6 space-y-2">
           {pendingRequests.map((req) => (

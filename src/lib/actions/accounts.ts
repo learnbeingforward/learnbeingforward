@@ -11,6 +11,7 @@ export type CreateAccountState = {
   error?: string;
   email?: string;
   password?: string;
+  roster?: boolean;
 } | null;
 
 function generatePassword() {
@@ -43,7 +44,29 @@ export async function createStudentAccount(
     return { ok: false, error: "An account with this email already exists." };
   }
 
-  const collegeId = session.user.role === "COLLEGE_ADMIN" ? session.user.collegeId : collegeIdInput || null;
+  const isCollegeAdmin = session.user.role === "COLLEGE_ADMIN";
+  const collegeId = isCollegeAdmin ? session.user.collegeId : collegeIdInput || null;
+
+  if (isCollegeAdmin) {
+    // College admins add a roster entry only — no login credential yet. The
+    // student claims it themselves via sign-up (name + email + college must
+    // match), which is what closes the "anyone can claim any college" hole.
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash: await bcrypt.hash(randomBytes(24).toString("hex"), 10),
+        role: "STUDENT",
+        usn: usn || null,
+        fatherName: fatherName || null,
+        collegeId,
+        studentStatus: "PRE_REGISTERED",
+      },
+    });
+
+    revalidatePath("/lms/college/students");
+    return { ok: true, email, roster: true };
+  }
 
   const password = generatePassword();
   await prisma.user.create({
@@ -55,10 +78,10 @@ export async function createStudentAccount(
       usn: usn || null,
       fatherName: fatherName || null,
       collegeId,
+      studentStatus: "ACTIVE",
     },
   });
 
-  revalidatePath("/lms/college/students");
   revalidatePath("/lms/company/accounts");
 
   return { ok: true, email, password };

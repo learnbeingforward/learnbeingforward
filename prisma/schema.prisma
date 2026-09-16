@@ -38,6 +38,12 @@ enum TechCategory {
   ROBOTICS
 }
 
+enum StudentStatus {
+  PRE_REGISTERED
+  PENDING_APPROVAL
+  ACTIVE
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -46,6 +52,7 @@ model User {
   role         Role
   usn          String?
   fatherName   String?
+  studentStatus StudentStatus @default(ACTIVE)
   collegeId    String?
   college      College? @relation(fields: [collegeId], references: [id])
   createdAt    DateTime @default(now())
@@ -242,6 +249,18 @@ model FooterLink {
   label String
   href  String
   order Int    @default(0)
+}
+
+model PasswordResetRequest {
+  id          String        @id @default(cuid())
+  name        String
+  email       String
+  collegeName String
+  status      RequestStatus @default(PENDING)
+  requestedAt DateTime      @default(now())
+  decidedAt   DateTime?
+
+  @@index([status])
 }
 
 model SiteSettings {

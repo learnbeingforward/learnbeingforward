@@ -10,6 +10,9 @@ export async function requestEnrollment(courseId: string) {
     throw new Error("Only students can request enrollment.");
   }
 
+  const student = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (student?.studentStatus !== "ACTIVE") return;
+
   const existing = await prisma.enrollmentRequest.findFirst({
     where: { studentId: session.user.id, courseId, status: "PENDING" },
   });

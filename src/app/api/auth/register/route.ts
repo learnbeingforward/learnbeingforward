@@ -11,34 +11,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const { name, email, password, role, collegeName, organizationName } = parsed.data;
+  const { name, password, collegeId } = parsed.data;
+  const email = parsed.data.email.toLowerCase();
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+  const college = await prisma.college.findUnique({ where: { id: collegeId } });
+  if (!college) {
+    return NextResponse.json({ error: "Select a valid college." }, { status: 400 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  // MySQL's default collation already compares strings case-insensitively.
+  const roster = await prisma.user.findFirst({
+    where: {
+      role: "STUDENT",
+      email,
+      collegeId,
+      studentStatus: "PRE_REGISTERED",
+    },
+  });
 
-  let collegeId: string | undefined;
-  const orgName = role === "STUDENT" ? collegeName : organizationName;
-
-  if (orgName) {
-    const college = await prisma.college.upsert({
-      where: { name: orgName },
-      update: {},
-      create: { name: orgName },
-    });
-    collegeId = college.id;
+  if (!roster) {
+    return NextResponse.json(
+      {
+        error:
+          "No matching student record found for this college. Ask your college to add you first, then try again with the same name and email.",
+      },
+      { status: 404 }
+    );
   }
 
-  await prisma.user.create({
+  if (roster.name.trim().toLowerCase() !== name.trim().toLowerCase()) {
+    return NextResponse.json(
+      { error: "Your name doesn't match the record your college provided. Check the spelling and try again." },
+      { status: 400 }
+    );
+  }
+
+  await prisma.user.update({
+    where: { id: roster.id },
     data: {
       name,
-      email,
-      passwordHash,
-      role,
-      collegeId,
+      passwordHash: await bcrypt.hash(password, 10),
+      studentStatus: "PENDING_APPROVAL",
     },
   });
 
