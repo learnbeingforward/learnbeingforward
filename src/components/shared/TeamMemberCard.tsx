@@ -2,20 +2,36 @@ import { Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/shared/Reveal";
-import type { TeamMember } from "@/data/team";
+import { parseJsonArray } from "@/lib/json-array";
 
-export function TeamMemberCard({ member, delay = 0 }: { member: TeamMember; delay?: number }) {
+export type TeamMemberData = {
+  id: string;
+  name: string;
+  role: string;
+  experienceYears: number;
+  specialties: string;
+  isFreelancer: boolean;
+  colleges: string | null;
+  cvUrl: string | null;
+  avatarSeed: string;
+  photoUrl: string | null;
+};
+
+export function TeamMemberCard({ member, delay = 0 }: { member: TeamMemberData; delay?: number }) {
+  const specialties = parseJsonArray(member.specialties);
+  const colleges = parseJsonArray(member.colleges);
+
   return (
     <Reveal delay={delay}>
       <div className="flex h-full flex-col items-center rounded-xl border border-border bg-white p-6 text-center shadow-sm">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`https://api.dicebear.com/9.x/personas/svg?seed=${member.avatarSeed}`}
+          src={member.photoUrl || `https://api.dicebear.com/9.x/personas/svg?seed=${member.avatarSeed}`}
           alt=""
           width={88}
           height={88}
           loading="lazy"
-          className="size-[88px] rounded-full bg-cream"
+          className="size-[88px] rounded-full bg-cream object-cover"
         />
 
         <h3 className="mt-4 font-semibold text-indigo">{member.name}</h3>
@@ -27,7 +43,7 @@ export function TeamMemberCard({ member, delay = 0 }: { member: TeamMember; dela
         )}
 
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-          {member.specialties.map((tag) => (
+          {specialties.map((tag) => (
             <span
               key={tag}
               className="rounded-full bg-cream px-2.5 py-1 text-[11px] font-medium text-indigo/80"
@@ -37,22 +53,24 @@ export function TeamMemberCard({ member, delay = 0 }: { member: TeamMember; dela
           ))}
         </div>
 
-        {member.isFreelancer && member.colleges && member.colleges.length > 0 && (
+        {member.isFreelancer && colleges.length > 0 && (
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-            Trained at: {member.colleges.join(", ")}
+            Trained at: {colleges.join(", ")}
           </p>
         )}
 
-        <Button
-          render={<a href={member.cvUrl} download />}
-          nativeButton={false}
-          variant="outline"
-          size="sm"
-          className="mt-5 border-gold text-indigo hover:bg-gold"
-        >
-          <Download className="size-4" />
-          Download Profile
-        </Button>
+        {member.cvUrl && (
+          <Button
+            render={<a href={member.cvUrl} download />}
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            className="mt-5 border-gold text-indigo hover:bg-gold"
+          >
+            <Download className="size-4" />
+            Download Profile
+          </Button>
+        )}
       </div>
     </Reveal>
   );

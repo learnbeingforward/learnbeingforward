@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
-import { courses } from "@/data/courses";
+import { prisma } from "@/lib/prisma";
 
 const SITE_URL = "https://learnbeingforward.in";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
     "/courses",
@@ -19,6 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === "" ? 1 : 0.8,
   }));
 
+  const courses = await prisma.course.findMany({ select: { slug: true } });
   const courseRoutes = courses.map((course) => ({
     url: `${SITE_URL}/courses/${course.slug}`,
     lastModified: new Date(),

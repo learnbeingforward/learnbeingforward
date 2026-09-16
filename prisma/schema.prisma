@@ -26,6 +26,18 @@ enum RequestStatus {
   REJECTED
 }
 
+enum TechCategory {
+  LANGUAGES
+  FRONTEND
+  BACKEND
+  DATABASES
+  TOOLS_DEVOPS
+  DATA_AI
+  APTITUDE
+  SOFT_SKILLS
+  ROBOTICS
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -57,17 +69,23 @@ model College {
   contactEmail String?
   createdAt    DateTime @default(now())
 
-  users              User[]
-  enrollments        Enrollment[]
-  enrollmentRequests EnrollmentRequest[]
+  users                User[]
+  enrollments          Enrollment[]
+  enrollmentRequests   EnrollmentRequest[]
+  attendanceExceptions AttendanceException[]
 }
 
 model Course {
-  id          String @id @default(cuid())
-  slug        String @unique
-  name        String
-  description String @db.Text
-  category    String
+  id               String  @id @default(cuid())
+  slug             String  @unique
+  name             String
+  shortDescription String? @db.Text
+  description      String  @db.Text
+  category         String
+  techSlugs        String? @db.Text
+  isPlaceholder    Boolean @default(false)
+  order            Int     @default(0)
+  createdAt        DateTime @default(now())
 
   modules            CourseModule[]
   enrollments        Enrollment[]
@@ -75,12 +93,16 @@ model Course {
 }
 
 model CourseModule {
-  id       String  @id @default(cuid())
-  courseId String
-  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title    String
-  level    String?
-  topics   String @db.Text
+  id         String  @id @default(cuid())
+  courseId   String
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  trackTitle String  @default("Course Modules")
+  title      String
+  level      String?
+  topics     String  @db.Text
+  techSlugs  String? @db.Text
+  delivery   String? @db.Text
+  order      Int     @default(0)
 
   @@index([courseId])
 }
@@ -99,8 +121,9 @@ model Enrollment {
   trainerId    String?
   trainer      Trainer? @relation(fields: [trainerId], references: [id])
 
-  attendanceRecords AttendanceRecord[]
-  certification     Certification?
+  attendanceRecords    AttendanceRecord[]
+  certification        Certification?
+  attendanceExceptions AttendanceException[]
 
   @@index([studentId])
   @@index([courseId])
@@ -137,12 +160,29 @@ model AttendanceRecord {
 }
 
 model Certification {
-  id              String              @id @default(cuid())
-  enrollmentId    String              @unique
-  enrollment      Enrollment          @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  status          CertificationStatus @default(NOT_ELIGIBLE)
-  trainerApproved Boolean             @default(false)
-  issuedAt        DateTime?
+  id               String              @id @default(cuid())
+  enrollmentId     String              @unique
+  enrollment       Enrollment          @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  status           CertificationStatus @default(NOT_ELIGIBLE)
+  trainerApproved  Boolean             @default(false)
+  overrideApproved Boolean             @default(false)
+  issuedAt         DateTime?
+}
+
+model AttendanceException {
+  id           String        @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  collegeId    String?
+  college      College?      @relation(fields: [collegeId], references: [id])
+  reason       String        @db.Text
+  status       RequestStatus @default(PENDING)
+  requestedAt  DateTime      @default(now())
+  decidedAt    DateTime?
+
+  @@index([enrollmentId])
+  @@index([collegeId])
+  @@index([status])
 }
 
 model TeamMember {
@@ -150,12 +190,14 @@ model TeamMember {
   name            String
   role            String
   experienceYears Int
-  background      String  @db.Text
-  specialties     String  @db.Text
-  isFreelancer    Boolean @default(false)
-  colleges        String? @db.Text
+  background      String   @db.Text
+  specialties     String   @db.Text
+  isFreelancer    Boolean  @default(false)
+  colleges        String?  @db.Text
   cvUrl           String?
   avatarSeed      String
+  photoUrl        String?
+  order           Int      @default(0)
   createdAt       DateTime @default(now())
 }
 
@@ -165,4 +207,46 @@ model ContactSubmission {
   email       String
   message     String   @db.Text
   submittedAt DateTime @default(now())
+}
+
+model ContactProfile {
+  id         String  @id @default(cuid())
+  name       String
+  role       String
+  email      String
+  phone      String
+  avatarSeed String
+  photoUrl   String?
+  order      Int     @default(0)
+}
+
+model Technology {
+  id       String       @id @default(cuid())
+  slug     String       @unique
+  name     String
+  iconName String
+  category TechCategory
+  order    Int          @default(0)
+}
+
+model HomeFeature {
+  id          String @id @default(cuid())
+  icon        String
+  title       String
+  description String @db.Text
+  order       Int    @default(0)
+}
+
+model FooterLink {
+  id    String @id @default(cuid())
+  label String
+  href  String
+  order Int    @default(0)
+}
+
+model SiteSettings {
+  id                  String @id @default("singleton")
+  companyContactName  String @default("Lohit Kumar")
+  companyContactPhone String @default("+91 99729 34418")
+  companyContactEmail String @default("info@learnbeingforward.in")
 }

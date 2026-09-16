@@ -7,28 +7,40 @@ import { Reveal } from "@/components/shared/Reveal";
 import { BlobBackground } from "@/components/shared/BlobBackground";
 import { TechIconRow } from "@/components/shared/TechIconRow";
 import { ModuleCard } from "@/components/shared/ModuleCard";
-import { courses, getCourseBySlug } from "@/data/courses";
-import { getTechsBySlugs } from "@/data/technologies";
+import { prisma } from "@/lib/prisma";
+import { parseJsonArray } from "@/lib/json-array";
 
-export function generateStaticParams() {
-  return courses.map((course) => ({ slug: course.slug }));
-}
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,
 }: PageProps<"/courses/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const course = getCourseBySlug(slug);
+  const course = await prisma.course.findUnique({ where: { slug } });
   if (!course) return {};
-  return { title: course.name, description: course.shortDescription };
+  return { title: course.name, description: course.shortDescription ?? course.description.slice(0, 140) };
 }
 
 export default async function CourseDetailPage({ params }: PageProps<"/courses/[slug]">) {
   const { slug } = await params;
-  const course = getCourseBySlug(slug);
+  const [course, technologies] = await Promise.all([
+    prisma.course.findUnique({
+      where: { slug },
+      include: { modules: { orderBy: { order: "asc" } } },
+    }),
+    prisma.technology.findMany(),
+  ]);
   if (!course) notFound();
 
-  const heroTechs = getTechsBySlugs(course.techSlugs);
+  const techLookup = new Map(technologies.map((t) => [t.slug, { name: t.name, iconName: t.iconName }]));
+  const heroTechs = parseJsonArray(course.techSlugs)
+    .map((tslug) => {
+      const tech = techLookup.get(tslug);
+      return tech ? { slug: tslug, ...tech } : null;
+    })
+    .filter((t): t is { slug: string; name: string; iconName: string } => Boolean(t));
+
+  const trackTitles = Array.from(new Set(course.modules.map((m) => m.trackTitle)));
 
   return (
     <>
@@ -70,13 +82,15 @@ export default async function CourseDetailPage({ params }: PageProps<"/courses/[
           </Reveal>
 
           <div className="mt-10 space-y-12">
-            {course.tracks.map((track) => (
-              <div key={track.title}>
-                <h3 className="mb-5 text-lg font-semibold text-indigo">{track.title}</h3>
+            {trackTitles.map((trackTitle) => (
+              <div key={trackTitle}>
+                <h3 className="mb-5 text-lg font-semibold text-indigo">{trackTitle}</h3>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {track.modules.map((mod, i) => (
-                    <ModuleCard key={mod.title} module={mod} delay={i * 0.05} />
-                  ))}
+                  {course.modules
+                    .filter((m) => m.trackTitle === trackTitle)
+                    .map((mod, i) => (
+                      <ModuleCard key={mod.id} module={mod} techLookup={techLookup} delay={i * 0.05} />
+                    ))}
                 </div>
               </div>
             ))}

@@ -1,12 +1,14 @@
-import type { Technology } from "@/data/technologies";
 import { cn } from "@/lib/utils";
+import { getIconByName } from "@/lib/icon-catalog";
+
+export type TechIconRowItem = { slug: string; name: string; iconName: string };
 
 export function TechIconRow({
   techs,
   size = "md",
   className,
 }: {
-  techs: Technology[];
+  techs: TechIconRowItem[];
   size?: "sm" | "md";
   className?: string;
 }) {
@@ -15,7 +17,8 @@ export function TechIconRow({
   return (
     <div className={cn("flex flex-wrap items-center gap-3", className)}>
       {techs.map((tech) => {
-        const Icon = tech.icon;
+        const Icon = getIconByName(tech.iconName);
+        if (!Icon) return null;
         return (
           <span
             key={tech.slug}

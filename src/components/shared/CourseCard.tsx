@@ -1,11 +1,33 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { Course } from "@/data/courses";
-import { getTechsBySlugs } from "@/data/technologies";
 import { Reveal } from "@/components/shared/Reveal";
+import { getIconByName } from "@/lib/icon-catalog";
+import { parseJsonArray } from "@/lib/json-array";
 
-export function CourseCard({ course, delay = 0 }: { course: Course; delay?: number }) {
-  const techs = getTechsBySlugs(course.techSlugs).slice(0, 5);
+type TechLookup = Map<string, { name: string; iconName: string }>;
+
+export type CourseCardData = {
+  slug: string;
+  name: string;
+  shortDescription: string | null;
+  description: string;
+  isPlaceholder: boolean;
+  techSlugs: string | null;
+};
+
+export function CourseCard({
+  course,
+  techLookup,
+  delay = 0,
+}: {
+  course: CourseCardData;
+  techLookup: TechLookup;
+  delay?: number;
+}) {
+  const techs = parseJsonArray(course.techSlugs)
+    .map((slug) => techLookup.get(slug))
+    .filter((t): t is { name: string; iconName: string } => Boolean(t))
+    .slice(0, 5);
 
   return (
     <Reveal delay={delay}>
@@ -20,13 +42,14 @@ export function CourseCard({ course, delay = 0 }: { course: Course; delay?: numb
         )}
         <h3 className="text-lg font-semibold text-indigo">{course.name}</h3>
         <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-          {course.shortDescription}
+          {course.shortDescription ?? course.description.slice(0, 140)}
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {techs.map((tech) => {
-            const Icon = tech.icon;
-            return <Icon key={tech.slug} className="size-5 text-indigo/70" title={tech.name} />;
+          {techs.map((tech, i) => {
+            const Icon = getIconByName(tech.iconName);
+            if (!Icon) return null;
+            return <Icon key={i} className="size-5 text-indigo/70" title={tech.name} />;
           })}
         </div>
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { marqueeTechnologies } from "@/data/technologies";
+import { getIconByName } from "@/lib/icon-catalog";
 
-export function TechMarquee() {
-  const items = [...marqueeTechnologies, ...marqueeTechnologies];
+export type MarqueeTech = { slug: string; name: string; iconName: string };
+
+export function TechMarquee({ technologies }: { technologies: MarqueeTech[] }) {
+  const items = [...technologies, ...technologies];
 
   return (
     <div className="group relative overflow-hidden border-y border-border bg-white py-8">
@@ -12,7 +14,8 @@ export function TechMarquee() {
 
       <div className="flex w-max animate-marquee group-hover:[animation-play-state:paused]">
         {items.map((tech, i) => {
-          const Icon = tech.icon;
+          const Icon = getIconByName(tech.iconName);
+          if (!Icon) return null;
           return (
             <div
               key={`${tech.slug}-${i}`}

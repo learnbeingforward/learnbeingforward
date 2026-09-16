@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { courses } from "../src/data/courses";
 import { teamMembers } from "../src/data/team";
+import { technologies } from "../src/data/technologies";
+import { contactProfiles } from "../src/data/contacts";
 
 const prisma = new PrismaClient();
 
@@ -20,37 +22,115 @@ function generatePassword() {
   return randomBytes(9).toString("base64").replace(/[+/=]/g, "");
 }
 
+const TECH_SLUG_TO_ICON: Record<string, string> = {
+  c: "SiC",
+  cpp: "SiCplusplus",
+  java: "FaJava",
+  python: "SiPython",
+  csharp: "SiSharp",
+  javascript: "SiJavascript",
+  typescript: "SiTypescript",
+  html5: "SiHtml5",
+  css3: "SiCss",
+  tailwind: "SiTailwindcss",
+  react: "SiReact",
+  angular: "SiAngular",
+  vue: "SiVuedotjs",
+  nodejs: "SiNodedotjs",
+  django: "SiDjango",
+  "spring-boot": "SiSpringboot",
+  dotnet: "SiDotnet",
+  mysql: "SiMysql",
+  postgresql: "SiPostgresql",
+  mongodb: "SiMongodb",
+  git: "SiGit",
+  github: "SiGithub",
+  docker: "SiDocker",
+  "quant-aptitude": "FaCalculator",
+  "logical-reasoning": "FaBrain",
+  "verbal-reasoning": "FaComments",
+  "nonverbal-reasoning": "FaBrain",
+  communication: "FaComments",
+  "group-discussion": "FaUsers",
+  "interview-prep": "FaUsers",
+  "resume-building": "FaFileAlt",
+  numpy: "SiNumpy",
+  pandas: "SiPandas",
+  "scikit-learn": "SiScikitlearn",
+  "robotics-fundamentals": "FaRobot",
+  arduino: "SiArduino",
+  "raspberry-pi": "SiRaspberrypi",
+};
+
+const CATEGORY_TO_ENUM: Record<string, string> = {
+  Languages: "LANGUAGES",
+  Frontend: "FRONTEND",
+  Backend: "BACKEND",
+  Databases: "DATABASES",
+  "Tools & DevOps": "TOOLS_DEVOPS",
+  "Data & AI": "DATA_AI",
+  Aptitude: "APTITUDE",
+  "Soft Skills": "SOFT_SKILLS",
+  Robotics: "ROBOTICS",
+};
+
 async function main() {
+  console.log("Seeding technologies...");
+  for (const [i, tech] of technologies.entries()) {
+    const iconName = TECH_SLUG_TO_ICON[tech.slug];
+    if (!iconName) continue;
+    await prisma.technology.upsert({
+      where: { slug: tech.slug },
+      update: { name: tech.name, iconName, category: CATEGORY_TO_ENUM[tech.category] as never, order: i },
+      create: {
+        slug: tech.slug,
+        name: tech.name,
+        iconName,
+        category: CATEGORY_TO_ENUM[tech.category] as never,
+        order: i,
+      },
+    });
+  }
+
   console.log("Seeding courses...");
-  for (const course of courses) {
+  for (const [courseOrder, course] of courses.entries()) {
     const created = await prisma.course.upsert({
       where: { slug: course.slug },
       update: {
         name: course.name,
+        shortDescription: course.shortDescription,
         description: course.description,
         category: categoryFor(course.slug),
+        techSlugs: JSON.stringify(course.techSlugs),
+        isPlaceholder: course.isPlaceholder ?? false,
+        order: courseOrder,
       },
       create: {
         slug: course.slug,
         name: course.name,
+        shortDescription: course.shortDescription,
         description: course.description,
         category: categoryFor(course.slug),
+        techSlugs: JSON.stringify(course.techSlugs),
+        isPlaceholder: course.isPlaceholder ?? false,
+        order: courseOrder,
       },
     });
 
     await prisma.courseModule.deleteMany({ where: { courseId: created.id } });
-    const genericTrackTitles = new Set(["Course Modules", "Course Modules (placeholder)"]);
+    let moduleOrder = 0;
     for (const track of course.tracks) {
       for (const mod of track.modules) {
-        const title = genericTrackTitles.has(track.title)
-          ? mod.title
-          : `${track.title} — ${mod.title}`;
         await prisma.courseModule.create({
           data: {
             courseId: created.id,
-            title,
+            trackTitle: track.title,
+            title: mod.title,
             level: mod.level ?? null,
             topics: JSON.stringify(mod.topics),
+            techSlugs: JSON.stringify(mod.techSlugs),
+            delivery: mod.delivery,
+            order: moduleOrder++,
           },
         });
       }
@@ -59,7 +139,7 @@ async function main() {
 
   console.log("Seeding team members...");
   await prisma.teamMember.deleteMany();
-  for (const member of teamMembers) {
+  for (const [i, member] of teamMembers.entries()) {
     await prisma.teamMember.create({
       data: {
         name: member.name,
@@ -71,8 +151,70 @@ async function main() {
         colleges: member.colleges ? JSON.stringify(member.colleges) : null,
         cvUrl: member.cvUrl,
         avatarSeed: member.avatarSeed,
+        order: i,
       },
     });
+  }
+
+  console.log("Seeding contact profiles...");
+  await prisma.contactProfile.deleteMany();
+  for (const [i, profile] of contactProfiles.entries()) {
+    await prisma.contactProfile.create({
+      data: {
+        name: profile.name,
+        role: profile.role,
+        email: profile.email,
+        phone: profile.phone,
+        avatarSeed: profile.avatarSeed,
+        order: i,
+      },
+    });
+  }
+
+  console.log("Seeding home page features...");
+  const homeFeatures = [
+    {
+      icon: "Code2",
+      title: "Programming & Full-Stack Training",
+      description: "Hands-on training in languages and frameworks that make students job-ready developers.",
+    },
+    {
+      icon: "Brain",
+      title: "Aptitude & Soft-Skills Training",
+      description: "Quantitative, logical and verbal reasoning alongside communication and interview readiness.",
+    },
+    {
+      icon: "GraduationCap",
+      title: "Placement Support & Campus Partnerships",
+      description: "Direct campus partnerships that connect classroom training to real placement outcomes.",
+    },
+    {
+      icon: "Building2",
+      title: "Corporate Onboarding Training",
+      description: "Structured onboarding programs that get corporate freshers productive, faster.",
+    },
+  ];
+  const existingFeatureCount = await prisma.homeFeature.count();
+  if (existingFeatureCount === 0) {
+    for (const [i, f] of homeFeatures.entries()) {
+      await prisma.homeFeature.create({ data: { ...f, order: i } });
+    }
+  }
+
+  console.log("Seeding footer quick links...");
+  const footerLinks = [
+    { label: "Home", href: "/" },
+    { label: "Courses", href: "/courses" },
+    { label: "Technologies", href: "/technologies" },
+    { label: "About", href: "/about" },
+    { label: "Employees", href: "/team" },
+    { label: "Contact", href: "/contact" },
+  ];
+  const existingLinkCount = await prisma.footerLink.count();
+  if (existingLinkCount === 0) {
+    for (const [i, l] of footerLinks.entries()) {
+      await prisma.footerLink.create({ data: { ...l, order: i } });
+    }
   }
 
   console.log("Seeding company (super admin) account...");

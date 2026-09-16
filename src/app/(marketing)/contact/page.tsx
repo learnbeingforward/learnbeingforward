@@ -4,14 +4,22 @@ import { PageHero } from "@/components/shared/PageHero";
 import { ContactProfileCard } from "@/components/shared/ContactProfileCard";
 import { ContactForm } from "@/components/sections/ContactForm";
 import { Reveal } from "@/components/shared/Reveal";
-import { contactProfiles } from "@/data/contacts";
+import { prisma } from "@/lib/prisma";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Contact",
   description: "Get in touch with Learn Being Forward for courses, campus partnerships, and placements.",
 };
 
-export default function ContactPage() {
+export const revalidate = 0;
+
+export default async function ContactPage() {
+  const [contactProfiles, settings] = await Promise.all([
+    prisma.contactProfile.findMany({ orderBy: { order: "asc" } }),
+    getSiteSettings(),
+  ]);
+
   return (
     <>
       <PageHero
@@ -22,13 +30,9 @@ export default function ContactPage() {
 
       <section className="pb-20">
         <div className="container-page">
-          <p className="mb-8 rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-center text-sm text-indigo">
-            Demo contact profiles shown below — real contact-section profiles will replace this
-            placeholder content.
-          </p>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {contactProfiles.map((profile, i) => (
-              <ContactProfileCard key={profile.slug} profile={profile} delay={i * 0.05} />
+              <ContactProfileCard key={profile.id} profile={profile} delay={i * 0.05} />
             ))}
           </div>
         </div>
@@ -52,19 +56,22 @@ export default function ContactPage() {
               <h3 className="text-xl font-semibold">Company Contact</h3>
               <ul className="mt-6 space-y-4 text-sm text-white/80">
                 <li className="flex items-center gap-3">
-                  <User className="size-5 text-gold-light" /> Lohit Kumar
+                  <User className="size-5 text-gold-light" /> {settings.companyContactName}
                 </li>
                 <li>
-                  <a href="tel:+919972934418" className="flex items-center gap-3 hover:text-white">
-                    <Phone className="size-5 text-gold-light" /> +91 99729 34418
+                  <a
+                    href={`tel:${settings.companyContactPhone.replace(/\s+/g, "")}`}
+                    className="flex items-center gap-3 hover:text-white"
+                  >
+                    <Phone className="size-5 text-gold-light" /> {settings.companyContactPhone}
                   </a>
                 </li>
                 <li>
                   <a
-                    href="mailto:info@learnbeingforward.in"
+                    href={`mailto:${settings.companyContactEmail}`}
                     className="flex items-center gap-3 hover:text-white"
                   >
-                    <Mail className="size-5 text-gold-light" /> info@learnbeingforward.in
+                    <Mail className="size-5 text-gold-light" /> {settings.companyContactEmail}
                   </a>
                 </li>
               </ul>
