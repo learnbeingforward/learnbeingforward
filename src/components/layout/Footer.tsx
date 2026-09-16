@@ -42,10 +42,10 @@ export function Footer() {
             Contact
           </h3>
           <ul className="space-y-3 text-sm text-white/70">
-            <li>Pavan Kumar</li>
+            <li>Lohit Kumar</li>
             <li>
-              <a href="tel:+918557076391" className="inline-flex items-center gap-2 hover:text-white">
-                <Phone className="size-4 shrink-0" /> +91 85570 76391
+              <a href="tel:+919972934418" className="inline-flex items-center gap-2 hover:text-white">
+                <Phone className="size-4 shrink-0" /> +91 99729 34418
               </a>
             </li>
             <li>

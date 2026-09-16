@@ -52,11 +52,11 @@ export default function ContactPage() {
               <h3 className="text-xl font-semibold">Company Contact</h3>
               <ul className="mt-6 space-y-4 text-sm text-white/80">
                 <li className="flex items-center gap-3">
-                  <User className="size-5 text-gold-light" /> Pavan Kumar
+                  <User className="size-5 text-gold-light" /> Lohit Kumar
                 </li>
                 <li>
-                  <a href="tel:+918557076391" className="flex items-center gap-3 hover:text-white">
-                    <Phone className="size-5 text-gold-light" /> +91 85570 76391
+                  <a href="tel:+919972934418" className="flex items-center gap-3 hover:text-white">
+                    <Phone className="size-5 text-gold-light" /> +91 99729 34418
                   </a>
                 </li>
                 <li>

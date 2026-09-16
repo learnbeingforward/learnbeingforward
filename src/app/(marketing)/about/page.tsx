@@ -64,15 +64,15 @@ export default function AboutPage() {
           <Reveal>
             <div className="grid gap-10 rounded-2xl border border-border bg-white p-8 sm:grid-cols-[auto_1fr] sm:p-12">
               <div className="mx-auto flex size-32 shrink-0 items-center justify-center rounded-full bg-indigo/10 text-4xl font-bold text-indigo sm:size-40">
-                PK
+                LK
               </div>
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide text-indigo">
                   Founder &amp; Lead Trainer
                 </p>
-                <h2 className="mt-1 text-2xl font-bold text-indigo sm:text-3xl">Pavan Kumar</h2>
+                <h2 className="mt-1 text-2xl font-bold text-indigo sm:text-3xl">Lohit Kumar</h2>
                 <p className="mt-4 leading-relaxed text-muted-foreground">
-                  Pavan Kumar is a technical trainer who has personally trained students across
+                  Lohit Kumar is a technical trainer who has personally trained students across
                   75+ colleges in programming, full-stack development, aptitude, and placement
                   preparation. He has worked closely with students right before their campus
                   placements, and built the Learn Being Forward curriculum around where students
