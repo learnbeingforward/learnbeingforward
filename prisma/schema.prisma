@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -46,7 +46,7 @@ model Course {
   id          String @id @default(cuid())
   slug        String @unique
   name        String
-  description String
+  description String @db.Text
   category    String
 
   modules     CourseModule[]
@@ -59,7 +59,7 @@ model CourseModule {
   course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title    String
   level    String?
-  topics   String
+  topics   String @db.Text
 
   @@index([courseId])
 }
@@ -107,10 +107,10 @@ model TeamMember {
   name            String
   role            String
   experienceYears Int
-  background      String
-  specialties     String
-  isFreelancer    Boolean  @default(false)
-  colleges        String?
+  background      String  @db.Text
+  specialties     String  @db.Text
+  isFreelancer    Boolean @default(false)
+  colleges        String? @db.Text
   cvUrl           String?
   avatarSeed      String
   createdAt       DateTime @default(now())
@@ -120,6 +120,6 @@ model ContactSubmission {
   id          String   @id @default(cuid())
   name        String
   email       String
-  message     String
+  message     String   @db.Text
   submittedAt DateTime @default(now())
 }

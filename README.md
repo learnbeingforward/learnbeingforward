@@ -6,21 +6,23 @@ placement-focused technical training through campus and corporate partnerships.
 ## Stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Framer Motion · shadcn/ui (Base UI) ·
-Prisma ORM · SQLite (local dev) · NextAuth.js v5 (credentials) · Zod · React Hook Form
+Prisma ORM · MySQL · NextAuth.js v5 (credentials) · Zod · React Hook Form
 
 ## Getting Started
 
 ```bash
 npm install
-npx prisma db push   # creates prisma/dev.db from schema.prisma
-npm run db:seed      # seeds courses, team, demo college + student/admin accounts
+cp .env.example .env   # fill in DATABASE_URL with a real MySQL connection string
+npx prisma db push     # creates the schema in your database
+npm run db:seed        # seeds courses, team, demo college + student/admin accounts
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Copy `.env.example` to `.env` and adjust if needed (SQLite works out of the box for local dev; set
-`DATABASE_URL` to a Postgres connection string for production, per the build brief).
+The project runs against MySQL (see `datasource db` in `prisma/schema.prisma`). Point
+`DATABASE_URL` at a Hostinger-provisioned MySQL database (hPanel → Databases) for both local
+dev and production — see `.env.example` for the connection string format.
 
 ### Demo logins (seeded, password `password123`)
 
@@ -55,3 +57,6 @@ npm run db:studio  # browse the database
 - Attendance threshold for certification is assumed at 75% (`src/lib/constants.ts`) — confirm the real number.
 - Brand logo is a placeholder icon mark built from the brief's description (`src/components/brand/`) —
   no logo files were found in this environment. Drop real logo assets into `public/brand/` and swap them in.
+- Production `DATABASE_URL` is not yet set — create a MySQL database in Hostinger's hPanel and set
+  the connection string both in `.env` (local) and the Hostinger app's environment variables, then run
+  `npx prisma db push` and `npm run db:seed` against it.
