@@ -80,7 +80,7 @@ export default async function CompanyAttendancePage() {
               </TableHeader>
               <TableBody>
                 {rows.map(({ enrollment, total, present, pct }) => {
-                  const eligible = pct >= ATTENDANCE_THRESHOLD;
+                  const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
                   const status = enrollment.certification?.status ?? "NOT_ELIGIBLE";
 
                   return (

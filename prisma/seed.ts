@@ -137,38 +137,40 @@ async function main() {
     }
   }
 
-  console.log("Seeding team members...");
-  await prisma.teamMember.deleteMany();
-  for (const [i, member] of teamMembers.entries()) {
-    await prisma.teamMember.create({
-      data: {
-        name: member.name,
-        role: member.role,
-        experienceYears: member.experienceYears,
-        background: member.background,
-        specialties: JSON.stringify(member.specialties),
-        isFreelancer: member.isFreelancer,
-        colleges: member.colleges ? JSON.stringify(member.colleges) : null,
-        cvUrl: member.cvUrl,
-        avatarSeed: member.avatarSeed,
-        order: i,
-      },
-    });
+  console.log("Seeding team members (only if table is empty)...");
+  if ((await prisma.teamMember.count()) === 0) {
+    for (const [i, member] of teamMembers.entries()) {
+      await prisma.teamMember.create({
+        data: {
+          name: member.name,
+          role: member.role,
+          experienceYears: member.experienceYears,
+          background: member.background,
+          specialties: JSON.stringify(member.specialties),
+          isFreelancer: member.isFreelancer,
+          colleges: member.colleges ? JSON.stringify(member.colleges) : null,
+          cvUrl: member.cvUrl,
+          avatarSeed: member.avatarSeed,
+          order: i,
+        },
+      });
+    }
   }
 
-  console.log("Seeding contact profiles...");
-  await prisma.contactProfile.deleteMany();
-  for (const [i, profile] of contactProfiles.entries()) {
-    await prisma.contactProfile.create({
-      data: {
-        name: profile.name,
-        role: profile.role,
-        email: profile.email,
-        phone: profile.phone,
-        avatarSeed: profile.avatarSeed,
-        order: i,
-      },
-    });
+  console.log("Seeding contact profiles (only if table is empty)...");
+  if ((await prisma.contactProfile.count()) === 0) {
+    for (const [i, profile] of contactProfiles.entries()) {
+      await prisma.contactProfile.create({
+        data: {
+          name: profile.name,
+          role: profile.role,
+          email: profile.email,
+          phone: profile.phone,
+          avatarSeed: profile.avatarSeed,
+          order: i,
+        },
+      });
+    }
   }
 
   console.log("Seeding home page features...");

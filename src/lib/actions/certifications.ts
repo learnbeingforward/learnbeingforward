@@ -13,14 +13,15 @@ export async function approveCertificate(enrollmentId: string) {
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { attendanceRecords: true },
+    include: { attendanceRecords: true, certification: true },
   });
   if (!enrollment) return;
 
   const total = enrollment.attendanceRecords.length || enrollment.totalClasses;
   const present = enrollment.attendanceRecords.filter((r) => r.present).length;
   const pct = total > 0 ? Math.round((present / total) * 100) : 0;
-  if (pct < ATTENDANCE_THRESHOLD) return;
+  const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
+  if (!eligible) return;
 
   await prisma.certification.upsert({
     where: { enrollmentId },

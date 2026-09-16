@@ -66,7 +66,7 @@ export default async function StudentDashboardPage() {
             const total = enrollment.attendanceRecords.length || enrollment.totalClasses;
             const present = enrollment.attendanceRecords.filter((r) => r.present).length;
             const pct = total > 0 ? Math.round((present / total) * 100) : 0;
-            const eligible = pct >= ATTENDANCE_THRESHOLD;
+            const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
 
             return (
               <div key={enrollment.id} className="rounded-xl border border-border bg-white p-6 sm:p-8">

@@ -49,9 +49,9 @@ export default async function StudentAttendancePage() {
             const present = enrollment.attendanceRecords.filter((r) => r.present).length;
             const absent = total - present;
             const pct = total > 0 ? Math.round((present / total) * 100) : 0;
-            const eligible = pct >= ATTENDANCE_THRESHOLD;
-            const remaining = Math.max(enrollment.totalClasses - classesHeld, 0);
             const cert = enrollment.certification;
+            const eligible = pct >= ATTENDANCE_THRESHOLD || cert?.overrideApproved;
+            const remaining = Math.max(enrollment.totalClasses - classesHeld, 0);
 
             return (
               <div key={enrollment.id} className="rounded-xl border border-border bg-white p-6 sm:p-8">
