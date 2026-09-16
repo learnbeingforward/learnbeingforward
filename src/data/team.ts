@@ -14,14 +14,14 @@ export type TeamMember = {
 
 export const teamMembers: TeamMember[] = [
   {
-    slug: "lohit-kumar",
-    name: "Lohit Kumar",
+    slug: "pavan-kumar",
+    name: "Pavan Kumar",
     role: "Founder & Lead Trainer",
     experienceYears: 8,
     background: "Full-stack development, placement training, curriculum design",
     specialties: ["Java", "Full-Stack Dev", "Placement Prep", "Curriculum Design"],
     isFreelancer: false,
-    avatarSeed: "lohit-kumar",
+    avatarSeed: "pavan-kumar",
     cvUrl: "/cv/placeholder-cv.pdf",
   },
   {
