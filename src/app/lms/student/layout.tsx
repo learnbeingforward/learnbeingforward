@@ -5,6 +5,7 @@ export default async function StudentLmsLayout({ children }: { children: React.R
   const session = await auth();
 
   if (!session?.user) redirect("/auth");
+  if (session.user.role === "SUPER_ADMIN") redirect("/lms/company");
   if (session.user.role !== "STUDENT") redirect("/lms/college");
 
   return <>{children}</>;

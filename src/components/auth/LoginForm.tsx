@@ -16,7 +16,8 @@ type SessionResponse = {
 };
 
 function roleRedirect(role?: string) {
-  if (role === "COLLEGE_ADMIN" || role === "SUPER_ADMIN") return "/lms/college";
+  if (role === "SUPER_ADMIN") return "/lms/company";
+  if (role === "COLLEGE_ADMIN") return "/lms/college";
   return "/lms/student";
 }
 

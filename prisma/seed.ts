@@ -153,8 +153,40 @@ async function main() {
     });
   }
 
+  console.log("Seeding company (super admin) account...");
+  await prisma.user.upsert({
+    where: { email: "company@learnbeingforward.in" },
+    update: {},
+    create: {
+      name: "Learn Being Forward Admin",
+      email: "company@learnbeingforward.in",
+      passwordHash,
+      role: "SUPER_ADMIN",
+    },
+  });
+
+  console.log("Seeding a demo enrollment request...");
+  const kavya = await prisma.user.findUnique({ where: { email: "student3@demo.com" } });
+  const frontend = await prisma.course.findUnique({ where: { slug: "frontend-development" } });
+  if (kavya && frontend) {
+    const existingRequest = await prisma.enrollmentRequest.findFirst({
+      where: { studentId: kavya.id, courseId: frontend.id, status: "PENDING" },
+    });
+    if (!existingRequest) {
+      await prisma.enrollmentRequest.create({
+        data: {
+          studentId: kavya.id,
+          courseId: frontend.id,
+          collegeId: college.id,
+          status: "PENDING",
+        },
+      });
+    }
+  }
+
   console.log("Seed complete.");
   console.log("Demo logins (password: password123):");
+  console.log("  Company admin: company@learnbeingforward.in");
   console.log("  College admin: college@demo.com");
   console.log("  Students: student1@demo.com .. student4@demo.com");
   console.log(`College admin id: ${collegeAdmin.id}`);

@@ -1,13 +1,16 @@
 import { Logo } from "@/components/brand/Logo";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { LmsNav, type LmsNavLink } from "@/components/layout/LmsNav";
 
 export function DashboardShell({
   title,
   subtitle,
+  navLinks,
   children,
 }: {
   title: string;
   subtitle: string;
+  navLinks?: LmsNavLink[];
   children: React.ReactNode;
 }) {
   return (
@@ -18,6 +21,8 @@ export function DashboardShell({
           <SignOutButton />
         </div>
       </header>
+
+      {navLinks && navLinks.length > 0 && <LmsNav links={navLinks} />}
 
       <div className="container-page py-10">
         <div className="mb-8">

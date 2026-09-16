@@ -1,34 +1,68 @@
-import { CheckCircle2, XCircle, BookOpen, Rocket } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, XCircle, BookOpen, Rocket, Clock } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { AttendanceBar } from "@/components/shared/AttendanceBar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
+
+const navLinks = [
+  { href: "/lms/student", label: "My Dashboard" },
+  { href: "/lms/student/courses", label: "Browse Courses" },
+];
 
 export default async function StudentDashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const enrollments = await prisma.enrollment.findMany({
-    where: { studentId: userId },
-    include: {
-      course: { include: { modules: true } },
-      attendanceRecords: true,
-      certification: true,
-    },
-    orderBy: { enrolledAt: "asc" },
-  });
+  const [enrollments, pendingRequests] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { studentId: userId },
+      include: {
+        course: { include: { modules: true } },
+        attendanceRecords: true,
+        certification: true,
+      },
+      orderBy: { enrolledAt: "asc" },
+    }),
+    prisma.enrollmentRequest.findMany({
+      where: { studentId: userId, status: "PENDING" },
+      include: { course: true },
+    }),
+  ]);
 
   return (
-    <DashboardShell title="Student Dashboard" subtitle="Welcome back">
+    <DashboardShell title="Student Dashboard" subtitle="Welcome back" navLinks={navLinks}>
+      {pendingRequests.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {pendingRequests.map((req) => (
+            <div
+              key={req.id}
+              className="flex items-center gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-indigo"
+            >
+              <Clock className="size-4 shrink-0" />
+              Your request to enroll in <strong>{req.course.name}</strong> is awaiting company approval.
+            </div>
+          ))}
+        </div>
+      )}
+
       {enrollments.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center">
           <BookOpen className="mx-auto mb-3 size-8 text-muted-foreground" />
           <p className="font-medium text-indigo">You&apos;re not enrolled in any courses yet.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your college or training coordinator will enroll you once your program starts.
+            Browse the course catalog and request enrollment — your college and our team will get you set up.
           </p>
+          <Button
+            render={<Link href="/lms/student/courses" />}
+            nativeButton={false}
+            className="mt-5 bg-indigo text-white hover:bg-indigo/90"
+          >
+            Browse Courses
+          </Button>
         </div>
       ) : (
         <div className="space-y-8">
