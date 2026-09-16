@@ -44,7 +44,7 @@ export function Header() {
           })}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden items-center gap-2 md:flex">
           <Button
             render={<Link href="/auth" />}
             nativeButton={false}
@@ -52,6 +52,13 @@ export function Header() {
             className="border-gold text-indigo hover:bg-gold"
           >
             Login
+          </Button>
+          <Button
+            render={<Link href="/auth?mode=signup" />}
+            nativeButton={false}
+            className="bg-indigo text-white hover:bg-indigo/90"
+          >
+            Sign Up
           </Button>
         </div>
 
@@ -85,6 +92,13 @@ export function Header() {
               className="mt-1 rounded-md border border-gold px-3 py-2.5 text-center text-base font-semibold text-indigo"
             >
               Login
+            </Link>
+            <Link
+              href="/auth?mode=signup"
+              onClick={() => setOpen(false)}
+              className="rounded-md bg-indigo px-3 py-2.5 text-center text-base font-semibold text-white"
+            >
+              Sign Up
             </Link>
           </nav>
         </div>

@@ -32,12 +32,23 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role
+  usn          String?
+  fatherName   String?
   collegeId    String?
   college      College? @relation(fields: [collegeId], references: [id])
   createdAt    DateTime @default(now())
 
   enrollments        Enrollment[]
   enrollmentRequests EnrollmentRequest[]
+}
+
+model Trainer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  createdAt DateTime @default(now())
+
+  enrollments Enrollment[]
 }
 
 model College {
@@ -84,7 +95,9 @@ model Enrollment {
   college     College? @relation(fields: [collegeId], references: [id])
   enrolledAt  DateTime @default(now())
 
-  totalClasses Int @default(0)
+  totalClasses Int     @default(0)
+  trainerId    String?
+  trainer      Trainer? @relation(fields: [trainerId], references: [id])
 
   attendanceRecords AttendanceRecord[]
   certification     Certification?
@@ -92,6 +105,7 @@ model Enrollment {
   @@index([studentId])
   @@index([courseId])
   @@index([collegeId])
+  @@index([trainerId])
 }
 
 model EnrollmentRequest {
@@ -123,11 +137,12 @@ model AttendanceRecord {
 }
 
 model Certification {
-  id           String              @id @default(cuid())
-  enrollmentId String              @unique
-  enrollment   Enrollment          @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  status       CertificationStatus @default(NOT_ELIGIBLE)
-  issuedAt     DateTime?
+  id              String              @id @default(cuid())
+  enrollmentId    String              @unique
+  enrollment      Enrollment          @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  status          CertificationStatus @default(NOT_ELIGIBLE)
+  trainerApproved Boolean             @default(false)
+  issuedAt        DateTime?
 }
 
 model TeamMember {

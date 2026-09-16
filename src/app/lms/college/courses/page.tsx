@@ -4,12 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Badge } from "@/components/ui/badge";
 import { getCollegeStudentRows, summarizeByCourse } from "@/lib/college-data";
-
-const navLinks = [
-  { href: "/lms/college", label: "Overview" },
-  { href: "/lms/college/students", label: "Students" },
-  { href: "/lms/college/courses", label: "Courses" },
-];
+import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 
 export default async function CollegeCoursesPage() {
   const session = await auth();

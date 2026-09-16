@@ -4,11 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { requestEnrollment } from "@/lib/actions/enrollment-requests";
-
-const navLinks = [
-  { href: "/lms/student", label: "My Dashboard" },
-  { href: "/lms/student/courses", label: "Browse Courses" },
-];
+import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 
 export default async function BrowseCoursesPage() {
   const session = await auth();

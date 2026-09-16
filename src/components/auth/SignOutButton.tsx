@@ -10,7 +10,13 @@ export function SignOutButton() {
       variant="outline"
       size="sm"
       className="border-border text-muted-foreground hover:text-indigo"
-      onClick={() => signOut({ callbackUrl: "/" })}
+      onClick={() =>
+        signOut({
+          redirect: false,
+        }).then(() => {
+          window.location.href = "/auth";
+        })
+      }
     >
       <LogOut className="size-4" />
       Log Out

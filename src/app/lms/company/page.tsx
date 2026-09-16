@@ -13,8 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/lib/actions/enrollment-requests";
-
-const navLinks = [{ href: "/lms/company", label: "Requests" }];
+import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 
 export default async function CompanyDashboardPage() {
   const [pending, recentDecided] = await Promise.all([

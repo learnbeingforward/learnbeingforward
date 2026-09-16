@@ -7,11 +7,7 @@ import { AttendanceBar } from "@/components/shared/AttendanceBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
-
-const navLinks = [
-  { href: "/lms/student", label: "My Dashboard" },
-  { href: "/lms/student/courses", label: "Browse Courses" },
-];
+import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 
 export default async function StudentDashboardPage() {
   const session = await auth();

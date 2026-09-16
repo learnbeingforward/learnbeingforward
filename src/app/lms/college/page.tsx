@@ -2,12 +2,7 @@ import { Users, TrendingUp, BookOpenCheck } from "lucide-react";
 import { auth } from "@/auth";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { getCollegeStudentRows, summarizeByCourse } from "@/lib/college-data";
-
-const navLinks = [
-  { href: "/lms/college", label: "Overview" },
-  { href: "/lms/college/students", label: "Students" },
-  { href: "/lms/college/courses", label: "Courses" },
-];
+import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 
 export default async function CollegeDashboardPage() {
   const session = await auth();

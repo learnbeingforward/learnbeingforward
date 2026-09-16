@@ -26,7 +26,7 @@ export function Footer() {
           <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gold-light">
             Quick Links
           </h3>
-          <ul className="space-y-2.5">
+          <ul className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
             {quickLinks.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="text-sm text-white/70 hover:text-white">

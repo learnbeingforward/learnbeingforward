@@ -10,12 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCollegeStudentRows } from "@/lib/college-data";
-
-const navLinks = [
-  { href: "/lms/college", label: "Overview" },
-  { href: "/lms/college/students", label: "Students" },
-  { href: "/lms/college/courses", label: "Courses" },
-];
+import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 
 export default async function CollegeStudentsPage() {
   const session = await auth();

@@ -202,6 +202,10 @@ async function main() {
     console.log("  Students: student1@demo.com .. student4@demo.com");
   }
 
+  if (process.env.SEED_BULK_DEMO === "true") {
+    await seedBulkDemoData();
+  }
+
   console.log("Seed complete.");
   if (generatedCompanyPassword) {
     console.log("");
@@ -213,6 +217,181 @@ async function main() {
   } else if (existingCompanyAdmin) {
     console.log("Company account already exists (company@learnbeingforward.in) — password unchanged.");
   }
+}
+
+const BULK_COLLEGES = [
+  "Global Institute of Technology",
+  "Sunrise Engineering College",
+  "Horizon College of Engineering",
+  "Pinnacle Institute of Technology",
+  "Crestview College of Engineering",
+];
+
+const TRAINER_NAMES = [
+  "Anil Deshmukh",
+  "Priyanka Rao",
+  "Suresh Iyer",
+  "Meenakshi Nair",
+  "Arvind Bhatt",
+  "Lakshmi Menon",
+  "Ravi Chandran",
+  "Neha Kapoor",
+];
+
+const FIRST_NAMES = [
+  "Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun", "Sai", "Reyansh", "Krishna",
+  "Ishaan", "Rohan", "Ananya", "Diya", "Saanvi", "Aadhya", "Kavya", "Myra",
+  "Anika", "Riya", "Ishita", "Pooja", "Karthik", "Nikhil", "Varun", "Siddharth",
+  "Priya", "Sneha", "Divya", "Shreya", "Manoj", "Rahul", "Amit", "Vikram",
+];
+
+const LAST_NAMES = [
+  "Sharma", "Verma", "Gupta", "Reddy", "Nair", "Iyer", "Patel", "Singh",
+  "Kumar", "Rao", "Mehta", "Joshi", "Pillai", "Menon", "Agarwal", "Chauhan",
+];
+
+function randomItem<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randomInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function seedBulkDemoData() {
+  console.log("Seeding bulk demo data (SEED_BULK_DEMO=true)...");
+
+  const bulkPassword = generatePassword();
+  const bulkPasswordHash = await bcrypt.hash(bulkPassword, 10);
+
+  const allCourses = await prisma.course.findMany();
+
+  const trainers = [];
+  for (const name of TRAINER_NAMES) {
+    const email = `${name.toLowerCase().replace(/\s+/g, ".")}@learnbeingforward.in`;
+    const trainer = await prisma.trainer.upsert({
+      where: { email },
+      update: {},
+      create: { name, email },
+    });
+    trainers.push(trainer);
+  }
+
+  let studentCount = 0;
+  let enrollmentCount = 0;
+
+  for (const collegeName of BULK_COLLEGES) {
+    const college = await prisma.college.upsert({
+      where: { name: collegeName },
+      update: {},
+      create: { name: collegeName, contactEmail: `admin@${collegeName.toLowerCase().replace(/\s+/g, "")}.edu` },
+    });
+
+    const collegeAdminEmail = `admin@${collegeName.toLowerCase().replace(/\s+/g, "")}.edu`;
+    await prisma.user.upsert({
+      where: { email: collegeAdminEmail },
+      update: {},
+      create: {
+        name: `${collegeName} Admin`,
+        email: collegeAdminEmail,
+        passwordHash: bulkPasswordHash,
+        role: "COLLEGE_ADMIN",
+        collegeId: college.id,
+      },
+    });
+
+    const studentTarget = randomInt(15, 20);
+    for (let i = 0; i < studentTarget; i++) {
+      studentCount += 1;
+      const firstName = randomItem(FIRST_NAMES);
+      const lastName = randomItem(LAST_NAMES);
+      const name = `${firstName} ${lastName}`;
+      const usn = `${collegeName.slice(0, 2).toUpperCase()}${new Date().getFullYear() % 100}CS${String(studentCount).padStart(3, "0")}`;
+      const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${studentCount}@bulkdemo.in`;
+
+      const student = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          name,
+          email,
+          passwordHash: bulkPasswordHash,
+          role: "STUDENT",
+          usn,
+          fatherName: `${randomItem(FIRST_NAMES)} ${lastName}`,
+          collegeId: college.id,
+        },
+      });
+
+      const course = randomItem(allCourses);
+      const trainer = randomItem(trainers);
+      const totalClasses = randomInt(30, 45);
+      const attendanceRatio = randomItem([0.35, 0.42, 0.5, 0.58, 0.65, 0.72, 0.78, 0.85, 0.9, 0.95]);
+      const classesHeld = randomInt(Math.floor(totalClasses * 0.6), totalClasses);
+      const presentCount = Math.round(classesHeld * attendanceRatio);
+
+      const existingEnrollment = await prisma.enrollment.findFirst({
+        where: { studentId: student.id, courseId: course.id },
+      });
+      if (existingEnrollment) continue;
+
+      const enrollment = await prisma.enrollment.create({
+        data: {
+          studentId: student.id,
+          courseId: course.id,
+          collegeId: college.id,
+          totalClasses,
+          trainerId: trainer.id,
+        },
+      });
+      enrollmentCount += 1;
+
+      const records = Array.from({ length: classesHeld }, (_, idx) => ({
+        enrollmentId: enrollment.id,
+        classDate: new Date(Date.now() - (classesHeld - idx) * 24 * 60 * 60 * 1000),
+        present: idx < presentCount,
+      }));
+      await prisma.attendanceRecord.createMany({ data: records });
+
+      const attendancePct = (presentCount / classesHeld) * 100;
+      const eligible = attendancePct >= ATTENDANCE_THRESHOLD;
+      const issued = eligible && Math.random() < 0.4;
+
+      await prisma.certification.create({
+        data: {
+          enrollmentId: enrollment.id,
+          status: issued ? "ISSUED" : eligible ? "ELIGIBLE" : "NOT_ELIGIBLE",
+          trainerApproved: issued,
+          issuedAt: issued ? new Date() : null,
+        },
+      });
+
+      if (Math.random() < 0.15) {
+        const otherCourse = randomItem(allCourses.filter((c) => c.id !== course.id));
+        const existingRequest = await prisma.enrollmentRequest.findFirst({
+          where: { studentId: student.id, courseId: otherCourse.id },
+        });
+        if (!existingRequest) {
+          await prisma.enrollmentRequest.create({
+            data: {
+              studentId: student.id,
+              courseId: otherCourse.id,
+              collegeId: college.id,
+              status: "PENDING",
+            },
+          });
+        }
+      }
+    }
+  }
+
+  console.log(`Bulk demo data: ${BULK_COLLEGES.length} colleges, ${studentCount} students, ${enrollmentCount} enrollments, ${trainers.length} trainers.`);
+  console.log("=================================================================");
+  console.log("Bulk demo accounts — shared password (college admins + students):");
+  console.log(`  Password: ${bulkPassword}`);
+  console.log("  College admin emails: admin@<collegenameNoSpaces>.edu (see console above)");
+  console.log("  Student emails: firstname.lastnameN@bulkdemo.in");
+  console.log("=================================================================");
 }
 
 main()
