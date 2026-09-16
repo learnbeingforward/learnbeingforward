@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  COLLEGE_ADMIN
+  SUPER_ADMIN
+}
+
+enum CertificationStatus {
+  NOT_ELIGIBLE
+  ELIGIBLE
+  ISSUED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  collegeId    String?
+  college      College? @relation(fields: [collegeId], references: [id])
+  createdAt    DateTime @default(now())
+
+  enrollments Enrollment[]
+}
+
+model College {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  contactEmail String?
+  createdAt    DateTime @default(now())
+
+  users       User[]
+  enrollments Enrollment[]
+}
+
+model Course {
+  id          String @id @default(cuid())
+  slug        String @unique
+  name        String
+  description String
+  category    String
+
+  modules     CourseModule[]
+  enrollments Enrollment[]
+}
+
+model CourseModule {
+  id       String  @id @default(cuid())
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  level    String?
+  topics   String
+
+  @@index([courseId])
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  collegeId   String?
+  college     College? @relation(fields: [collegeId], references: [id])
+  enrolledAt  DateTime @default(now())
+
+  totalClasses Int @default(0)
+
+  attendanceRecords AttendanceRecord[]
+  certification     Certification?
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([collegeId])
+}
+
+model AttendanceRecord {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  classDate    DateTime
+  present      Boolean
+
+  @@index([enrollmentId])
+}
+
+model Certification {
+  id           String              @id @default(cuid())
+  enrollmentId String              @unique
+  enrollment   Enrollment          @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  status       CertificationStatus @default(NOT_ELIGIBLE)
+  issuedAt     DateTime?
+}
+
+model TeamMember {
+  id              String   @id @default(cuid())
+  name            String
+  role            String
+  experienceYears Int
+  background      String
+  specialties     String
+  isFreelancer    Boolean  @default(false)
+  colleges        String?
+  cvUrl           String?
+  avatarSeed      String
+  createdAt       DateTime @default(now())
+}
+
+model ContactSubmission {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  message     String
+  submittedAt DateTime @default(now())
+}
