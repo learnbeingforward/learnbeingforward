@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
@@ -8,6 +9,9 @@ import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginBut
 import { updateTrainerRate } from "@/lib/actions/trainers";
 
 export default async function CompanyTrainersPage() {
+  const session = await auth();
+  const isSuperAdmin = session!.user.role === "SUPER_ADMIN";
+
   const trainers = await prisma.trainer.findMany({
     include: { loginUser: true, batches: true },
     orderBy: { name: "asc" },
@@ -30,13 +34,15 @@ export default async function CompanyTrainersPage() {
           <p className="font-semibold text-indigo">Schedule Training</p>
           <p className="mt-1 text-sm text-muted-foreground">Assign a trainer, date and session slots to a batch.</p>
         </Link>
-        <Link
-          href="/lms/company/trainers/invoices"
-          className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-        >
-          <p className="font-semibold text-indigo">Invoices</p>
-          <p className="mt-1 text-sm text-muted-foreground">Review and approve trainer invoices.</p>
-        </Link>
+        {isSuperAdmin && (
+          <Link
+            href="/lms/company/trainers/invoices"
+            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+          >
+            <p className="font-semibold text-indigo">Invoices</p>
+            <p className="mt-1 text-sm text-muted-foreground">Review and approve trainer invoices.</p>
+          </Link>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-white">
@@ -69,20 +75,22 @@ export default async function CompanyTrainersPage() {
                     hasEmail={!!trainer.email}
                     hasLogin={!!trainer.loginUser}
                   />
-                  <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">₹</span>
-                    <Input
-                      name="hourlyRate"
-                      type="number"
-                      min="0"
-                      defaultValue={trainer.hourlyRate}
-                      className="w-24"
-                    />
-                    <span className="text-sm text-muted-foreground">/hr</span>
-                    <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                      Save
-                    </Button>
-                  </form>
+                  {isSuperAdmin && (
+                    <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">₹</span>
+                      <Input
+                        name="hourlyRate"
+                        type="number"
+                        min="0"
+                        defaultValue={trainer.hourlyRate}
+                        className="w-24"
+                      />
+                      <span className="text-sm text-muted-foreground">/hr</span>
+                      <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+                        Save
+                      </Button>
+                    </form>
+                  )}
                 </div>
               </div>
             ))}

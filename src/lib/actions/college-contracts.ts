@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 import { renderCollegeInvoicePdf, type CollegeInvoiceLineItem } from "@/lib/pdf/invoice-pdf";
 
 const HOURS_PER_SESSION = 2;
@@ -14,9 +15,10 @@ export async function requestTraining(
   formData: FormData
 ): Promise<RequestTrainingState> {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     return { ok: false, error: "Not authorized." };
   }
+  const isAdmin2 = session.user.role === "ADMIN2";
 
   const collegeId = String(formData.get("collegeId") ?? "").trim();
   const courseId = String(formData.get("courseId") ?? "").trim();
@@ -50,15 +52,17 @@ export async function requestTraining(
   let ratePerStudentHour: number | null = null;
   let flatRatePerDay: number | null = null;
 
-  if (contractType === "PER_STUDENT_HOURLY") {
-    ratePerStudentHour = Number.parseInt(ratePerStudentHourInput, 10);
-    if (!Number.isFinite(ratePerStudentHour) || ratePerStudentHour <= 0) {
-      return { ok: false, error: "Enter a valid per-student, per-hour rate." };
-    }
-  } else if (contractType === "PER_DAY_FLAT") {
-    flatRatePerDay = Number.parseInt(flatRatePerDayInput, 10);
-    if (!Number.isFinite(flatRatePerDay) || flatRatePerDay <= 0) {
-      return { ok: false, error: "Enter a valid flat daily rate." };
+  if (!isAdmin2) {
+    if (contractType === "PER_STUDENT_HOURLY") {
+      ratePerStudentHour = Number.parseInt(ratePerStudentHourInput, 10);
+      if (!Number.isFinite(ratePerStudentHour) || ratePerStudentHour <= 0) {
+        return { ok: false, error: "Enter a valid per-student, per-hour rate." };
+      }
+    } else if (contractType === "PER_DAY_FLAT") {
+      flatRatePerDay = Number.parseInt(flatRatePerDayInput, 10);
+      if (!Number.isFinite(flatRatePerDay) || flatRatePerDay <= 0) {
+        return { ok: false, error: "Enter a valid flat daily rate." };
+      }
     }
   }
 
@@ -80,6 +84,8 @@ export async function requestTraining(
       endDate,
       targetBranch: targetBranchInput || null,
       targetSemester,
+      status: isAdmin2 ? "PENDING_RATE" : "PENDING",
+      requestedByAdminId: isAdmin2 ? session.user.id : null,
     },
   });
 
@@ -88,7 +94,49 @@ export async function requestTraining(
   return { ok: true };
 }
 
-export async function decideContract(contractId: string, approve: boolean) {
+export type ApproveRateState = { ok: boolean; error?: string } | null;
+
+export async function approveContractRate(
+  contractId: string,
+  _prevState: ApproveRateState,
+  formData: FormData
+): Promise<ApproveRateState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    return { ok: false, error: "Only the main company admin can set the rate and send this to the college." };
+  }
+
+  const contract = await prisma.collegeContract.findUnique({ where: { id: contractId } });
+  if (!contract || contract.status !== "PENDING_RATE") {
+    return { ok: false, error: "This request is no longer awaiting a rate." };
+  }
+
+  let ratePerStudentHour: number | null = null;
+  let flatRatePerDay: number | null = null;
+
+  if (contract.contractType === "PER_STUDENT_HOURLY") {
+    ratePerStudentHour = Number.parseInt(String(formData.get("ratePerStudentHour") ?? ""), 10);
+    if (!Number.isFinite(ratePerStudentHour) || ratePerStudentHour <= 0) {
+      return { ok: false, error: "Enter a valid per-student, per-hour rate." };
+    }
+  } else if (contract.contractType === "PER_DAY_FLAT") {
+    flatRatePerDay = Number.parseInt(String(formData.get("flatRatePerDay") ?? ""), 10);
+    if (!Number.isFinite(flatRatePerDay) || flatRatePerDay <= 0) {
+      return { ok: false, error: "Enter a valid flat daily rate." };
+    }
+  }
+
+  await prisma.collegeContract.update({
+    where: { id: contractId },
+    data: { ratePerStudentHour, flatRatePerDay, status: "PENDING" },
+  });
+
+  revalidatePath("/lms/company/colleges");
+  revalidatePath("/lms/college/contracts");
+  return { ok: true };
+}
+
+export async function decideContract(contractId: string, approve: boolean, formData: FormData) {
   const session = await auth();
   if (!session?.user || session.user.role !== "COLLEGE_ADMIN") {
     throw new Error("Only a college admin can decide on a training request.");
@@ -99,9 +147,14 @@ export async function decideContract(contractId: string, approve: boolean) {
     return;
   }
 
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!approve && !reason) {
+    throw new Error("A reason is required when rejecting a training request.");
+  }
+
   await prisma.collegeContract.update({
     where: { id: contractId },
-    data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date() },
+    data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date(), rejectReason: reason || null },
   });
 
   revalidatePath("/lms/college/contracts");
@@ -130,7 +183,7 @@ export async function rescheduleSession(sessionId: string, formData: FormData) {
   revalidatePath("/lms/trainer/schedule");
 }
 
-export type GenerateInvoiceState = { ok: boolean; error?: string } | null;
+export type GenerateInvoiceState = { ok: boolean; error?: string; invoiceId?: string; pdfUrl?: string } | null;
 
 export async function generateCollegeInvoice(
   contractId: string,
@@ -139,7 +192,7 @@ export async function generateCollegeInvoice(
 ): Promise<GenerateInvoiceState> {
   const session = await auth();
   if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    return { ok: false, error: "Only the company admin can generate an invoice." };
+    return { ok: false, error: "Only the main company admin can generate an invoice." };
   }
 
   const contract = await prisma.collegeContract.findUnique({
@@ -239,10 +292,33 @@ export async function generateCollegeInvoice(
   revalidatePath("/lms/company/colleges");
   revalidatePath("/lms/college/contracts");
 
+  return { ok: true, invoiceId: invoice.id, pdfUrl };
+}
+
+export type SubmitDraftState = { ok: boolean; error?: string } | null;
+
+export async function submitDraftCollegeInvoice(
+  invoiceId: string,
+  _prevState: SubmitDraftState,
+  _formData: FormData
+): Promise<SubmitDraftState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    return { ok: false, error: "Only the main company admin can send this invoice." };
+  }
+
+  const invoice = await prisma.collegeInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice) return { ok: false, error: "Invoice not found." };
+  if (invoice.submitted) return { ok: false, error: "This invoice has already been sent." };
+
+  await prisma.collegeInvoice.update({ where: { id: invoiceId }, data: { submitted: true } });
+
+  revalidatePath("/lms/company/colleges");
+  revalidatePath("/lms/college/contracts");
   return { ok: true };
 }
 
-export async function decideCollegeInvoice(invoiceId: string, approve: boolean) {
+export async function decideCollegeInvoice(invoiceId: string, approve: boolean, formData: FormData) {
   const session = await auth();
   if (!session?.user || session.user.role !== "COLLEGE_ADMIN") {
     throw new Error("Only a college admin can decide on an invoice.");
@@ -252,13 +328,23 @@ export async function decideCollegeInvoice(invoiceId: string, approve: boolean) 
     where: { id: invoiceId },
     include: { contract: true },
   });
-  if (!invoice || invoice.status !== "PENDING" || invoice.contract.collegeId !== session.user.collegeId) {
+  if (
+    !invoice ||
+    invoice.status !== "PENDING" ||
+    !invoice.submitted ||
+    invoice.contract.collegeId !== session.user.collegeId
+  ) {
     return;
+  }
+
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!approve && !reason) {
+    throw new Error("A reason is required when rejecting an invoice.");
   }
 
   await prisma.collegeInvoice.update({
     where: { id: invoiceId },
-    data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date() },
+    data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date(), rejectReason: reason || null },
   });
 
   revalidatePath("/lms/college/contracts");

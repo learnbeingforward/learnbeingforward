@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 async function requireCompany() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can edit site content.");
   }
 }

@@ -14,7 +14,8 @@ export async function POST(request: Request) {
     data: {
       name: parsed.data.name,
       email: parsed.data.email.toLowerCase(),
-      collegeName: parsed.data.collegeName,
+      collegeName: parsed.data.collegeName || null,
+      role: parsed.data.role,
     },
   });
 

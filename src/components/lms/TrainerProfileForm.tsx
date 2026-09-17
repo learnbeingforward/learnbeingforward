@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateTrainerProfile, type UpdateTrainerProfileState } from "@/lib/actions/trainers";
 
@@ -57,18 +58,30 @@ export function TrainerProfileForm({ trainer }: { trainer: Trainer }) {
       <FileUploadField name="cvUrl" label="CV / Resume (optional)" category="cv" defaultUrl={trainer.cvUrl} />
 
       <div>
-        <p className="mb-3 text-sm font-semibold text-indigo">Bank Details (for invoice payments)</p>
+        <p className="mb-1 text-sm font-semibold text-indigo">Bank Details (for invoice payments)</p>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Account holder name, account number, and IFSC are required before you can generate an invoice.
+        </p>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <Label htmlFor="bankAccountName">Account Holder Name (optional)</Label>
+            <Label htmlFor="bankAccountName">
+              Account Holder Name
+              <RequiredMark />
+            </Label>
             <Input id="bankAccountName" name="bankAccountName" defaultValue={trainer.bankAccountName ?? ""} className="mt-1.5" />
           </div>
           <div>
-            <Label htmlFor="bankAccountNumber">Account Number (optional)</Label>
+            <Label htmlFor="bankAccountNumber">
+              Account Number
+              <RequiredMark />
+            </Label>
             <Input id="bankAccountNumber" name="bankAccountNumber" defaultValue={trainer.bankAccountNumber ?? ""} className="mt-1.5" />
           </div>
           <div>
-            <Label htmlFor="bankIfsc">IFSC Code (optional)</Label>
+            <Label htmlFor="bankIfsc">
+              IFSC Code
+              <RequiredMark />
+            </Label>
             <Input id="bankIfsc" name="bankIfsc" defaultValue={trainer.bankIfsc ?? ""} className="mt-1.5" />
           </div>
           <div>

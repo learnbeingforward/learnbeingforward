@@ -2,9 +2,32 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
+import { StudentDetailView } from "@/components/lms/StudentDetailView";
+import { BackLink } from "@/components/lms/BackLink";
+import { getStudentDetail } from "@/lib/college-data";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
-export default async function CompanyAllStudentsPage() {
+export default async function CompanyAllStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ studentId?: string }>;
+}) {
+  const { studentId } = await searchParams;
+
+  if (studentId) {
+    const detail = await getStudentDetail(studentId);
+    return (
+      <DashboardShell title="Student" subtitle="Full profile" navLinks={navLinks}>
+        <BackLink href="/lms/company/students" label="Back to All Students" />
+        {!detail ? (
+          <p className="text-sm text-muted-foreground">This student no longer exists.</p>
+        ) : (
+          <StudentDetailView student={detail} />
+        )}
+      </DashboardShell>
+    );
+  }
+
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },
     include: {
@@ -23,6 +46,7 @@ export default async function CompanyAllStudentsPage() {
           const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
           return {
             id: `${student.id}-${enrollment.id}`,
+            studentId: student.id,
             name: student.name,
             email: student.email,
             collegeName: student.college?.name ?? "—",
@@ -37,6 +61,7 @@ export default async function CompanyAllStudentsPage() {
       : [
           {
             id: student.id,
+            studentId: student.id,
             name: student.name,
             email: student.email,
             collegeName: student.college?.name ?? "—",

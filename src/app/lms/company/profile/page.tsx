@@ -24,6 +24,7 @@ export default async function CompanyProfilePage() {
             companyBankName: settings?.companyBankName ?? null,
             companyGstNumber: settings?.companyGstNumber ?? null,
           }}
+          showBank={session!.user.role === "SUPER_ADMIN"}
         />
 
         <div>

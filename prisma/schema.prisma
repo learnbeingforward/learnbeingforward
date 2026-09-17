@@ -13,6 +13,7 @@ enum Role {
   COLLEGE_ADMIN
   SUPER_ADMIN
   TRAINER
+  ADMIN2
 }
 
 enum CertificationStatus {
@@ -25,6 +26,7 @@ enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
+  PENDING_RATE
 }
 
 enum TechCategory {
@@ -69,6 +71,8 @@ model User {
   cvUrl        String?
   branch       String?
   semester     Int?
+  phone        String?
+  gender       String?
   createdAt    DateTime @default(now())
 
   enrollments           Enrollment[]
@@ -244,6 +248,7 @@ model Batch {
   course    Course   @relation(fields: [courseId], references: [id])
   name      String
   semester  Int?
+  completed Boolean  @default(false)
   trainerId String?
   trainer   Trainer? @relation(fields: [trainerId], references: [id])
   createdAt DateTime @default(now())
@@ -316,6 +321,7 @@ model TrainerInvoice {
   deductionReason     String?  @db.Text
   paymentTimelineDays Int?
   approvalPdfUrl      String?
+  submitted           Boolean  @default(false)
 
   lineItems TrainerInvoiceSession[]
 
@@ -451,7 +457,8 @@ model PasswordResetRequest {
   id          String        @id @default(cuid())
   name        String
   email       String
-  collegeName String
+  collegeName String?
+  role        Role          @default(STUDENT)
   status      RequestStatus @default(PENDING)
   requestedAt DateTime      @default(now())
   decidedAt   DateTime?
@@ -490,6 +497,8 @@ model CollegeContract {
   status             RequestStatus @default(PENDING)
   requestedAt        DateTime      @default(now())
   decidedAt          DateTime?
+  requestedByAdminId String?
+  rejectReason       String?       @db.Text
 
   invoices CollegeInvoice[]
 
@@ -509,6 +518,8 @@ model CollegeInvoice {
   submittedAt   DateTime        @default(now())
   decidedAt     DateTime?
   pdfUrl        String?
+  submitted     Boolean         @default(false)
+  rejectReason  String?         @db.Text
 
   @@index([contractId])
   @@index([status])

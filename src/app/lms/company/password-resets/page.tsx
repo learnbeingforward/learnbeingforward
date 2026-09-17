@@ -3,11 +3,10 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import { PasswordResetRow } from "@/components/lms/PasswordResetRow";
-import { ResetTrainerPasswordForm } from "@/components/lms/ResetTrainerPasswordForm";
 import { format } from "date-fns";
 
 export default async function CompanyPasswordResetsPage() {
-  const [pending, decided, trainers] = await Promise.all([
+  const [pending, decided] = await Promise.all([
     prisma.passwordResetRequest.findMany({
       where: { status: "PENDING" },
       orderBy: { requestedAt: "asc" },
@@ -17,16 +16,16 @@ export default async function CompanyPasswordResetsPage() {
       orderBy: { decidedAt: "desc" },
       take: 15,
     }),
-    prisma.trainer.findMany({ where: { loginUser: { isNot: null } }, orderBy: { name: "asc" } }),
   ]);
 
   return (
-    <DashboardShell title="Password Resets" subtitle="Student forgot-password requests" navLinks={navLinks}>
+    <DashboardShell title="Password Reset Requests" subtitle="Forgot-password requests" navLinks={navLinks}>
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Only requests that match an active student account&apos;s name, email, and college can be
-        fulfilled — this queue can never reset a college or company login. Type a new password and
-        send it; there&apos;s no email provider configured yet, so this simulates delivery (the
-        password is logged server-side for now).
+        Students, colleges, trainers, and second admins can all send a request here when they forget
+        their password — the main company admin&apos;s own login can never be reset this way. Type a
+        new password and send it; there&apos;s no email provider configured yet, so this simulates
+        delivery (the password is logged server-side for now). Need to reset an account directly
+        without a request? Use Manage Accounts instead.
       </p>
 
       <div className="rounded-xl border border-border bg-white">
@@ -42,13 +41,6 @@ export default async function CompanyPasswordResetsPage() {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-          Reset a Trainer&apos;s Password
-        </h2>
-        <ResetTrainerPasswordForm trainers={trainers} />
       </div>
 
       {decided.length > 0 && (

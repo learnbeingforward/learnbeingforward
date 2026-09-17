@@ -1,17 +1,84 @@
 import Link from "next/link";
-import { FileText } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { trainerNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
+import { BackLink } from "@/components/lms/BackLink";
 import { getBillableSessions } from "@/lib/actions/trainer-invoices";
 import { SubmitInvoiceForm } from "@/components/lms/SubmitInvoiceForm";
+import { TrainerInvoiceDetailView } from "@/components/lms/TrainerInvoiceDetailView";
+import { SubmitDraftInvoiceButton } from "@/components/lms/SubmitDraftInvoiceButton";
 import { format } from "date-fns";
 
-export default async function TrainerInvoicePage() {
+export default async function TrainerInvoicePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invoiceId?: string }>;
+}) {
+  const { invoiceId } = await searchParams;
   const session = await auth();
   const trainerId = session!.user.trainerId!;
+
+  if (invoiceId) {
+    const invoice = await prisma.trainerInvoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        trainer: true,
+        lineItems: { include: { trainingSession: { include: { batch: { include: { college: true } } } } } },
+      },
+    });
+
+    return (
+      <DashboardShell title="Invoice" subtitle="Invoice detail" navLinks={navLinks}>
+        <BackLink href="/lms/trainer/invoice" label="Back to Invoice" />
+        {!invoice || invoice.trainerId !== trainerId ? (
+          <p className="text-sm text-muted-foreground">This invoice doesn&apos;t belong to you.</p>
+        ) : (
+          <>
+            {!invoice.submitted && (
+              <div className="mb-6 max-w-2xl rounded-xl border border-gold/40 bg-gold/10 p-4">
+                <p className="mb-3 text-sm text-indigo">
+                  This invoice is still a draft — the company can&apos;t see it until you submit it.
+                </p>
+                <SubmitDraftInvoiceButton invoiceId={invoice.id} />
+              </div>
+            )}
+            <TrainerInvoiceDetailView
+              invoice={{
+              trainerName: invoice.trainer.name,
+              status: invoice.status,
+              sessionCount: invoice.sessionCount,
+              hours: invoice.hours,
+              hourlyRate: invoice.hourlyRate,
+              totalAmount: invoice.totalAmount,
+              approvedAmount: invoice.approvedAmount,
+              deductionAmount: invoice.deductionAmount,
+              deductionReason: invoice.deductionReason,
+              paymentTimelineDays: invoice.paymentTimelineDays,
+              notes: invoice.notes,
+              submittedAt: invoice.submittedAt,
+              decidedAt: invoice.decidedAt,
+              pdfUrl: invoice.pdfUrl,
+              approvalPdfUrl: invoice.approvalPdfUrl,
+              bankAccountName: invoice.trainer.bankAccountName,
+              bankAccountNumber: invoice.trainer.bankAccountNumber,
+              bankIfsc: invoice.trainer.bankIfsc,
+              bankName: invoice.trainer.bankName,
+                lineItems: invoice.lineItems.map((li) => ({
+                  id: li.id,
+                  date: li.trainingSession.sessionDate,
+                  collegeName: li.trainingSession.batch.college.name,
+                  batchName: li.trainingSession.batch.name,
+                  hours: 2,
+                })),
+              }}
+            />
+          </>
+        )}
+      </DashboardShell>
+    );
+  }
 
   const [trainer, billable, pastInvoices] = await Promise.all([
     prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } }),
@@ -76,7 +143,11 @@ export default async function TrainerInvoicePage() {
           </div>
           <div className="divide-y divide-border">
             {pastInvoices.map((inv) => (
-              <div key={inv.id} className="flex flex-wrap items-start justify-between gap-3 p-4 text-sm">
+              <Link
+                key={inv.id}
+                href={`/lms/trainer/invoice?invoiceId=${inv.id}`}
+                className="flex flex-wrap items-start justify-between gap-3 p-4 text-sm hover:bg-cream"
+              >
                 <div>
                   <span className="text-indigo">
                     {format(inv.submittedAt, "MMM d, yyyy")} &middot; {inv.sessionCount} sessions &middot;{" "}
@@ -89,39 +160,27 @@ export default async function TrainerInvoicePage() {
                       {inv.paymentTimelineDays ? ` · payment within ${inv.paymentTimelineDays} days` : ""}
                     </p>
                   )}
-                  <div className="mt-1 flex flex-wrap gap-3">
-                    {inv.pdfUrl && (
-                      <Link
-                        href={inv.pdfUrl}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
-                      >
-                        <FileText className="size-3.5" /> Invoice PDF
-                      </Link>
-                    )}
-                    {inv.approvalPdfUrl && (
-                      <Link
-                        href={inv.approvalPdfUrl}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
-                      >
-                        <FileText className="size-3.5" /> Decision PDF
-                      </Link>
-                    )}
-                  </div>
                 </div>
                 <Badge
                   className={
-                    inv.status === "APPROVED"
-                      ? "bg-green-100 text-green-700 hover:bg-green-100"
-                      : inv.status === "REJECTED"
-                        ? "bg-red-100 text-red-700 hover:bg-red-100"
-                        : "bg-gold/20 text-indigo hover:bg-gold/20"
+                    !inv.submitted
+                      ? "bg-cream text-muted-foreground hover:bg-cream"
+                      : inv.status === "APPROVED"
+                        ? "bg-green-100 text-green-700 hover:bg-green-100"
+                        : inv.status === "REJECTED"
+                          ? "bg-red-100 text-red-700 hover:bg-red-100"
+                          : "bg-gold/20 text-indigo hover:bg-gold/20"
                   }
                 >
-                  {inv.status === "APPROVED" ? "Approved" : inv.status === "REJECTED" ? "Rejected" : "Pending"}
+                  {!inv.submitted
+                    ? "Draft"
+                    : inv.status === "APPROVED"
+                      ? "Approved"
+                      : inv.status === "REJECTED"
+                        ? "Rejected"
+                        : "Pending"}
                 </Badge>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

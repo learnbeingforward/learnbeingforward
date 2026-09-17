@@ -13,11 +13,11 @@ import { RequiredMark } from "@/components/ui/required-mark";
 import { loginSchema, type LoginInput } from "@/lib/validation";
 
 type SessionResponse = {
-  user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" };
+  user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" | "ADMIN2" };
 };
 
 function roleRedirect(role?: string) {
-  if (role === "SUPER_ADMIN") return "/lms/company";
+  if (role === "SUPER_ADMIN" || role === "ADMIN2") return "/lms/company";
   if (role === "COLLEGE_ADMIN") return "/lms/college";
   if (role === "TRAINER") return "/lms/trainer";
   return "/lms/student";

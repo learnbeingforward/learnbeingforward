@@ -9,11 +9,17 @@ export const signUpSchema = z.object({
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
 
-export const forgotPasswordSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters"),
-  email: z.string().trim().email("Enter a valid email address"),
-  collegeName: z.string().trim().min(1, "Select your college"),
-});
+export const forgotPasswordSchema = z
+  .object({
+    name: z.string().trim().min(2, "Name must be at least 2 characters"),
+    email: z.string().trim().email("Enter a valid email address"),
+    role: z.enum(["STUDENT", "COLLEGE_ADMIN", "TRAINER", "ADMIN2"]),
+    collegeName: z.string().trim().optional(),
+  })
+  .refine(
+    (data) => (data.role === "STUDENT" || data.role === "COLLEGE_ADMIN" ? !!data.collegeName : true),
+    { message: "Select your college", path: ["collegeName"] }
+  );
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 

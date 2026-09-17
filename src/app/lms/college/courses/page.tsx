@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Clock } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -21,10 +22,10 @@ export default async function CollegeCoursesPage() {
       })
     : [];
 
-  const studentsByCourse = new Map<string, string[]>();
+  const studentsByCourse = new Map<string, { name: string; studentId: string }[]>();
   for (const row of rows) {
     const list = studentsByCourse.get(row.courseName) ?? [];
-    list.push(row.studentName);
+    list.push({ name: row.studentName, studentId: row.studentId });
     studentsByCourse.set(row.courseName, list);
   }
 
@@ -67,13 +68,14 @@ export default async function CollegeCoursesPage() {
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {(studentsByCourse.get(course) ?? []).map((name, i) => (
-                  <span
-                    key={`${name}-${i}`}
-                    className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-indigo/80"
+                {(studentsByCourse.get(course) ?? []).map((s, i) => (
+                  <Link
+                    key={`${s.studentId}-${i}`}
+                    href={`/lms/college/students?studentId=${s.studentId}`}
+                    className="rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-indigo/80 hover:bg-indigo/10"
                   >
-                    {name}
-                  </span>
+                    {s.name}
+                  </Link>
                 ))}
               </div>
             </div>

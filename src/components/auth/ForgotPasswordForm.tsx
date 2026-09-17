@@ -19,6 +19,13 @@ import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validation
 
 type College = { id: string; name: string };
 
+const ROLE_LABELS: Record<string, string> = {
+  STUDENT: "Student",
+  COLLEGE_ADMIN: "College Admin",
+  TRAINER: "Trainer",
+  ADMIN2: "Second Admin",
+};
+
 export function ForgotPasswordForm({ colleges, onBack }: { colleges: College[]; onBack: () => void }) {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -27,10 +34,14 @@ export function ForgotPasswordForm({ colleges, onBack }: { colleges: College[]; 
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
   });
+
+  const role = watch("role");
+  const needsCollege = role === "STUDENT" || role === "COLLEGE_ADMIN";
 
   const onSubmit = async (data: ForgotPasswordInput) => {
     setServerError(null);
@@ -73,9 +84,37 @@ export function ForgotPasswordForm({ colleges, onBack }: { colleges: College[]; 
         </button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Password resets are only available for student accounts. Enter your details exactly as
-        your college registered them.
+        Tell us who you are and we&apos;ll verify your details before resetting your password. The
+        main company admin account can&apos;t be reset this way.
       </p>
+
+      <div>
+        <Label htmlFor="forgot-role">
+          I am a
+          <RequiredMark />
+        </Label>
+        <Controller
+          control={control}
+          name="role"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="mt-1.5 w-full">
+                <SelectValue placeholder="Select who you are">
+                  {(value: string | null) => (value ? ROLE_LABELS[value] : "Select who you are")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.role && <p className="mt-1 text-xs text-destructive">{errors.role.message}</p>}
+      </div>
 
       <div>
         <Label htmlFor="forgot-name">
@@ -95,35 +134,37 @@ export function ForgotPasswordForm({ colleges, onBack }: { colleges: College[]; 
         {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
-      <div>
-        <Label htmlFor="forgot-college">
-          College
-          <RequiredMark />
-        </Label>
-        <Controller
-          control={control}
-          name="collegeName"
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className="mt-1.5 w-full">
-                <SelectValue placeholder="Select your college">
-                  {(value: string | null) => value || "Select your college"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {colleges.map((c) => (
-                  <SelectItem key={c.id} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {needsCollege && (
+        <div>
+          <Label htmlFor="forgot-college">
+            College
+            <RequiredMark />
+          </Label>
+          <Controller
+            control={control}
+            name="collegeName"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="mt-1.5 w-full">
+                  <SelectValue placeholder="Select your college">
+                    {(value: string | null) => value || "Select your college"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {colleges.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.collegeName && (
+            <p className="mt-1 text-xs text-destructive">{errors.collegeName.message}</p>
           )}
-        />
-        {errors.collegeName && (
-          <p className="mt-1 text-xs text-destructive">{errors.collegeName.message}</p>
-        )}
-      </div>
+        </div>
+      )}
 
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 

@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 export async function approveRegistration(userId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can approve registrations.");
   }
 
@@ -23,7 +24,7 @@ export async function approveRegistration(userId: string) {
 
 export async function rejectRegistration(userId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can reject registrations.");
   }
 

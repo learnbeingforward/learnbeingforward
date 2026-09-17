@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 export type CreateAccountState = {
   ok: boolean;
@@ -23,7 +24,7 @@ export async function createStudentAccount(
   formData: FormData
 ): Promise<CreateAccountState> {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "COLLEGE_ADMIN" && session.user.role !== "SUPER_ADMIN")) {
+  if (!session?.user || (session.user.role !== "COLLEGE_ADMIN" && !isCompanyStaff(session.user.role))) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -99,7 +100,7 @@ export async function createCollegeAccount(
   formData: FormData
 ): Promise<CreateAccountState> {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -133,6 +134,46 @@ export async function createCollegeAccount(
       passwordHash: await bcrypt.hash(password, 10),
       role: "COLLEGE_ADMIN",
       collegeId: college.id,
+    },
+  });
+
+  revalidatePath("/lms/company/accounts");
+
+  return { ok: true, email, password };
+}
+
+export async function createAdmin2Account(
+  _prevState: CreateAccountState,
+  formData: FormData
+): Promise<CreateAccountState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    return { ok: false, error: "Only the main company admin can create a second admin account." };
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const gender = String(formData.get("gender") ?? "").trim();
+
+  if (!name || !email) {
+    return { ok: false, error: "Name and email are required." };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return { ok: false, error: "An account with this email already exists." };
+  }
+
+  const password = generatePassword();
+  await prisma.user.create({
+    data: {
+      name,
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      role: "ADMIN2",
+      phone: phone || null,
+      gender: gender || null,
     },
   });
 

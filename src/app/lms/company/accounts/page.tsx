@@ -1,11 +1,14 @@
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { AddStudentForm } from "@/components/lms/AddStudentForm";
 import { AddCollegeForm } from "@/components/lms/AddCollegeForm";
 import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm";
+import { CreateAdmin2AccountForm } from "@/components/lms/CreateAdmin2AccountForm";
 
 export default async function CompanyAccountsPage() {
+  const session = await auth();
   const colleges = await prisma.college.findMany({ orderBy: { name: "asc" } });
 
   return (
@@ -36,6 +39,15 @@ export default async function CompanyAccountsPage() {
           </h2>
           <CreateTrainerLoginForm />
         </div>
+
+        {session!.user.role === "SUPER_ADMIN" && (
+          <div>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+              New Second Admin Account
+            </h2>
+            <CreateAdmin2AccountForm />
+          </div>
+        )}
       </div>
     </DashboardShell>
   );

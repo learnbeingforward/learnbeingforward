@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
 export async function approveCertificate(enrollmentId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can approve certificates.");
   }
 
@@ -41,7 +42,7 @@ export async function approveCertificate(enrollmentId: string) {
 
 export async function assignTrainer(enrollmentId: string, trainerId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can assign trainers.");
   }
 

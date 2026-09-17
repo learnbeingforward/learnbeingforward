@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
@@ -8,11 +10,13 @@ import { AssignTrainerSelect } from "@/components/lms/AssignTrainerSelect";
 import { BackLink } from "@/components/lms/BackLink";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddToBatchForm } from "@/components/lms/AddToBatchForm";
+import { MoveStudentForm } from "@/components/lms/MoveStudentForm";
 import {
   autoBatchAll,
   assignTrainerToBatch,
   removeStudentFromBatch,
   deleteBatch,
+  markBatchCompleted,
 } from "@/lib/actions/batches";
 import { MANUAL_BATCH_CAP } from "@/lib/batching";
 
@@ -22,6 +26,8 @@ export default async function CompanyBatchesPage({
   searchParams: Promise<{ collegeId?: string; batchId?: string }>;
 }) {
   const { collegeId, batchId } = await searchParams;
+  const session = await auth();
+  const isSuperAdmin = session!.user.role === "SUPER_ADMIN";
 
   // Level 2: a single batch's roster
   if (collegeId && batchId) {
@@ -33,12 +39,15 @@ export default async function CompanyBatchesPage({
         enrollments: { include: { student: true, attendanceRecords: true } },
       },
     });
-    const candidates = batch
-      ? await prisma.enrollment.findMany({
-          where: { collegeId: batch.collegeId, courseId: batch.courseId, batchId: null },
-          include: { student: true },
-        })
-      : [];
+    const [candidates, otherCourses] = batch
+      ? await Promise.all([
+          prisma.enrollment.findMany({
+            where: { collegeId: batch.collegeId, courseId: batch.courseId, batchId: null },
+            include: { student: true },
+          }),
+          prisma.course.findMany({ where: { id: { not: batch.courseId } }, orderBy: { name: "asc" } }),
+        ])
+      : [[], []];
 
     if (!batch) {
       return (
@@ -57,11 +66,26 @@ export default async function CompanyBatchesPage({
             {batch.course.name} &middot; {batch.enrollments.length}/{MANUAL_BATCH_CAP} students
             {batch.semester && ` · Sem ${batch.semester}`}
           </p>
-          <form action={deleteBatch.bind(null, batch.id)}>
-            <Button type="submit" size="sm" variant="outline" className="border-destructive text-destructive">
-              Delete Batch
-            </Button>
-          </form>
+          <div className="flex items-center gap-2">
+            {batch.completed ? (
+              <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+                <CheckCircle2 className="size-4" /> Training Completed
+              </span>
+            ) : (
+              <form action={markBatchCompleted.bind(null, batch.id)}>
+                <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+                  Mark Completed
+                </Button>
+              </form>
+            )}
+            {isSuperAdmin && (
+              <form action={deleteBatch.bind(null, batch.id)}>
+                <Button type="submit" size="sm" variant="outline" className="border-destructive text-destructive">
+                  Delete Batch
+                </Button>
+              </form>
+            )}
+          </div>
         </div>
 
         {candidates.length > 0 && (
@@ -80,7 +104,11 @@ export default async function CompanyBatchesPage({
                     {e.student.email} &middot; {e.attendanceRecords.length} classes recorded
                   </p>
                 </div>
-                <DeleteButton action={removeStudentFromBatch.bind(null, e.id)} />
+                {isSuperAdmin ? (
+                  <DeleteButton action={removeStudentFromBatch.bind(null, e.id)} />
+                ) : (
+                  <MoveStudentForm enrollmentId={e.id} courses={otherCourses} />
+                )}
               </div>
             ))}
             {batch.enrollments.length === 0 && (
@@ -141,7 +169,14 @@ export default async function CompanyBatchesPage({
             {collegeBatches.map((batch) => (
               <div key={batch.id} className="flex flex-wrap items-center justify-between gap-4 p-6">
                 <Link href={`/lms/company/trainers/batches?collegeId=${collegeId}&batchId=${batch.id}`} className="flex-1">
-                  <p className="font-medium text-indigo hover:underline">{batch.name}</p>
+                  <p className="font-medium text-indigo hover:underline">
+                    {batch.name}
+                    {batch.completed && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-green-700">
+                        <CheckCircle2 className="size-3.5" /> Completed
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {batch.enrollments.length} students
                     {batch.trainer && ` · Trainer: ${batch.trainer.name}`}

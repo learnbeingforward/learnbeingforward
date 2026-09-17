@@ -61,6 +61,48 @@ export async function getCollegeStudentRows(collegeId: string | null) {
   return { students, rows };
 }
 
+export async function getStudentDetail(studentId: string) {
+  const student = await prisma.user.findUnique({
+    where: { id: studentId, role: "STUDENT" },
+    include: {
+      enrollments: {
+        include: {
+          course: true,
+          trainer: true,
+          attendanceRecords: true,
+          certification: true,
+        },
+      },
+    },
+  });
+  if (!student) return null;
+
+  return {
+    name: student.name,
+    email: student.email,
+    branch: student.branch,
+    semester: student.semester,
+    usn: student.usn,
+    cvUrl: student.cvUrl,
+    collegeId: student.collegeId,
+    enrollments: student.enrollments.map((enrollment) => {
+      const total = enrollment.attendanceRecords.length || enrollment.totalClasses;
+      const present = enrollment.attendanceRecords.filter((r) => r.present).length;
+      const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+      const overrideApproved = enrollment.certification?.overrideApproved ?? false;
+      return {
+        id: enrollment.id,
+        courseName: enrollment.course.name,
+        trainerName: enrollment.trainer?.name ?? null,
+        present,
+        total,
+        pct,
+        eligible: pct >= ATTENDANCE_THRESHOLD || overrideApproved,
+      };
+    }),
+  };
+}
+
 export function summarizeByCourse(rows: StudentRow[]) {
   const byCourse = new Map<string, { count: number; totalPct: number }>();
   for (const row of rows) {

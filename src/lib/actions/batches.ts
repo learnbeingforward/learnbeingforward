@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { chunkIntoBatches, AUTO_BATCH_CAP, MANUAL_BATCH_CAP } from "@/lib/batching";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 async function requireCompanyOrCollege(collegeId?: string | null) {
   const session = await auth();
   if (!session?.user) throw new Error("Not authorized.");
-  if (session.user.role === "SUPER_ADMIN") return session;
+  if (isCompanyStaff(session.user.role)) return session;
   if (session.user.role === "COLLEGE_ADMIN") {
     if (collegeId && session.user.collegeId !== collegeId) {
       throw new Error("You can only manage batches for your own college.");
@@ -93,7 +94,7 @@ export async function autoBatchCollege(collegeId: string) {
 
 export async function autoBatchAll() {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can auto-batch everyone.");
   }
   await groupAndBatch({});
@@ -158,7 +159,7 @@ export async function createManualBatch(
 
 export async function assignTrainerToBatch(batchId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can assign a trainer to a batch.");
   }
 
@@ -212,10 +213,13 @@ export async function addStudentsToBatch(
 }
 
 export async function removeStudentFromBatch(enrollmentId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    throw new Error("Only the main company admin can remove a student from a batch this way.");
+  }
+
   const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId } });
   if (!enrollment) return;
-
-  await requireCompanyOrCollege(enrollment.collegeId);
 
   await prisma.enrollment.update({
     where: { id: enrollmentId },
@@ -225,14 +229,74 @@ export async function removeStudentFromBatch(enrollmentId: string) {
   revalidateBatchPaths();
 }
 
+export type MoveStudentState = { ok: boolean; error?: string } | null;
+
+export async function moveStudentToCourse(
+  enrollmentId: string,
+  _prevState: MoveStudentState,
+  formData: FormData
+): Promise<MoveStudentState> {
+  const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId } });
+  if (!enrollment) return { ok: false, error: "Enrollment not found." };
+
+  try {
+    await requireCompanyOrCollege(enrollment.collegeId);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
+
+  const newCourseId = String(formData.get("newCourseId") ?? "").trim();
+  if (!newCourseId) return { ok: false, error: "Select a course to move the student to." };
+  if (newCourseId === enrollment.courseId) {
+    return { ok: false, error: "Select a different course than the one they're already in." };
+  }
+
+  const existingTarget = await prisma.enrollment.findFirst({
+    where: { studentId: enrollment.studentId, courseId: newCourseId },
+  });
+  if (existingTarget) {
+    return { ok: false, error: "This student is already enrolled in that course." };
+  }
+
+  await prisma.$transaction([
+    prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { batchId: null, trainerId: null },
+    }),
+    prisma.enrollment.create({
+      data: {
+        studentId: enrollment.studentId,
+        courseId: newCourseId,
+        collegeId: enrollment.collegeId,
+      },
+    }),
+  ]);
+
+  revalidateBatchPaths();
+  return { ok: true };
+}
+
+export async function markBatchCompleted(batchId: string) {
+  const session = await auth();
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
+    throw new Error("Only the company admin can mark a batch completed.");
+  }
+
+  await prisma.batch.update({ where: { id: batchId }, data: { completed: true } });
+  revalidateBatchPaths();
+}
+
 export async function deleteBatch(batchId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    throw new Error("Only the main company admin can delete a batch.");
+  }
+
   const batch = await prisma.batch.findUnique({
     where: { id: batchId },
     include: { trainingSessions: true },
   });
   if (!batch) return;
-
-  await requireCompanyOrCollege(batch.collegeId);
 
   if (batch.trainingSessions.some((s) => s.attendanceTaken)) {
     throw new Error("This batch already has attendance recorded and can't be deleted.");
@@ -249,7 +313,7 @@ export async function deleteBatch(batchId: string) {
 
 export async function deleteTrainingSession(sessionId: string) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
     throw new Error("Only the company admin can delete a scheduled session.");
   }
 

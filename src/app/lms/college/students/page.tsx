@@ -11,18 +11,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCollegeStudentRows } from "@/lib/college-data";
+import { getCollegeStudentRows, getStudentDetail } from "@/lib/college-data";
 import { BackLink } from "@/components/lms/BackLink";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
+import { StudentDetailView } from "@/components/lms/StudentDetailView";
 
 export default async function CollegeStudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; branch?: string; semester?: string }>;
+  searchParams: Promise<{ view?: string; branch?: string; semester?: string; studentId?: string }>;
 }) {
-  const { view, branch, semester } = await searchParams;
+  const { view, branch, semester, studentId } = await searchParams;
   const session = await auth();
   const collegeId = session!.user.collegeId;
+
+  if (studentId) {
+    const detail = await getStudentDetail(studentId);
+    return (
+      <DashboardShell title="Student" subtitle="Full profile" navLinks={navLinks}>
+        <BackLink href="/lms/college/students" label="Back to Students" />
+        {!detail || detail.collegeId !== collegeId ? (
+          <p className="text-sm text-muted-foreground">This student doesn&apos;t belong to your college.</p>
+        ) : (
+          <StudentDetailView student={detail} />
+        )}
+      </DashboardShell>
+    );
+  }
 
   const { rows } = await getCollegeStudentRows(collegeId);
 
@@ -43,6 +58,7 @@ export default async function CollegeStudentsPage({
         <StudentSearchTable
           rows={rows.map((r) => ({
             id: `${r.studentId}-${r.enrollmentId}`,
+            studentId: r.studentId,
             name: r.studentName,
             email: r.studentEmail,
             branch: r.branch,
@@ -76,7 +92,14 @@ export default async function CollegeStudentsPage({
             <TableBody>
               {scoped.map((row, i) => (
                 <TableRow key={`${row.studentId}-${i}`}>
-                  <TableCell className="font-medium text-indigo">{row.studentName}</TableCell>
+                  <TableCell className="font-medium text-indigo">
+                    <Link
+                      href={`/lms/college/students?studentId=${row.studentId}`}
+                      className="underline underline-offset-2 hover:text-indigo/70"
+                    >
+                      {row.studentName}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{row.courseName}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {row.present}/{row.total} ({row.pct}%)

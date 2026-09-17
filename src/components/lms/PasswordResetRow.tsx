@@ -10,7 +10,8 @@ type Request = {
   id: string;
   name: string;
   email: string;
-  collegeName: string;
+  collegeName: string | null;
+  role: string;
 };
 
 export function PasswordResetRow({ request }: { request: Request }) {
@@ -31,7 +32,8 @@ export function PasswordResetRow({ request }: { request: Request }) {
       <div>
         <p className="font-medium text-indigo">{request.name}</p>
         <p className="text-sm text-muted-foreground">
-          {request.email} &middot; {request.collegeName}
+          {request.email} &middot; {request.role.replace("_", " ")}
+          {request.collegeName && ` · ${request.collegeName}`}
         </p>
       </div>
       <form action={formAction} className="flex shrink-0 flex-wrap items-start gap-2">

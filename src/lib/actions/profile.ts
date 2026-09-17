@@ -98,9 +98,10 @@ export async function updateCompanyProfile(
   formData: FormData
 ): Promise<UpdateProfileState> {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  if (!session?.user || (session.user.role !== "SUPER_ADMIN" && session.user.role !== "ADMIN2")) {
     return { ok: false, error: "Not authorized." };
   }
+  const canEditBank = session.user.role === "SUPER_ADMIN";
 
   const name = String(formData.get("name") ?? "").trim();
   const photoUrl = String(formData.get("photoUrl") ?? "").trim();
@@ -123,6 +124,11 @@ export async function updateCompanyProfile(
       avatarSeed: current?.avatarSeed ?? `${slugify(name)}-${Date.now()}`,
     },
   });
+
+  if (!canEditBank) {
+    revalidatePath("/lms/company/profile");
+    return { ok: true };
+  }
 
   await prisma.siteSettings.upsert({
     where: { id: "singleton" },

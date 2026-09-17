@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +17,7 @@ import {
 
 export type SearchableStudent = {
   id: string;
+  studentId: string;
   name: string;
   email: string;
   collegeName?: string;
@@ -34,6 +37,7 @@ export function StudentSearchTable({
   showCollege?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const pathname = usePathname();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -69,7 +73,11 @@ export function StudentSearchTable({
           <TableBody>
             {filtered.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className="font-medium text-indigo">{r.name}</TableCell>
+                <TableCell className="font-medium text-indigo">
+                  <Link href={`${pathname}?studentId=${r.studentId}`} className="underline underline-offset-2 hover:text-indigo/70">
+                    {r.name}
+                  </Link>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{r.email}</TableCell>
                 {showCollege && <TableCell className="text-muted-foreground">{r.collegeName}</TableCell>}
                 <TableCell className="text-muted-foreground">{r.branch ?? "—"}</TableCell>

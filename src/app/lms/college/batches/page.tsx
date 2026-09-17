@@ -1,13 +1,12 @@
+import { CheckCircle2 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { ManualBatchBuilder } from "@/components/lms/ManualBatchBuilder";
 import { BackLink } from "@/components/lms/BackLink";
-import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddToBatchForm } from "@/components/lms/AddToBatchForm";
-import { Button } from "@/components/ui/button";
-import { removeStudentFromBatch, deleteBatch } from "@/lib/actions/batches";
+import { MoveStudentForm } from "@/components/lms/MoveStudentForm";
 import { MANUAL_BATCH_CAP } from "@/lib/batching";
 
 export default async function CollegeBatchesPage({
@@ -32,10 +31,13 @@ export default async function CollegeBatchesPage({
       );
     }
 
-    const candidates = await prisma.enrollment.findMany({
-      where: { collegeId, courseId: batch.courseId, batchId: null },
-      include: { student: true },
-    });
+    const [candidates, otherCourses] = await Promise.all([
+      prisma.enrollment.findMany({
+        where: { collegeId, courseId: batch.courseId, batchId: null },
+        include: { student: true },
+      }),
+      prisma.course.findMany({ where: { id: { not: batch.courseId } }, orderBy: { name: "asc" } }),
+    ]);
 
     return (
       <DashboardShell title={batch.name} subtitle={batch.course.name} navLinks={navLinks}>
@@ -46,11 +48,13 @@ export default async function CollegeBatchesPage({
             {batch.enrollments.length}/{MANUAL_BATCH_CAP} students
             {batch.semester && ` · Sem ${batch.semester}`}
           </p>
-          <form action={deleteBatch.bind(null, batch.id)}>
-            <Button type="submit" size="sm" variant="outline" className="border-destructive text-destructive">
-              Delete Batch
-            </Button>
-          </form>
+          {batch.completed ? (
+            <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+              <CheckCircle2 className="size-4" /> Training Completed
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">Training in progress</span>
+          )}
         </div>
 
         {candidates.length > 0 && (
@@ -69,7 +73,7 @@ export default async function CollegeBatchesPage({
                     {e.student.email} &middot; {e.attendanceRecords.length} classes recorded
                   </p>
                 </div>
-                <DeleteButton action={removeStudentFromBatch.bind(null, e.id)} />
+                <MoveStudentForm enrollmentId={e.id} courses={otherCourses} />
               </div>
             ))}
             {batch.enrollments.length === 0 && (
@@ -151,9 +155,16 @@ export default async function CollegeBatchesPage({
                 <p className="text-sm text-indigo underline">
                   {batch.name} &middot; {batch.enrollments.length} students
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {batch.trainer ? `Trainer: ${batch.trainer.name}` : "Trainer not yet assigned"}
-                </p>
+                <div className="flex items-center gap-3">
+                  {batch.completed && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-green-700">
+                      <CheckCircle2 className="size-3.5" /> Completed
+                    </span>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {batch.trainer ? `Trainer: ${batch.trainer.name}` : "Trainer not yet assigned"}
+                  </p>
+                </div>
               </a>
             ))}
           </div>

@@ -23,7 +23,7 @@ export async function getBillableSessions(trainerId: string) {
   });
 }
 
-export type SubmitInvoiceState = { ok: boolean; error?: string } | null;
+export type SubmitInvoiceState = { ok: boolean; error?: string; invoiceId?: string; pdfUrl?: string } | null;
 
 export async function submitTrainerInvoice(
   _prevState: SubmitInvoiceState,
@@ -38,6 +38,14 @@ export async function submitTrainerInvoice(
   const notes = String(formData.get("notes") ?? "").trim();
 
   const trainer = await prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } });
+
+  if (!trainer.bankAccountName || !trainer.bankAccountNumber || !trainer.bankIfsc) {
+    return {
+      ok: false,
+      error: "Complete your bank details (account holder name, account number, IFSC) on your profile before generating an invoice.",
+    };
+  }
+
   const billable = await getBillableSessions(trainerId);
 
   if (billable.length === 0) {
@@ -89,6 +97,31 @@ export async function submitTrainerInvoice(
   revalidatePath("/lms/trainer/invoice");
   revalidatePath("/lms/company/trainers/invoices");
 
+  return { ok: true, invoiceId: invoice.id, pdfUrl };
+}
+
+export type SubmitDraftInvoiceState = { ok: boolean; error?: string } | null;
+
+export async function submitDraftTrainerInvoice(
+  invoiceId: string,
+  _prevState: SubmitDraftInvoiceState,
+  _formData: FormData
+): Promise<SubmitDraftInvoiceState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "TRAINER" || !session.user.trainerId) {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const invoice = await prisma.trainerInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice || invoice.trainerId !== session.user.trainerId) {
+    return { ok: false, error: "Invoice not found." };
+  }
+  if (invoice.submitted) return { ok: false, error: "This invoice has already been sent." };
+
+  await prisma.trainerInvoice.update({ where: { id: invoiceId }, data: { submitted: true } });
+
+  revalidatePath("/lms/trainer/invoice");
+  revalidatePath("/lms/company/trainers/invoices");
   return { ok: true };
 }
 
@@ -109,7 +142,7 @@ export async function decideTrainerInvoice(
     where: { id: invoiceId },
     include: { trainer: true },
   });
-  if (!invoice || invoice.status !== "PENDING") {
+  if (!invoice || invoice.status !== "PENDING" || !invoice.submitted) {
     return { ok: false, error: "This invoice has already been decided." };
   }
 

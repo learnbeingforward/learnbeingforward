@@ -25,7 +25,15 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
   PER_DAY_FLAT: "Paid — Flat Rate Per Day",
 };
 
-export function RequestTrainingForm({ colleges, courses }: { colleges: College[]; courses: Course[] }) {
+export function RequestTrainingForm({
+  colleges,
+  courses,
+  hideRate = false,
+}: {
+  colleges: College[];
+  courses: Course[];
+  hideRate?: boolean;
+}) {
   const [state, formAction, isPending] = useActionState<RequestTrainingState, FormData>(
     requestTraining,
     null
@@ -132,7 +140,7 @@ export function RequestTrainingForm({ colleges, courses }: { colleges: College[]
         </div>
       </div>
 
-      {contractType === "PER_STUDENT_HOURLY" && (
+      {!hideRate && contractType === "PER_STUDENT_HOURLY" && (
         <div>
           <Label htmlFor="ratePerStudentHour">
             Rate (₹ per student, per hour)
@@ -142,7 +150,7 @@ export function RequestTrainingForm({ colleges, courses }: { colleges: College[]
         </div>
       )}
 
-      {contractType === "PER_DAY_FLAT" && (
+      {!hideRate && contractType === "PER_DAY_FLAT" && (
         <div>
           <Label htmlFor="flatRatePerDay">
             Flat Rate (₹ per day)
@@ -150,6 +158,12 @@ export function RequestTrainingForm({ colleges, courses }: { colleges: College[]
           </Label>
           <Input id="flatRatePerDay" name="flatRatePerDay" type="number" min="1" required className="mt-1.5" placeholder="e.g. 20000" />
         </div>
+      )}
+
+      {hideRate && (contractType === "PER_STUDENT_HOURLY" || contractType === "PER_DAY_FLAT") && (
+        <p className="rounded-lg bg-cream px-3 py-2 text-xs text-muted-foreground">
+          The main company admin will set the rate before this is sent to the college.
+        </p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">

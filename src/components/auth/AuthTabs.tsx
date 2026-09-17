@@ -8,13 +8,12 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 
-type Mode = "login" | "signup" | "forgot" | "trainer";
+type Mode = "login" | "signup" | "forgot";
 type College = { id: string; name: string };
 
-const TAB_LABELS: Record<"login" | "signup" | "trainer", string> = {
+const TAB_LABELS: Record<"login" | "signup", string> = {
   login: "Login",
   signup: "Sign Up",
-  trainer: "Trainer Login",
 };
 
 export function AuthTabs({ colleges }: { colleges: College[] }) {
@@ -25,8 +24,8 @@ export function AuthTabs({ colleges }: { colleges: College[] }) {
   return (
     <div className="rounded-2xl border border-border bg-white p-7 shadow-sm sm:p-9">
       {mode !== "forgot" && (
-        <div className="mb-7 grid grid-cols-3 rounded-lg bg-cream p-1">
-          {(["login", "signup", "trainer"] as const).map((m) => (
+        <div className="mb-7 grid grid-cols-2 rounded-lg bg-cream p-1">
+          {(["login", "signup"] as const).map((m) => (
             <button
               key={m}
               type="button"
@@ -70,14 +69,6 @@ export function AuthTabs({ colleges }: { colleges: College[] }) {
             </>
           )}
           {mode === "signup" && <SignUpForm colleges={colleges} />}
-          {mode === "trainer" && (
-            <>
-              <p className="mb-4 text-sm text-muted-foreground">
-                For trainers with an account provisioned by Learn Being Forward.
-              </p>
-              <LoginForm />
-            </>
-          )}
           {mode === "forgot" && (
             <ForgotPasswordForm colleges={colleges} onBack={() => setMode("login")} />
           )}

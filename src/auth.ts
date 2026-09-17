@@ -50,7 +50,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session: async ({ session, token }) => {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER";
+        session.user.role = token.role as "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" | "ADMIN2";
         session.user.collegeId = (token.collegeId as string | null) ?? null;
         session.user.trainerId = (token.trainerId as string | null) ?? null;
       }

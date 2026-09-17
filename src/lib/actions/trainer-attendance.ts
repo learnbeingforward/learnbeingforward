@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { combineDateAndTime } from "@/lib/attendance";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 export async function submitSessionAttendance(sessionId: string, formData: FormData) {
   const session = await auth();
   const isTrainer = session?.user?.role === "TRAINER";
-  const isCompany = session?.user?.role === "SUPER_ADMIN";
+  const isCompany = isCompanyStaff(session?.user?.role);
   if (!session?.user || !(isTrainer || isCompany)) {
     throw new Error("Only trainers or the company admin can mark attendance.");
   }

@@ -31,7 +31,7 @@ export const companyNavLinks: LmsNavEntry[] = [
     children: [
       { href: "/lms/company/registrations", label: "New Registrations" },
       { href: "/lms/company/approvals", label: "Approvals from College" },
-      { href: "/lms/company/password-resets", label: "Password Resets" },
+      { href: "/lms/company/password-resets", label: "Password Reset Requests" },
     ],
   },
   { href: "/lms/company/attendance", label: "Attendance" },
