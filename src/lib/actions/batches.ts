@@ -246,3 +246,23 @@ export async function deleteBatch(batchId: string) {
 
   revalidateBatchPaths();
 }
+
+export async function deleteTrainingSession(sessionId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    throw new Error("Only the company admin can delete a scheduled session.");
+  }
+
+  const trainingSession = await prisma.trainingSession.findUnique({ where: { id: sessionId } });
+  if (!trainingSession) return;
+
+  if (trainingSession.attendanceTaken) {
+    throw new Error("This session already has attendance recorded and can't be deleted.");
+  }
+
+  await prisma.trainingSession.delete({ where: { id: sessionId } });
+
+  revalidatePath("/lms/company/trainers/schedule");
+  revalidatePath("/lms/trainer/schedule");
+  revalidatePath("/lms/trainer/attendance");
+}

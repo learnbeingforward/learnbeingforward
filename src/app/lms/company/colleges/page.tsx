@@ -2,10 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { RequestTrainingForm } from "@/components/lms/RequestTrainingForm";
 import { RescheduleSessionRow } from "@/components/lms/RescheduleSessionRow";
-import { generateCollegeInvoice } from "@/lib/actions/college-contracts";
+import { GenerateCollegeInvoiceButton } from "@/components/lms/GenerateCollegeInvoiceButton";
 import { format } from "date-fns";
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
@@ -65,6 +64,18 @@ export default async function CompanyCollegesPage() {
                     {c.ratePerStudentHour && ` · ₹${c.ratePerStudentHour}/student/hr`}
                     {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} &middot; Min {c.minStudents} students
                     &middot; {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
+                    {(c.targetBranch || c.targetSemester) && (
+                      <>
+                        {" "}
+                        &middot;{" "}
+                        <span className="font-medium text-indigo">
+                          {[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null]
+                            .filter(Boolean)
+                            .join(" · ")}{" "}
+                          only
+                        </span>
+                      </>
+                    )}
                   </p>
                   {c.invoices.length > 0 && (
                     <p className="mt-1 text-xs text-indigo">
@@ -85,11 +96,7 @@ export default async function CompanyCollegesPage() {
                     {c.status}
                   </Badge>
                   {c.status === "APPROVED" && c.contractType !== "CSR" && (
-                    <form action={generateCollegeInvoice.bind(null, c.id)}>
-                      <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                        Generate Invoice
-                      </Button>
-                    </form>
+                    <GenerateCollegeInvoiceButton contractId={c.id} />
                   )}
                 </div>
               </div>

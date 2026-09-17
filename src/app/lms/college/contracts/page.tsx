@@ -63,6 +63,18 @@ export default async function CollegeContractsPage() {
                     {c.ratePerStudentHour && ` · ₹${c.ratePerStudentHour}/student/hr`}
                     {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} &middot; Min {c.minStudents} students
                     &middot; {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
+                    {(c.targetBranch || c.targetSemester) && (
+                      <>
+                        {" "}
+                        &middot;{" "}
+                        <span className="font-medium text-indigo">
+                          {[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null]
+                            .filter(Boolean)
+                            .join(" · ")}{" "}
+                          only
+                        </span>
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { requestTraining, type RequestTrainingState } from "@/lib/actions/college-contracts";
+import { BRANCH_OPTIONS } from "@/lib/constants";
 
 type College = { id: string; name: string };
 type Course = { id: string; name: string };
@@ -96,6 +97,39 @@ export function RequestTrainingForm({ colleges, courses }: { colleges: College[]
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="targetBranch">Restrict to Branch (optional)</Label>
+          <Select name="targetBranch">
+            <SelectTrigger className="mt-1.5 w-full">
+              <SelectValue placeholder="All branches" />
+            </SelectTrigger>
+            <SelectContent>
+              {BRANCH_OPTIONS.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="targetSemester">Restrict to Semester (optional)</Label>
+          <Select name="targetSemester">
+            <SelectTrigger className="mt-1.5 w-full">
+              <SelectValue placeholder="All semesters" />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  Semester {n}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {contractType === "PER_STUDENT_HOURLY" && (

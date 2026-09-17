@@ -4,14 +4,96 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { ScheduleSessionForm } from "@/components/lms/ScheduleSessionForm";
 import { BackLink } from "@/components/lms/BackLink";
+import { DeleteButton } from "@/components/lms/DeleteButton";
+import { Button } from "@/components/ui/button";
+import { submitSessionAttendance } from "@/lib/actions/trainer-attendance";
+import { deleteTrainingSession } from "@/lib/actions/batches";
 import { format } from "date-fns";
 
 export default async function CompanyScheduleTrainingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ trainerId?: string }>;
+  searchParams: Promise<{ trainerId?: string; sessionId?: string }>;
 }) {
-  const { trainerId } = await searchParams;
+  const { trainerId, sessionId } = await searchParams;
+
+  // Level 2: mark attendance for a specific pending session
+  if (trainerId && sessionId) {
+    const trainingSession = await prisma.trainingSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        batch: {
+          include: { college: true, course: true, enrollments: { include: { student: true } } },
+        },
+        courseModule: true,
+      },
+    });
+
+    if (!trainingSession || trainingSession.trainerId !== trainerId) {
+      return (
+        <DashboardShell title="Attendance" subtitle="Session not found" navLinks={navLinks}>
+          <BackLink href={`/lms/company/trainers/schedule?trainerId=${trainerId}`} label="Back to sessions" />
+          <p className="text-sm text-muted-foreground">This session doesn&apos;t exist.</p>
+        </DashboardShell>
+      );
+    }
+
+    if (trainingSession.attendanceTaken) {
+      return (
+        <DashboardShell title="Attendance" subtitle="Already submitted" navLinks={navLinks}>
+          <BackLink href={`/lms/company/trainers/schedule?trainerId=${trainerId}`} label="Back to sessions" />
+          <p className="text-sm text-muted-foreground">
+            Attendance for this session has already been submitted.
+          </p>
+        </DashboardShell>
+      );
+    }
+
+    return (
+      <DashboardShell
+        title="Mark Attendance"
+        subtitle={`${trainingSession.batch.college.name} — ${trainingSession.batch.name}`}
+        navLinks={navLinks}
+      >
+        <BackLink href={`/lms/company/trainers/schedule?trainerId=${trainerId}`} label="Back to sessions" />
+        <p className="mb-4 text-sm text-muted-foreground">
+          {format(trainingSession.sessionDate, "EEE, MMM d, yyyy")} &middot; Slot{" "}
+          {trainingSession.slotNumber} ({trainingSession.startTime}–{trainingSession.endTime}) &middot;{" "}
+          {trainingSession.courseModule?.title ?? trainingSession.topic ?? "—"}
+        </p>
+
+        <form
+          action={submitSessionAttendance.bind(null, trainingSession.id)}
+          className="rounded-xl border border-border bg-white"
+        >
+          <div className="divide-y divide-border">
+            {trainingSession.batch.enrollments.map((enrollment) => (
+              <label
+                key={enrollment.id}
+                className="flex items-center justify-between gap-3 p-4 text-sm hover:bg-cream"
+              >
+                <span className="text-indigo">
+                  {enrollment.student.name}
+                  {enrollment.student.usn && (
+                    <span className="ml-2 text-xs text-muted-foreground">USN: {enrollment.student.usn}</span>
+                  )}
+                </span>
+                <span className="flex items-center gap-2">
+                  Present
+                  <input type="checkbox" name={`present_${enrollment.id}`} defaultChecked className="size-4" />
+                </span>
+              </label>
+            ))}
+          </div>
+          <div className="p-4">
+            <Button type="submit" className="bg-indigo text-white hover:bg-indigo/90">
+              Submit Attendance
+            </Button>
+          </div>
+        </form>
+      </DashboardShell>
+    );
+  }
 
   const [batches, trainers, modules, sessions] = await Promise.all([
     prisma.batch.findMany({
@@ -35,6 +117,7 @@ export default async function CompanyScheduleTrainingPage({
   }));
   const moduleOptions = modules.map((m) => ({ id: m.id, title: m.title, courseId: m.courseId }));
 
+  // Level 1: a specific trainer's session list
   if (trainerId) {
     const trainer = trainers.find((t) => t.id === trainerId);
     const trainerSessions = sessions.filter((s) => s.trainerId === trainerId);
@@ -55,9 +138,21 @@ export default async function CompanyScheduleTrainingPage({
                     &middot; {s.courseModule?.title ?? s.topic ?? "—"}
                   </p>
                 </div>
-                <span className={s.attendanceTaken ? "text-green-700" : "text-muted-foreground"}>
-                  {s.attendanceTaken ? "Attendance taken" : "Pending attendance"}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  {s.attendanceTaken ? (
+                    <span className="text-sm text-green-700">Attendance taken</span>
+                  ) : (
+                    <>
+                      <Link
+                        href={`/lms/company/trainers/schedule?trainerId=${trainerId}&sessionId=${s.id}`}
+                        className="text-sm font-medium text-indigo underline underline-offset-2"
+                      >
+                        Mark Attendance
+                      </Link>
+                      <DeleteButton action={deleteTrainingSession.bind(null, s.id)} />
+                    </>
+                  )}
+                </div>
               </div>
             ))}
             {trainerSessions.length === 0 && (
@@ -79,6 +174,7 @@ export default async function CompanyScheduleTrainingPage({
 
   return (
     <DashboardShell title="Schedule Training" subtitle="Trainers — assign a session" navLinks={navLinks}>
+      <BackLink href="/lms/company/trainers" label="Back to Trainers" />
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
         Schedule one session-day at a time for a batch — pick the trainer, date, and up to 3 slots.
         Submit again for the next day.

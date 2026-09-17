@@ -92,7 +92,7 @@ export default async function CompanyBatchesPage({
     );
   }
 
-  const [unbatched, batches, trainers] = await Promise.all([
+  const [unbatched, batches, trainers, approvedContracts] = await Promise.all([
     prisma.enrollment.findMany({
       where: { batchId: null, collegeId: { not: null } },
       include: { student: true, course: true, college: true },
@@ -102,6 +102,10 @@ export default async function CompanyBatchesPage({
       orderBy: { createdAt: "desc" },
     }),
     prisma.trainer.findMany({ orderBy: { name: "asc" } }),
+    prisma.collegeContract.findMany({
+      where: { status: "APPROVED" },
+      orderBy: { decidedAt: "desc" },
+    }),
   ]);
 
   const builderRows = unbatched.map((e) => ({
@@ -111,8 +115,18 @@ export default async function CompanyBatchesPage({
     collegeName: e.college?.name ?? "—",
     courseId: e.courseId,
     courseName: e.course.name,
+    branch: e.student.branch,
     semester: e.student.semester,
   }));
+
+  // Keyed by "collegeId::courseId" since this builder isn't locked to one college.
+  const contractRestrictions: Record<string, { branch: string | null; semester: number | null }> = {};
+  for (const c of approvedContracts) {
+    const key = `${c.collegeId}::${c.courseId}`;
+    if (!(key in contractRestrictions) && (c.targetBranch || c.targetSemester)) {
+      contractRestrictions[key] = { branch: c.targetBranch, semester: c.targetSemester };
+    }
+  }
 
   // Level 1: batches within a specific college
   if (collegeId) {
@@ -160,6 +174,7 @@ export default async function CompanyBatchesPage({
 
   return (
     <DashboardShell title="Batches" subtitle="Trainers — group students into class batches" navLinks={navLinks}>
+      <BackLink href="/lms/company/trainers" label="Back to Trainers" />
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-white p-6">
         <div>
           <p className="font-semibold text-indigo">Auto-create batches</p>
@@ -179,7 +194,7 @@ export default async function CompanyBatchesPage({
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
           Build a Batch Manually
         </h2>
-        <ManualBatchBuilder enrollments={builderRows} />
+        <ManualBatchBuilder enrollments={builderRows} contractRestrictions={contractRestrictions} />
       </div>
 
       <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">By College</p>

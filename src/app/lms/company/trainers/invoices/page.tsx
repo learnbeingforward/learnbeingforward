@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
+import { BackLink } from "@/components/lms/BackLink";
 import { DecideTrainerInvoiceForm } from "@/components/lms/DecideTrainerInvoiceForm";
 import { format } from "date-fns";
 
@@ -27,6 +28,7 @@ export default async function CompanyTrainerInvoicesPage() {
 
   return (
     <DashboardShell title="Trainer Invoices" subtitle="Review and approve payments" navLinks={navLinks}>
+      <BackLink href="/lms/company/trainers" label="Back to Trainers" />
       <div className="rounded-xl border border-border bg-white">
         <div className="border-b border-border p-6">
           <p className="text-sm font-semibold text-indigo">Pending ({pending.length})</p>

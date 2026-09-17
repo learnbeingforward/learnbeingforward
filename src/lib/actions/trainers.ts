@@ -123,6 +123,59 @@ export async function updateTrainerProfile(
   return { ok: true };
 }
 
+export type CreateLoginForTrainerState = {
+  ok: boolean;
+  error?: string;
+  email?: string;
+  password?: string;
+} | null;
+
+export async function createLoginForExistingTrainer(
+  trainerId: string,
+  _prevState: CreateLoginForTrainerState,
+  formData: FormData
+): Promise<CreateLoginForTrainerState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const trainer = await prisma.trainer.findUnique({ where: { id: trainerId }, include: { loginUser: true } });
+  if (!trainer) return { ok: false, error: "Trainer not found." };
+  if (trainer.loginUser) return { ok: false, error: "This trainer already has a login." };
+
+  const emailInput = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = emailInput || trainer.email;
+  if (!email) return { ok: false, error: "Enter an email for this trainer's login." };
+
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) return { ok: false, error: "An account with this email already exists." };
+
+  if (email !== trainer.email) {
+    const emailInUseByAnotherTrainer = await prisma.trainer.findUnique({ where: { email } });
+    if (emailInUseByAnotherTrainer) return { ok: false, error: "Another trainer already uses this email." };
+  }
+
+  const password = generatePassword();
+  await prisma.$transaction([
+    prisma.trainer.update({ where: { id: trainerId }, data: { email } }),
+    prisma.user.create({
+      data: {
+        name: trainer.name,
+        email,
+        passwordHash: await bcrypt.hash(password, 10),
+        role: "TRAINER",
+        trainerId: trainer.id,
+      },
+    }),
+  ]);
+
+  revalidatePath("/lms/company/trainers");
+  revalidatePath("/lms/company/password-resets");
+
+  return { ok: true, email, password };
+}
+
 export type ResetTrainerPasswordState = { ok: boolean; error?: string } | null;
 
 export async function resetTrainerPassword(

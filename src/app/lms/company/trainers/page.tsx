@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginButton";
 import { updateTrainerRate } from "@/lib/actions/trainers";
 
 export default async function CompanyTrainersPage() {
@@ -44,7 +45,8 @@ export default async function CompanyTrainersPage() {
             All Trainers ({trainers.length})
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create a trainer login from the Employees page under Edit Site.
+            Create new trainer accounts from the Add Account page — trainers without a login yet can
+            get one below.
           </p>
         </div>
         {trainers.length === 0 ? (
@@ -61,20 +63,27 @@ export default async function CompanyTrainersPage() {
                     {!trainer.loginUser && " · No login yet"}
                   </p>
                 </div>
-                <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">₹</span>
-                  <Input
-                    name="hourlyRate"
-                    type="number"
-                    min="0"
-                    defaultValue={trainer.hourlyRate}
-                    className="w-24"
+                <div className="flex flex-wrap items-center gap-3">
+                  <CreateTrainerLoginButton
+                    trainerId={trainer.id}
+                    hasEmail={!!trainer.email}
+                    hasLogin={!!trainer.loginUser}
                   />
-                  <span className="text-sm text-muted-foreground">/hr</span>
-                  <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                    Save
-                  </Button>
-                </form>
+                  <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">₹</span>
+                    <Input
+                      name="hourlyRate"
+                      type="number"
+                      min="0"
+                      defaultValue={trainer.hourlyRate}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground">/hr</span>
+                    <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+                      Save
+                    </Button>
+                  </form>
+                </div>
               </div>
             ))}
           </div>

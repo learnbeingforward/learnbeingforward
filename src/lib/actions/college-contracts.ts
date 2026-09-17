@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { renderCollegeInvoicePdf } from "@/lib/pdf/invoice-pdf";
+import { renderCollegeInvoicePdf, type CollegeInvoiceLineItem } from "@/lib/pdf/invoice-pdf";
 
 const HOURS_PER_SESSION = 2;
 
@@ -26,6 +26,8 @@ export async function requestTraining(
   const startDateInput = String(formData.get("startDate") ?? "").trim();
   const ratePerStudentHourInput = String(formData.get("ratePerStudentHour") ?? "").trim();
   const flatRatePerDayInput = String(formData.get("flatRatePerDay") ?? "").trim();
+  const targetBranchInput = String(formData.get("targetBranch") ?? "").trim();
+  const targetSemesterInput = String(formData.get("targetSemester") ?? "").trim();
 
   if (!collegeId || !courseId || !contractType || !totalDaysInput || !startDateInput) {
     return { ok: false, error: "Please fill in all fields before submitting." };
@@ -63,6 +65,8 @@ export async function requestTraining(
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + totalDays - 1);
 
+  const targetSemester = targetSemesterInput ? Number.parseInt(targetSemesterInput, 10) : null;
+
   await prisma.collegeContract.create({
     data: {
       collegeId,
@@ -74,6 +78,8 @@ export async function requestTraining(
       totalDays,
       startDate,
       endDate,
+      targetBranch: targetBranchInput || null,
+      targetSemester,
     },
   });
 
@@ -124,17 +130,29 @@ export async function rescheduleSession(sessionId: string, formData: FormData) {
   revalidatePath("/lms/trainer/schedule");
 }
 
-export async function generateCollegeInvoice(contractId: string) {
+export type GenerateInvoiceState = { ok: boolean; error?: string } | null;
+
+export async function generateCollegeInvoice(
+  contractId: string,
+  _prevState: GenerateInvoiceState,
+  _formData: FormData
+): Promise<GenerateInvoiceState> {
   const session = await auth();
   if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Only the company admin can generate an invoice.");
+    return { ok: false, error: "Only the company admin can generate an invoice." };
   }
 
   const contract = await prisma.collegeContract.findUnique({
     where: { id: contractId },
     include: { college: true, course: true },
   });
-  if (!contract || contract.status !== "APPROVED" || contract.contractType === "CSR") return;
+  if (!contract) return { ok: false, error: "Training request not found." };
+  if (contract.status !== "APPROVED") {
+    return { ok: false, error: "The college hasn't approved this training request yet." };
+  }
+  if (contract.contractType === "CSR") {
+    return { ok: false, error: "CSR training is free — no invoice is needed." };
+  }
 
   const batches = await prisma.batch.findMany({
     where: { collegeId: contract.collegeId, courseId: contract.courseId },
@@ -148,30 +166,53 @@ export async function generateCollegeInvoice(contractId: string) {
   let totalHours: number | null = null;
   let totalDays: number | null = null;
   let totalAmount: number;
+  const lineItems: CollegeInvoiceLineItem[] = [];
 
   if (contract.contractType === "PER_STUDENT_HOURLY") {
     let hoursSum = 0;
     let amountSum = 0;
     for (const batch of batches) {
       const hours = batch.trainingSessions.length * HOURS_PER_SESSION;
+      if (hours === 0) continue;
+      const amount = hours * batch.enrollments.length * (contract.ratePerStudentHour ?? 0);
       hoursSum += hours;
-      amountSum += hours * batch.enrollments.length * (contract.ratePerStudentHour ?? 0);
+      amountSum += amount;
+      lineItems.push({ batchName: batch.name, students: batch.enrollments.length, hours, days: null, amount });
     }
-    if (hoursSum === 0) return;
+    if (hoursSum === 0) {
+      return {
+        ok: false,
+        error:
+          "No training sessions have been marked as attended yet for this contract — mark attendance first, then generate the invoice.",
+      };
+    }
     totalHours = hoursSum;
     totalAmount = amountSum;
     totalStudents = batches.reduce((sum, b) => sum + b.enrollments.length, 0);
   } else {
-    const distinctDates = new Set<string>();
+    const allDistinctDates = new Set<string>();
     for (const batch of batches) {
       for (const s of batch.trainingSessions) {
-        distinctDates.add(s.sessionDate.toISOString().slice(0, 10));
+        allDistinctDates.add(s.sessionDate.toISOString().slice(0, 10));
       }
     }
-    if (distinctDates.size === 0) return;
-    totalDays = distinctDates.size;
+    if (allDistinctDates.size === 0) {
+      return {
+        ok: false,
+        error:
+          "No training sessions have been marked as attended yet for this contract — mark attendance first, then generate the invoice.",
+      };
+    }
+    totalDays = allDistinctDates.size;
     totalStudents = batches.reduce((sum, b) => sum + b.enrollments.length, 0);
     totalAmount = totalDays * (contract.flatRatePerDay ?? 0);
+
+    for (const batch of batches) {
+      const batchDates = new Set(batch.trainingSessions.map((s) => s.sessionDate.toISOString().slice(0, 10)));
+      if (batchDates.size === 0) continue;
+      const amount = Math.round((batchDates.size / totalDays) * totalAmount);
+      lineItems.push({ batchName: batch.name, students: batch.enrollments.length, hours: null, days: batchDates.size, amount });
+    }
   }
 
   const invoice = await prisma.collegeInvoice.create({
@@ -190,12 +231,15 @@ export async function generateCollegeInvoice(contractId: string) {
       companyBankIfsc: settings?.companyBankIfsc ?? null,
       companyBankName: settings?.companyBankName ?? null,
       companyGstNumber: settings?.companyGstNumber ?? null,
-    }
+    },
+    lineItems
   );
   await prisma.collegeInvoice.update({ where: { id: invoice.id }, data: { pdfUrl } });
 
   revalidatePath("/lms/company/colleges");
   revalidatePath("/lms/college/contracts");
+
+  return { ok: true };
 }
 
 export async function decideCollegeInvoice(invoiceId: string, approve: boolean) {

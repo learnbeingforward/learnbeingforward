@@ -7,8 +7,10 @@ import { combineDateAndTime } from "@/lib/attendance";
 
 export async function submitSessionAttendance(sessionId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "TRAINER") {
-    throw new Error("Only trainers can mark attendance.");
+  const isTrainer = session?.user?.role === "TRAINER";
+  const isCompany = session?.user?.role === "SUPER_ADMIN";
+  if (!session?.user || !(isTrainer || isCompany)) {
+    throw new Error("Only trainers or the company admin can mark attendance.");
   }
 
   const trainingSession = await prisma.trainingSession.findUnique({
@@ -16,7 +18,7 @@ export async function submitSessionAttendance(sessionId: string, formData: FormD
     include: { batch: { include: { enrollments: true } } },
   });
   if (!trainingSession) throw new Error("Session not found.");
-  if (trainingSession.trainerId !== session.user.trainerId) {
+  if (isTrainer && trainingSession.trainerId !== session.user.trainerId) {
     throw new Error("You can only mark attendance for your own sessions.");
   }
   if (trainingSession.attendanceTaken) {
@@ -48,4 +50,5 @@ export async function submitSessionAttendance(sessionId: string, formData: FormD
   revalidatePath("/lms/college/students");
   revalidatePath("/lms/college/courses");
   revalidatePath("/lms/company/attendance");
+  revalidatePath("/lms/company/trainers/schedule");
 }

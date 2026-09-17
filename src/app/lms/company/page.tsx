@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { format } from "date-fns";
 import { Building2, BookOpenCheck, Clock3 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
@@ -12,10 +13,74 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BackLink } from "@/components/lms/BackLink";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/lib/actions/enrollment-requests";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 
-export default async function CompanyDashboardPage() {
+export default async function CompanyDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ requestId?: string }>;
+}) {
+  const { requestId } = await searchParams;
+
+  if (requestId) {
+    const request = await prisma.enrollmentRequest.findUnique({
+      where: { id: requestId },
+      include: { student: true, course: true, college: true },
+    });
+
+    return (
+      <DashboardShell title="Enrollment Request" subtitle="Decision detail" navLinks={navLinks}>
+        <BackLink href="/lms/company" label="Back to Requests" />
+        {!request ? (
+          <p className="text-sm text-muted-foreground">This request no longer exists.</p>
+        ) : (
+          <div className="max-w-lg rounded-xl border border-border bg-white p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-indigo">{request.student.name}</h2>
+              <Badge
+                className={
+                  request.status === "APPROVED"
+                    ? "bg-green-100 text-green-700 hover:bg-green-100"
+                    : request.status === "REJECTED"
+                      ? "bg-red-100 text-red-700 hover:bg-red-100"
+                      : "bg-gold/20 text-indigo hover:bg-gold/20"
+                }
+              >
+                {request.status}
+              </Badge>
+            </div>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Email</dt>
+                <dd className="text-indigo">{request.student.email}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">College</dt>
+                <dd className="text-indigo">{request.college?.name ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Course</dt>
+                <dd className="text-indigo">{request.course.name}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Requested</dt>
+                <dd className="text-indigo">{format(request.requestedAt, "MMM d, yyyy")}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Decided</dt>
+                <dd className="text-indigo">
+                  {request.decidedAt ? format(request.decidedAt, "MMM d, yyyy") : "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
+      </DashboardShell>
+    );
+  }
+
   const [pending, recentDecided] = await Promise.all([
     prisma.enrollmentRequest.findMany({
       where: { status: "PENDING" },
@@ -120,46 +185,36 @@ export default async function CompanyDashboardPage() {
       </div>
 
       {recentDecided.length > 0 && (
-        <div className="mt-8 rounded-xl border border-border bg-white">
-          <div className="border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">Recent Decisions</p>
+        <div className="mt-8">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Recent Decisions</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {recentDecided.map((req) => (
+              <Link
+                key={req.id}
+                href={`/lms/company?requestId=${req.id}`}
+                className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-indigo">{req.student.name}</p>
+                  <Badge
+                    className={
+                      req.status === "APPROVED"
+                        ? "bg-green-100 text-green-700 hover:bg-green-100"
+                        : "bg-red-100 text-red-700 hover:bg-red-100"
+                    }
+                  >
+                    {req.status === "APPROVED" ? "Approved" : "Rejected"}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {req.course.name} &middot; {req.college?.name ?? "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {req.decidedAt ? format(req.decidedAt, "MMM d, yyyy") : "—"}
+                </p>
+              </Link>
+            ))}
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>College</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Decided</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentDecided.map((req) => (
-                <TableRow key={req.id}>
-                  <TableCell className="font-medium text-indigo">{req.student.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {req.college?.name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{req.course.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {req.decidedAt ? format(req.decidedAt, "MMM d, yyyy") : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        req.status === "APPROVED"
-                          ? "bg-green-100 text-green-700 hover:bg-green-100"
-                          : "bg-red-100 text-red-700 hover:bg-red-100"
-                      }
-                    >
-                      {req.status === "APPROVED" ? "Approved" : "Rejected"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
         </div>
       )}
     </DashboardShell>

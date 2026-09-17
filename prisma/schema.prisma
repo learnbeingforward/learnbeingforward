@@ -485,6 +485,8 @@ model CollegeContract {
   totalDays          Int
   startDate          DateTime
   endDate            DateTime
+  targetBranch       String?
+  targetSemester     Int?
   status             RequestStatus @default(PENDING)
   requestedAt        DateTime      @default(now())
   decidedAt          DateTime?

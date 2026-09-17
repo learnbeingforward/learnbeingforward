@@ -6,8 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RequiredMark } from "@/components/ui/required-mark";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateStudentProfile, type UpdateProfileState } from "@/lib/actions/profile";
+import { BRANCH_OPTIONS } from "@/lib/constants";
 
 type Student = {
   name: string;
@@ -47,7 +55,18 @@ export function StudentProfileForm({ student }: { student: Student }) {
         </div>
         <div>
           <Label htmlFor="branch">Branch (optional)</Label>
-          <Input id="branch" name="branch" defaultValue={student.branch ?? ""} className="mt-1.5" placeholder="e.g. Computer Science" />
+          <Select name="branch" defaultValue={student.branch ?? undefined}>
+            <SelectTrigger className="mt-1.5 w-full">
+              <SelectValue placeholder="Select branch" />
+            </SelectTrigger>
+            <SelectContent>
+              {BRANCH_OPTIONS.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="semester">Semester (optional)</Label>

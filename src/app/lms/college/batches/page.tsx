@@ -81,7 +81,7 @@ export default async function CollegeBatchesPage({
     );
   }
 
-  const [unbatched, batches] = await Promise.all([
+  const [unbatched, batches, approvedContracts] = await Promise.all([
     prisma.enrollment.findMany({
       where: { batchId: null, collegeId },
       include: { student: true, course: true, college: true },
@@ -90,6 +90,10 @@ export default async function CollegeBatchesPage({
       where: { collegeId },
       include: { course: true, trainer: true, enrollments: true },
       orderBy: { createdAt: "desc" },
+    }),
+    prisma.collegeContract.findMany({
+      where: { collegeId, status: "APPROVED" },
+      orderBy: { decidedAt: "desc" },
     }),
   ]);
 
@@ -100,8 +104,17 @@ export default async function CollegeBatchesPage({
     collegeName: e.college?.name ?? "—",
     courseId: e.courseId,
     courseName: e.course.name,
+    branch: e.student.branch,
     semester: e.student.semester,
   }));
+
+  const contractRestrictions: Record<string, { branch: string | null; semester: number | null }> = {};
+  for (const c of approvedContracts) {
+    const key = `${collegeId}::${c.courseId}`;
+    if (!(key in contractRestrictions) && (c.targetBranch || c.targetSemester)) {
+      contractRestrictions[key] = { branch: c.targetBranch, semester: c.targetSemester };
+    }
+  }
 
   return (
     <DashboardShell title="Batches" subtitle="Group your students into class batches" navLinks={navLinks}>
@@ -114,7 +127,11 @@ export default async function CollegeBatchesPage({
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
           Build a Batch
         </h2>
-        <ManualBatchBuilder enrollments={builderRows} lockedCollegeId={collegeId} />
+        <ManualBatchBuilder
+          enrollments={builderRows}
+          lockedCollegeId={collegeId}
+          contractRestrictions={contractRestrictions}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-white">

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createStudentAccount, type CreateAccountState } from "@/lib/actions/accounts";
+import { BRANCH_OPTIONS } from "@/lib/constants";
 
 type College = { id: string; name: string };
 
@@ -107,7 +108,18 @@ export function AddStudentForm({ colleges }: { colleges?: College[] }) {
         </div>
         <div>
           <Label htmlFor="branch">Branch (optional)</Label>
-          <Input id="branch" name="branch" className="mt-1.5" placeholder="e.g. Computer Science" />
+          <Select name="branch">
+            <SelectTrigger className="mt-1.5 w-full">
+              <SelectValue placeholder="Select branch" />
+            </SelectTrigger>
+            <SelectContent>
+              {BRANCH_OPTIONS.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="semester">Semester (optional)</Label>

@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createManualBatch, type CreateManualBatchState } from "@/lib/actions/batches";
 import { MANUAL_BATCH_CAP } from "@/lib/batching";
@@ -23,15 +22,20 @@ type UnbatchedEnrollment = {
   collegeName: string;
   courseId: string;
   courseName: string;
+  branch: string | null;
   semester: number | null;
 };
+
+type ContractRestriction = { branch: string | null; semester: number | null };
 
 export function ManualBatchBuilder({
   enrollments,
   lockedCollegeId,
+  contractRestrictions,
 }: {
   enrollments: UnbatchedEnrollment[];
   lockedCollegeId?: string;
+  contractRestrictions?: Record<string, ContractRestriction>;
 }) {
   const [state, formAction, isPending] = useActionState<CreateManualBatchState, FormData>(
     createManualBatch,
@@ -46,6 +50,7 @@ export function ManualBatchBuilder({
 
   const [collegeId, setCollegeId] = useState(lockedCollegeId ?? "");
   const [courseId, setCourseId] = useState("");
+  const [semesterFilter, setSemesterFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const courses = useMemo(() => {
@@ -56,7 +61,14 @@ export function ManualBatchBuilder({
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [enrollments, collegeId]);
 
-  const candidates = enrollments.filter((e) => e.collegeId === collegeId && e.courseId === courseId);
+  const restriction = collegeId && courseId ? contractRestrictions?.[`${collegeId}::${courseId}`] : undefined;
+
+  const courseCandidates = enrollments.filter((e) => e.collegeId === collegeId && e.courseId === courseId);
+  const candidates = courseCandidates.filter((e) => {
+    if (restriction?.branch && e.branch !== restriction.branch) return false;
+    if (semesterFilter && String(e.semester ?? "") !== semesterFilter) return false;
+    return true;
+  });
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -87,6 +99,7 @@ export function ManualBatchBuilder({
                 setCollegeId(String(v));
                 setCourseId("");
                 setSelected(new Set());
+                setSemesterFilter("");
               }}
             >
               <SelectTrigger className="mt-1.5 w-full">
@@ -115,8 +128,11 @@ export function ManualBatchBuilder({
             name="courseId"
             value={courseId}
             onValueChange={(v) => {
-              setCourseId(String(v));
+              const id = String(v);
+              setCourseId(id);
               setSelected(new Set());
+              const nextRestriction = collegeId ? contractRestrictions?.[`${collegeId}::${id}`] : undefined;
+              setSemesterFilter(nextRestriction?.semester ? String(nextRestriction.semester) : "");
             }}
           >
             <SelectTrigger className="mt-1.5 w-full">
@@ -136,17 +152,36 @@ export function ManualBatchBuilder({
       </div>
 
       <div>
-        <Label htmlFor="batch-semester">Semester Label (optional)</Label>
-        <Input
-          id="batch-semester"
+        <Label htmlFor="batch-semester">Semester (optional — filters the list below too)</Label>
+        <Select
           name="semester"
-          type="number"
-          min="1"
-          max="8"
-          className="mt-1.5 max-w-32"
-          placeholder="e.g. 5"
-        />
+          value={semesterFilter}
+          onValueChange={(v) => setSemesterFilter(String(v))}
+          disabled={!!restriction?.semester}
+        >
+          <SelectTrigger className="mt-1.5 max-w-40">
+            <SelectValue placeholder="All semesters">
+              {(value: string | null) => (value ? `Semester ${value}` : "All semesters")}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <SelectItem key={n} value={String(n)}>
+                Semester {n}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {restriction && (restriction.branch || restriction.semester) && (
+        <p className="rounded-lg bg-gold/10 px-3 py-2 text-xs text-indigo">
+          This training was requested for
+          {restriction.branch && ` ${restriction.branch}`}
+          {restriction.branch && restriction.semester && " · "}
+          {restriction.semester && ` Semester ${restriction.semester}`} only — showing eligible students only.
+        </p>
+      )}
 
       {candidates.length > 0 ? (
         <div>
@@ -166,13 +201,17 @@ export function ManualBatchBuilder({
                   className="size-4"
                 />
                 {c.studentName}
-                {c.semester && <span className="text-xs text-muted-foreground">(Sem {c.semester})</span>}
+                {(c.branch || c.semester) && (
+                  <span className="text-xs text-muted-foreground">
+                    ({[c.branch, c.semester ? `Sem ${c.semester}` : null].filter(Boolean).join(" · ")})
+                  </span>
+                )}
               </label>
             ))}
           </div>
         </div>
       ) : collegeId && courseId ? (
-        <p className="text-sm text-muted-foreground">No unbatched students for this college/course.</p>
+        <p className="text-sm text-muted-foreground">No unbatched students match this college/course/semester.</p>
       ) : null}
 
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}

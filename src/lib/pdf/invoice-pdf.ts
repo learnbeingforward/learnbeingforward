@@ -122,14 +122,14 @@ export async function renderTrainerInvoicePdf(
       doc.text(li.batchName, colX[2], rowY, { width: 90 });
       doc.text(li.topic, colX[3], rowY, { width: 55 });
       doc.text(String(li.hours), colX[4], rowY, { width: 50 });
-      doc.text(`₹${li.hours * li.rate}`, colX[5], rowY, { width: 70 });
+      doc.text(`Rs. ${li.hours * li.rate}`, colX[5], rowY, { width: 70 });
       doc.moveDown(0.6);
     }
 
     doc.moveDown(0.5);
     doc.moveTo(64, doc.y).lineTo(doc.page.width - 64, doc.y).strokeColor("#E5E7EB").stroke();
     doc.moveDown(0.5);
-    doc.font("Helvetica-Bold").fontSize(13).fillColor(INDIGO).text(`Total: ₹${totalAmount}`, { align: "right" });
+    doc.font("Helvetica-Bold").fontSize(13).fillColor(INDIGO).text(`Total: Rs. ${totalAmount}`, { align: "right" });
 
     if (notes) {
       sectionTitle(doc, "Note");
@@ -159,12 +159,12 @@ export async function renderTrainerApprovalPdf(
     kv(doc, "Name:", trainer.name);
 
     sectionTitle(doc, "Summary");
-    kv(doc, "Submitted Amount:", `₹${totalAmount}`);
+    kv(doc, "Submitted Amount:", `Rs. ${totalAmount}`);
     if (approved) {
       if (deductionAmount && deductionAmount > 0) {
-        kv(doc, "Deduction:", `₹${deductionAmount}${deductionReason ? ` (${deductionReason})` : ""}`);
+        kv(doc, "Deduction:", `Rs. ${deductionAmount}${deductionReason ? ` (${deductionReason})` : ""}`);
       }
-      kv(doc, "Approved Amount:", `₹${approvedAmount ?? totalAmount}`);
+      kv(doc, "Approved Amount:", `Rs. ${approvedAmount ?? totalAmount}`);
       if (paymentTimelineDays) {
         kv(doc, "Expected Payment Within:", `${paymentTimelineDays} day${paymentTimelineDays !== 1 ? "s" : ""}`);
       }
@@ -183,12 +183,21 @@ export type CompanyBankDetails = {
   companyGstNumber: string | null;
 };
 
+export type CollegeInvoiceLineItem = {
+  batchName: string;
+  students: number;
+  hours: number | null;
+  days: number | null;
+  amount: number;
+};
+
 export async function renderCollegeInvoicePdf(
   invoiceId: string,
   collegeName: string,
   courseName: string,
   breakdown: { totalStudents: number; totalHours: number | null; totalDays: number | null; totalAmount: number },
-  companyBank: CompanyBankDetails
+  companyBank: CompanyBankDetails,
+  lineItems: CollegeInvoiceLineItem[] = []
 ): Promise<string> {
   return finish(`college-${invoiceId}`, (doc) => {
     header(doc, "Training Invoice", `Issued ${format(new Date(), "MMM d, yyyy")}`);
@@ -197,12 +206,43 @@ export async function renderCollegeInvoicePdf(
     kv(doc, "College:", collegeName);
     kv(doc, "Course:", courseName);
 
+    if (lineItems.length > 0) {
+      sectionTitle(doc, "Training Breakdown");
+      const colX = [64, 260, 340, 430];
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(INDIGO);
+      doc.text("Batch", colX[0], doc.y, { width: 190 });
+      const headerY = doc.y - 11;
+      doc.text("Students", colX[1], headerY, { width: 70 });
+      doc.text("Hrs/Days", colX[2], headerY, { width: 80 });
+      doc.text("Amount", colX[3], headerY, { width: 90 });
+      doc.moveDown(0.5);
+      doc.moveTo(64, doc.y).lineTo(doc.page.width - 64, doc.y).strokeColor("#E5E7EB").stroke();
+      doc.moveDown(0.3);
+
+      for (const li of lineItems) {
+        if (doc.y > doc.page.height - 100) {
+          doc.addPage();
+          doc.y = 60;
+        }
+        const rowY = doc.y;
+        doc.font("Helvetica").fontSize(9).fillColor(INK);
+        doc.text(li.batchName, colX[0], rowY, { width: 190 });
+        doc.text(String(li.students), colX[1], rowY, { width: 70 });
+        doc.text(String(li.hours ?? li.days ?? "—"), colX[2], rowY, { width: 80 });
+        doc.text(`Rs. ${li.amount}`, colX[3], rowY, { width: 90 });
+        doc.moveDown(0.6);
+      }
+      doc.moveDown(0.3);
+      doc.moveTo(64, doc.y).lineTo(doc.page.width - 64, doc.y).strokeColor("#E5E7EB").stroke();
+      doc.moveDown(0.3);
+    }
+
     sectionTitle(doc, "Training Summary");
     kv(doc, "Students Trained:", String(breakdown.totalStudents));
     if (breakdown.totalHours) kv(doc, "Total Hours:", String(breakdown.totalHours));
     if (breakdown.totalDays) kv(doc, "Total Days:", String(breakdown.totalDays));
     doc.moveDown(0.3);
-    doc.font("Helvetica-Bold").fontSize(13).fillColor(INDIGO).text(`Total: ₹${breakdown.totalAmount}`);
+    doc.font("Helvetica-Bold").fontSize(13).fillColor(INDIGO).text(`Total: Rs. ${breakdown.totalAmount}`);
 
     sectionTitle(doc, "Pay To (Learn Being Forward)");
     if (
