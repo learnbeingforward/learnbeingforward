@@ -12,6 +12,7 @@ enum Role {
   STUDENT
   COLLEGE_ADMIN
   SUPER_ADMIN
+  TRAINER
 }
 
 enum CertificationStatus {
@@ -55,6 +56,8 @@ model User {
   studentStatus StudentStatus @default(ACTIVE)
   collegeId    String?
   college      College? @relation(fields: [collegeId], references: [id])
+  trainerId    String?  @unique
+  trainer      Trainer? @relation(fields: [trainerId], references: [id])
   createdAt    DateTime @default(now())
 
   enrollments        Enrollment[]
@@ -62,12 +65,21 @@ model User {
 }
 
 model Trainer {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?  @unique
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  email      String?  @unique
+  phone      String?
+  bio        String?  @db.Text
+  cvUrl      String?
+  hourlyRate Int      @default(0)
+  createdAt  DateTime @default(now())
 
-  enrollments Enrollment[]
+  loginUser        User?
+  enrollments      Enrollment[]
+  batches          Batch[]
+  trainingSessions TrainingSession[]
+  invoices         TrainerInvoice[]
+  sessionContents  SessionContent[]
 }
 
 model College {
@@ -80,6 +92,7 @@ model College {
   enrollments          Enrollment[]
   enrollmentRequests   EnrollmentRequest[]
   attendanceExceptions AttendanceException[]
+  batches              Batch[]
 }
 
 model Course {
@@ -97,6 +110,8 @@ model Course {
   modules            CourseModule[]
   enrollments        Enrollment[]
   enrollmentRequests EnrollmentRequest[]
+  batches            Batch[]
+  sessionContents    SessionContent[]
 }
 
 model CourseModule {
@@ -110,6 +125,9 @@ model CourseModule {
   techSlugs  String? @db.Text
   delivery   String? @db.Text
   order      Int     @default(0)
+
+  trainingSessions TrainingSession[]
+  sessionContents  SessionContent[]
 
   @@index([courseId])
 }
@@ -127,6 +145,8 @@ model Enrollment {
   totalClasses Int     @default(0)
   trainerId    String?
   trainer      Trainer? @relation(fields: [trainerId], references: [id])
+  batchId      String?
+  batch        Batch?   @relation(fields: [batchId], references: [id])
 
   attendanceRecords    AttendanceRecord[]
   certification        Certification?
@@ -136,6 +156,97 @@ model Enrollment {
   @@index([courseId])
   @@index([collegeId])
   @@index([trainerId])
+  @@index([batchId])
+}
+
+model Batch {
+  id        String   @id @default(cuid())
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  name      String
+  trainerId String?
+  trainer   Trainer? @relation(fields: [trainerId], references: [id])
+  createdAt DateTime @default(now())
+
+  enrollments      Enrollment[]
+  trainingSessions TrainingSession[]
+
+  @@index([collegeId])
+  @@index([courseId])
+  @@index([trainerId])
+}
+
+model TrainingSession {
+  id              String        @id @default(cuid())
+  batchId         String
+  batch           Batch         @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  trainerId       String
+  trainer         Trainer       @relation(fields: [trainerId], references: [id])
+  courseModuleId  String?
+  courseModule    CourseModule? @relation(fields: [courseModuleId], references: [id])
+  topic           String?
+  sessionDate     DateTime
+  slotNumber      Int
+  startTime       String
+  endTime         String
+  attendanceTaken Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  invoiceLineItems TrainerInvoiceSession[]
+
+  @@unique([batchId, sessionDate, slotNumber])
+  @@index([batchId])
+  @@index([trainerId])
+  @@index([sessionDate])
+}
+
+model SessionContent {
+  id             String        @id @default(cuid())
+  trainerId      String
+  trainer        Trainer       @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  courseId       String?
+  course         Course?       @relation(fields: [courseId], references: [id])
+  courseModuleId String?
+  courseModule   CourseModule? @relation(fields: [courseModuleId], references: [id])
+  title          String
+  description    String?       @db.Text
+  fileUrl        String
+  fileType       String
+  uploadedAt     DateTime      @default(now())
+
+  @@index([trainerId])
+}
+
+model TrainerInvoice {
+  id           String        @id @default(cuid())
+  trainerId    String
+  trainer      Trainer       @relation(fields: [trainerId], references: [id])
+  sessionCount Int
+  hours        Int
+  hourlyRate   Int
+  totalAmount  Int
+  status       RequestStatus @default(PENDING)
+  notes        String?       @db.Text
+  submittedAt  DateTime      @default(now())
+  decidedAt    DateTime?
+
+  lineItems TrainerInvoiceSession[]
+
+  @@index([trainerId])
+  @@index([status])
+}
+
+model TrainerInvoiceSession {
+  id                String          @id @default(cuid())
+  invoiceId         String
+  invoice           TrainerInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  trainingSessionId String
+  trainingSession   TrainingSession @relation(fields: [trainingSessionId], references: [id])
+
+  @@unique([invoiceId, trainingSessionId])
+  @@index([trainingSessionId])
 }
 
 model EnrollmentRequest {

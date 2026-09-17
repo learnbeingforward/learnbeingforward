@@ -38,6 +38,9 @@ yarn-error.log*
 /prisma/dev.db
 /prisma/dev.db-journal
 
+# uploaded files (CVs, trainer content) — stored on the server's local disk
+/public/uploads/
+
 # vercel
 .vercel
 

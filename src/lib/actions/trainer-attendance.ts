@@ -1,0 +1,57 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+
+function combineDateAndTime(date: Date, time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  const combined = new Date(date);
+  combined.setHours(hours || 0, minutes || 0, 0, 0);
+  return combined;
+}
+
+export async function submitSessionAttendance(sessionId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "TRAINER") {
+    throw new Error("Only trainers can mark attendance.");
+  }
+
+  const trainingSession = await prisma.trainingSession.findUnique({
+    where: { id: sessionId },
+    include: { batch: { include: { enrollments: true } } },
+  });
+  if (!trainingSession) throw new Error("Session not found.");
+  if (trainingSession.trainerId !== session.user.trainerId) {
+    throw new Error("You can only mark attendance for your own sessions.");
+  }
+  if (trainingSession.attendanceTaken) {
+    throw new Error("Attendance has already been submitted for this session.");
+  }
+
+  const classDate = combineDateAndTime(trainingSession.sessionDate, trainingSession.startTime);
+
+  await prisma.$transaction([
+    ...trainingSession.batch.enrollments.map((enrollment) =>
+      prisma.attendanceRecord.create({
+        data: {
+          enrollmentId: enrollment.id,
+          classDate,
+          present: formData.get(`present_${enrollment.id}`) === "on",
+        },
+      })
+    ),
+    prisma.trainingSession.update({
+      where: { id: sessionId },
+      data: { attendanceTaken: true },
+    }),
+  ]);
+
+  revalidatePath("/lms/trainer/schedule");
+  revalidatePath("/lms/trainer/attendance");
+  revalidatePath("/lms/student");
+  revalidatePath("/lms/student/attendance");
+  revalidatePath("/lms/college/students");
+  revalidatePath("/lms/college/courses");
+  revalidatePath("/lms/company/attendance");
+}

@@ -12,12 +12,13 @@ import { Label } from "@/components/ui/label";
 import { loginSchema, type LoginInput } from "@/lib/validation";
 
 type SessionResponse = {
-  user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" };
+  user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" };
 };
 
 function roleRedirect(role?: string) {
   if (role === "SUPER_ADMIN") return "/lms/company";
   if (role === "COLLEGE_ADMIN") return "/lms/college";
+  if (role === "TRAINER") return "/lms/trainer";
   return "/lms/student";
 }
 

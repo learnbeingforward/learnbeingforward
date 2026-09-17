@@ -32,6 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role,
           collegeId: user.collegeId,
+          trainerId: user.trainerId,
         };
       },
     }),
@@ -41,6 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role;
         token.collegeId = user.collegeId;
+        token.trainerId = user.trainerId;
         token.id = user.id;
       }
       return token;
@@ -48,8 +50,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session: async ({ session, token }) => {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN";
+        session.user.role = token.role as "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER";
         session.user.collegeId = (token.collegeId as string | null) ?? null;
+        session.user.trainerId = (token.trainerId as string | null) ?? null;
       }
       return session;
     },

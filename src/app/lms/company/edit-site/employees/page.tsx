@@ -9,12 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { createTeamMember, deleteTeamMember } from "@/lib/actions/site-content";
 import { parseJsonArray } from "@/lib/json-array";
+import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm";
 
 export default async function EditEmployeesPage() {
   const members = await prisma.teamMember.findMany({ orderBy: { order: "asc" } });
 
   return (
     <DashboardShell title="Employees" subtitle="Edit site — Team profiles" navLinks={navLinks}>
+      <div className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+          Create Trainer Login
+        </h2>
+        <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
+          This creates an internal login for the LMS trainer dashboard — separate from the public
+          Team page profile below. A trainer doesn&apos;t need a public Team entry to log in, and
+          adding one here doesn&apos;t publish anything publicly.
+        </p>
+        <CreateTrainerLoginForm />
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
