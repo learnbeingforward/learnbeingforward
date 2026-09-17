@@ -33,6 +33,9 @@ export async function createStudentAccount(
     .toLowerCase();
   const usn = String(formData.get("usn") ?? "").trim();
   const fatherName = String(formData.get("fatherName") ?? "").trim();
+  const branch = String(formData.get("branch") ?? "").trim();
+  const semesterInput = String(formData.get("semester") ?? "").trim();
+  const semester = semesterInput ? Number.parseInt(semesterInput, 10) : null;
   const collegeIdInput = String(formData.get("collegeId") ?? "").trim();
 
   if (!name || !email) {
@@ -59,6 +62,8 @@ export async function createStudentAccount(
         role: "STUDENT",
         usn: usn || null,
         fatherName: fatherName || null,
+        branch: branch || null,
+        semester,
         collegeId,
         studentStatus: "PRE_REGISTERED",
       },
@@ -77,6 +82,8 @@ export async function createStudentAccount(
       role: "STUDENT",
       usn: usn || null,
       fatherName: fatherName || null,
+      branch: branch || null,
+      semester,
       collegeId,
       studentStatus: "ACTIVE",
     },

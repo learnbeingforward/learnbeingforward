@@ -16,7 +16,7 @@ import {
 import { scheduleTrainingSession, type ScheduleSessionState } from "@/lib/actions/training-sessions";
 import { slotPresetsFor } from "@/lib/session-slots";
 
-type BatchOption = { id: string; name: string; collegeName: string; courseId: string };
+type BatchOption = { id: string; name: string; collegeName: string; courseId: string; trainerId: string | null };
 type TrainerOption = { id: string; name: string };
 type ModuleOption = { id: string; title: string; courseId: string };
 
@@ -52,7 +52,16 @@ export function ScheduleSessionForm({
             Batch
             <RequiredMark />
           </Label>
-          <Select name="batchId" value={batchId} onValueChange={(v) => setBatchId(String(v))}>
+          <Select
+            name="batchId"
+            value={batchId}
+            onValueChange={(v) => {
+              const id = String(v);
+              setBatchId(id);
+              const batch = batches.find((b) => b.id === id);
+              if (batch?.trainerId) setTrainerId(batch.trainerId);
+            }}
+          >
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue placeholder="Select batch">
                 {(value: string | null) => {

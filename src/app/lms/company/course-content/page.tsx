@@ -1,13 +1,20 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
+import { BackLink } from "@/components/lms/BackLink";
 import { deleteCourseContent, decideContentAccessRequest } from "@/lib/actions/course-content";
 import { format } from "date-fns";
 
-export default async function CompanyCourseContentPage() {
+export default async function CompanyCourseContentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ courseId?: string }>;
+}) {
+  const { courseId } = await searchParams;
   const [courses, modules, subModules, content, pendingRequests] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
@@ -74,45 +81,73 @@ export default async function CompanyCourseContentPage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            All Content ({content.length})
-          </h2>
-          <div className="max-h-[900px] space-y-3 overflow-y-auto">
-            {content.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nothing added yet.</p>
-            ) : (
-              content.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold text-indigo underline"
-                      >
-                        {item.title}
-                      </a>
-                      <p className="text-xs text-muted-foreground">
-                        {item.course.name} — {item.courseModule?.title}
-                        {item.courseSubModule && ` — ${item.courseSubModule.title}`}
-                      </p>
+          {courseId ? (
+            <>
+              <BackLink href="/lms/company/course-content" label="Back to all courses" />
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+                {courses.find((c) => c.id === courseId)?.name} Content (
+                {content.filter((c) => c.courseId === courseId).length})
+              </h2>
+              <div className="max-h-[800px] space-y-3 overflow-y-auto">
+                {content
+                  .filter((c) => c.courseId === courseId)
+                  .map((item) => (
+                    <div key={item.id} className="rounded-xl border border-border bg-white p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <a
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-semibold text-indigo underline"
+                          >
+                            {item.title}
+                          </a>
+                          <p className="text-xs text-muted-foreground">
+                            {item.courseModule?.title}
+                            {item.courseSubModule && ` — ${item.courseSubModule.title}`}
+                          </p>
+                        </div>
+                        <DeleteButton action={deleteCourseContent.bind(null, item.id)} />
+                      </div>
+                      {item.links.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border pt-2">
+                          {item.links.map((l) => (
+                            <span key={l.id} className="rounded-full bg-cream px-2 py-0.5 text-[10px] text-indigo/80">
+                              {l.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <DeleteButton action={deleteCourseContent.bind(null, item.id)} />
-                  </div>
-                  {item.links.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border pt-2">
-                      {item.links.map((l) => (
-                        <span key={l.id} className="rounded-full bg-cream px-2 py-0.5 text-[10px] text-indigo/80">
-                          {l.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+                  ))}
+                {content.filter((c) => c.courseId === courseId).length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground">Nothing added for this course yet.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+                Browse by Course
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {courses.map((course) => {
+                  const count = content.filter((c) => c.courseId === course.id).length;
+                  return (
+                    <Link
+                      key={course.id}
+                      href={`/lms/company/course-content?courseId=${course.id}`}
+                      className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+                    >
+                      <p className="font-semibold text-indigo">{course.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{count} item{count !== 1 ? "s" : ""}</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </DashboardShell>

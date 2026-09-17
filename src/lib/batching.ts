@@ -1,4 +1,7 @@
-const MAX_BATCH_SIZE = 30;
+export const AUTO_BATCH_CAP = 50;
+export const MANUAL_BATCH_CAP = 60;
+
+const MAX_BATCH_SIZE = AUTO_BATCH_CAP;
 
 export type Batchable = { id: string; enrolledAt: Date };
 

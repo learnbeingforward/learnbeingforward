@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -74,11 +76,40 @@ export default async function TrainerInvoicePage() {
           </div>
           <div className="divide-y divide-border">
             {pastInvoices.map((inv) => (
-              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-                <span className="text-indigo">
-                  {format(inv.submittedAt, "MMM d, yyyy")} &middot; {inv.sessionCount} sessions &middot;{" "}
-                  {inv.hours} hrs &middot; ₹{inv.totalAmount}
-                </span>
+              <div key={inv.id} className="flex flex-wrap items-start justify-between gap-3 p-4 text-sm">
+                <div>
+                  <span className="text-indigo">
+                    {format(inv.submittedAt, "MMM d, yyyy")} &middot; {inv.sessionCount} sessions &middot;{" "}
+                    {inv.hours} hrs &middot; ₹{inv.totalAmount}
+                  </span>
+                  {inv.status === "APPROVED" && inv.approvedAmount !== null && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Approved for ₹{inv.approvedAmount}
+                      {inv.deductionAmount ? ` (₹${inv.deductionAmount} deducted — ${inv.deductionReason})` : ""}
+                      {inv.paymentTimelineDays ? ` · payment within ${inv.paymentTimelineDays} days` : ""}
+                    </p>
+                  )}
+                  <div className="mt-1 flex flex-wrap gap-3">
+                    {inv.pdfUrl && (
+                      <Link
+                        href={inv.pdfUrl}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                      >
+                        <FileText className="size-3.5" /> Invoice PDF
+                      </Link>
+                    )}
+                    {inv.approvalPdfUrl && (
+                      <Link
+                        href={inv.approvalPdfUrl}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                      >
+                        <FileText className="size-3.5" /> Decision PDF
+                      </Link>
+                    )}
+                  </div>
+                </div>
                 <Badge
                   className={
                     inv.status === "APPROVED"

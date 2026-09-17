@@ -3,9 +3,14 @@ import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
 export type StudentRow = {
   enrollmentId: string;
+  batchId: string | null;
   studentId: string;
   studentName: string;
+  studentEmail: string;
   studentUsn: string | null;
+  branch: string | null;
+  semester: number | null;
+  cvUrl: string | null;
   courseName: string;
   present: number;
   total: number;
@@ -34,9 +39,14 @@ export async function getCollegeStudentRows(collegeId: string | null) {
       const overrideApproved = enrollment.certification?.overrideApproved ?? false;
       return {
         enrollmentId: enrollment.id,
+        batchId: enrollment.batchId,
         studentId: student.id,
         studentName: student.name,
+        studentEmail: student.email,
         studentUsn: student.usn,
+        branch: student.branch,
+        semester: student.semester,
+        cvUrl: student.cvUrl,
         courseName: enrollment.course.name,
         present,
         total,

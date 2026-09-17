@@ -11,7 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createManualBatch, type CreateManualBatchState } from "@/lib/actions/batches";
+import { MANUAL_BATCH_CAP } from "@/lib/batching";
 
 type UnbatchedEnrollment = {
   id: string;
@@ -20,6 +23,7 @@ type UnbatchedEnrollment = {
   collegeName: string;
   courseId: string;
   courseName: string;
+  semester: number | null;
 };
 
 export function ManualBatchBuilder({
@@ -131,10 +135,23 @@ export function ManualBatchBuilder({
         </div>
       </div>
 
+      <div>
+        <Label htmlFor="batch-semester">Semester Label (optional)</Label>
+        <Input
+          id="batch-semester"
+          name="semester"
+          type="number"
+          min="1"
+          max="8"
+          className="mt-1.5 max-w-32"
+          placeholder="e.g. 5"
+        />
+      </div>
+
       {candidates.length > 0 ? (
         <div>
           <p className="mb-2 text-sm font-medium text-indigo">
-            Unbatched students ({selected.size} selected, max 30)
+            Unbatched students ({selected.size} selected, max {MANUAL_BATCH_CAP})
           </p>
           <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-border p-3">
             {candidates.map((c) => (
@@ -145,10 +162,11 @@ export function ManualBatchBuilder({
                   value={c.id}
                   checked={selected.has(c.id)}
                   onChange={() => toggle(c.id)}
-                  disabled={!selected.has(c.id) && selected.size >= 30}
+                  disabled={!selected.has(c.id) && selected.size >= MANUAL_BATCH_CAP}
                   className="size-4"
                 />
                 {c.studentName}
+                {c.semester && <span className="text-xs text-muted-foreground">(Sem {c.semester})</span>}
               </label>
             ))}
           </div>

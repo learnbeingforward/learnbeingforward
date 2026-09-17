@@ -68,6 +68,7 @@ model User {
   avatarSeed   String?
   cvUrl        String?
   branch       String?
+  semester     Int?
   createdAt    DateTime @default(now())
 
   enrollments           Enrollment[]
@@ -83,6 +84,10 @@ model Trainer {
   bio        String?  @db.Text
   cvUrl      String?
   hourlyRate Int      @default(0)
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfsc          String?
+  bankName          String?
   createdAt  DateTime @default(now())
 
   loginUser        User?
@@ -238,6 +243,7 @@ model Batch {
   courseId  String
   course    Course   @relation(fields: [courseId], references: [id])
   name      String
+  semester  Int?
   trainerId String?
   trainer   Trainer? @relation(fields: [trainerId], references: [id])
   createdAt DateTime @default(now())
@@ -303,6 +309,13 @@ model TrainerInvoice {
   notes        String?       @db.Text
   submittedAt  DateTime      @default(now())
   decidedAt    DateTime?
+
+  pdfUrl              String?
+  approvedAmount      Int?
+  deductionAmount     Int?
+  deductionReason     String?  @db.Text
+  paymentTimelineDays Int?
+  approvalPdfUrl      String?
 
   lineItems TrainerInvoiceSession[]
 
@@ -451,6 +464,12 @@ model SiteSettings {
   companyContactName  String @default("Lohit Kumar")
   companyContactPhone String @default("+91 99729 34418")
   companyContactEmail String @default("info@learnbeingforward.in")
+
+  companyBankAccountName   String?
+  companyBankAccountNumber String?
+  companyBankIfsc          String?
+  companyBankName          String?
+  companyGstNumber         String?
 }
 
 model CollegeContract {
@@ -487,6 +506,7 @@ model CollegeInvoice {
   status        RequestStatus   @default(PENDING)
   submittedAt   DateTime        @default(now())
   decidedAt     DateTime?
+  pdfUrl        String?
 
   @@index([contractId])
   @@index([status])

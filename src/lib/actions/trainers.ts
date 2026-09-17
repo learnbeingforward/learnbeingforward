@@ -101,6 +101,10 @@ export async function updateTrainerProfile(
   const phone = String(formData.get("phone") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
   const cvUrl = String(formData.get("cvUrl") ?? "").trim();
+  const bankAccountName = String(formData.get("bankAccountName") ?? "").trim();
+  const bankAccountNumber = String(formData.get("bankAccountNumber") ?? "").trim();
+  const bankIfsc = String(formData.get("bankIfsc") ?? "").trim();
+  const bankName = String(formData.get("bankName") ?? "").trim();
 
   await prisma.trainer.update({
     where: { id: session.user.trainerId },
@@ -108,9 +112,41 @@ export async function updateTrainerProfile(
       phone: phone || null,
       bio: bio || null,
       cvUrl: cvUrl || null,
+      bankAccountName: bankAccountName || null,
+      bankAccountNumber: bankAccountNumber || null,
+      bankIfsc: bankIfsc || null,
+      bankName: bankName || null,
     },
   });
 
   revalidatePath("/lms/trainer");
+  return { ok: true };
+}
+
+export type ResetTrainerPasswordState = { ok: boolean; error?: string } | null;
+
+export async function resetTrainerPassword(
+  _prevState: ResetTrainerPasswordState,
+  formData: FormData
+): Promise<ResetTrainerPasswordState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const trainerId = String(formData.get("trainerId") ?? "").trim();
+  const newPassword = String(formData.get("newPassword") ?? "").trim();
+
+  if (!trainerId) return { ok: false, error: "Select a trainer." };
+  if (newPassword.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
+
+  const user = await prisma.user.findFirst({ where: { trainerId } });
+  if (!user) return { ok: false, error: "This trainer doesn't have a login yet." };
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10) },
+  });
+
   return { ok: true };
 }

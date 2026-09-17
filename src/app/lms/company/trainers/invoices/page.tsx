@@ -1,9 +1,10 @@
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { decideTrainerInvoice } from "@/lib/actions/trainer-invoices";
+import { DecideTrainerInvoiceForm } from "@/components/lms/DecideTrainerInvoiceForm";
 import { format } from "date-fns";
 
 export default async function CompanyTrainerInvoicesPage() {
@@ -47,18 +48,18 @@ export default async function CompanyTrainerInvoicesPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       Submitted {format(inv.submittedAt, "MMM d, yyyy")}
                     </p>
+                    {inv.pdfUrl && (
+                      <Link
+                        href={inv.pdfUrl}
+                        target="_blank"
+                        className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                      >
+                        <FileText className="size-3.5" /> View Invoice PDF
+                      </Link>
+                    )}
                   </div>
-                  <div className="flex shrink-0 gap-2">
-                    <form action={decideTrainerInvoice.bind(null, inv.id, true)}>
-                      <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                        Approve
-                      </Button>
-                    </form>
-                    <form action={decideTrainerInvoice.bind(null, inv.id, false)}>
-                      <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                        Reject
-                      </Button>
-                    </form>
+                  <div className="shrink-0">
+                    <DecideTrainerInvoiceForm invoiceId={inv.id} totalAmount={inv.totalAmount} />
                   </div>
                 </div>
                 <div className="mt-3 space-y-1 border-t border-border pt-3">
@@ -83,9 +84,20 @@ export default async function CompanyTrainerInvoicesPage() {
           <div className="divide-y divide-border">
             {decided.map((inv) => (
               <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <p className="text-sm text-indigo">
-                  {inv.trainer.name} — ₹{inv.totalAmount}
-                </p>
+                <div>
+                  <p className="text-sm text-indigo">
+                    {inv.trainer.name} — ₹{inv.approvedAmount ?? inv.totalAmount}
+                  </p>
+                  {inv.approvalPdfUrl && (
+                    <Link
+                      href={inv.approvalPdfUrl}
+                      target="_blank"
+                      className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                    >
+                      <FileText className="size-3.5" /> View Decision PDF
+                    </Link>
+                  )}
+                </div>
                 <Badge
                   className={
                     inv.status === "APPROVED"

@@ -3,13 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-
-function combineDateAndTime(date: Date, time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  const combined = new Date(date);
-  combined.setHours(hours || 0, minutes || 0, 0, 0);
-  return combined;
-}
+import { combineDateAndTime } from "@/lib/attendance";
 
 export async function submitSessionAttendance(sessionId: string, formData: FormData) {
   const session = await auth();

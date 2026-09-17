@@ -28,6 +28,8 @@ export async function updateStudentProfile(
   const usn = String(formData.get("usn") ?? "").trim();
   const fatherName = String(formData.get("fatherName") ?? "").trim();
   const branch = String(formData.get("branch") ?? "").trim();
+  const semesterInput = String(formData.get("semester") ?? "").trim();
+  const semester = semesterInput ? Number.parseInt(semesterInput, 10) : null;
   const photoUrl = String(formData.get("photoUrl") ?? "").trim();
   const cvUrl = String(formData.get("cvUrl") ?? "").trim();
 
@@ -44,6 +46,7 @@ export async function updateStudentProfile(
       usn: usn || null,
       fatherName: fatherName || null,
       branch: branch || null,
+      semester,
       photoUrl: photoUrl || null,
       avatarSeed: current?.avatarSeed ?? `${slugify(name)}-${Date.now()}`,
       cvUrl: cvUrl || null,
@@ -101,6 +104,11 @@ export async function updateCompanyProfile(
 
   const name = String(formData.get("name") ?? "").trim();
   const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+  const companyBankAccountName = String(formData.get("companyBankAccountName") ?? "").trim();
+  const companyBankAccountNumber = String(formData.get("companyBankAccountNumber") ?? "").trim();
+  const companyBankIfsc = String(formData.get("companyBankIfsc") ?? "").trim();
+  const companyBankName = String(formData.get("companyBankName") ?? "").trim();
+  const companyGstNumber = String(formData.get("companyGstNumber") ?? "").trim();
 
   if (!name) {
     return { ok: false, error: "Name is required." };
@@ -113,6 +121,25 @@ export async function updateCompanyProfile(
       name,
       photoUrl: photoUrl || null,
       avatarSeed: current?.avatarSeed ?? `${slugify(name)}-${Date.now()}`,
+    },
+  });
+
+  await prisma.siteSettings.upsert({
+    where: { id: "singleton" },
+    update: {
+      companyBankAccountName: companyBankAccountName || null,
+      companyBankAccountNumber: companyBankAccountNumber || null,
+      companyBankIfsc: companyBankIfsc || null,
+      companyBankName: companyBankName || null,
+      companyGstNumber: companyGstNumber || null,
+    },
+    create: {
+      id: "singleton",
+      companyBankAccountName: companyBankAccountName || null,
+      companyBankAccountNumber: companyBankAccountNumber || null,
+      companyBankIfsc: companyBankIfsc || null,
+      companyBankName: companyBankName || null,
+      companyGstNumber: companyGstNumber || null,
     },
   });
 

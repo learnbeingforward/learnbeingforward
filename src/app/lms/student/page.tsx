@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, XCircle, BookOpen, Rocket, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, BookOpen, Rocket, Clock, CalendarDays } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { format } from "date-fns";
 
 export default async function StudentDashboardPage() {
   const session = await auth();
@@ -30,6 +31,17 @@ export default async function StudentDashboardPage() {
     }),
   ]);
 
+  const batchIds = enrollments.map((e) => e.batchId).filter((id): id is string => id !== null);
+  const upcomingSessions =
+    batchIds.length > 0
+      ? await prisma.trainingSession.findMany({
+          where: { batchId: { in: batchIds }, attendanceTaken: false, sessionDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+          include: { batch: { include: { course: true } }, courseModule: true },
+          orderBy: [{ sessionDate: "asc" }, { slotNumber: "asc" }],
+          take: 5,
+        })
+      : [];
+
   return (
     <DashboardShell title="Student Dashboard" subtitle="Welcome back" navLinks={navLinks}>
       {student?.studentStatus === "PENDING_APPROVAL" && (
@@ -39,6 +51,26 @@ export default async function StudentDashboardPage() {
             Your registration is awaiting company approval. You&apos;ll be able to request courses
             once it&apos;s approved — this usually doesn&apos;t take long.
           </span>
+        </div>
+      )}
+
+      {upcomingSessions.length > 0 && (
+        <div className="mb-6 rounded-xl border border-border bg-white p-5">
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-indigo">
+            <CalendarDays className="size-4" /> Upcoming Classes
+          </p>
+          <div className="space-y-2">
+            {upcomingSessions.map((s) => (
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-cream px-3 py-2 text-sm">
+                <span className="text-indigo">
+                  {s.batch.course.name} &middot; {s.courseModule?.title ?? s.topic ?? "Topic TBD"}
+                </span>
+                <span className="text-muted-foreground">
+                  {format(s.sessionDate, "EEE, MMM d")} &middot; {s.startTime}–{s.endTime}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

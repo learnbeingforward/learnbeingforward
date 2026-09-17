@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { auth } from "@/auth";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -10,23 +12,57 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCollegeStudentRows } from "@/lib/college-data";
-import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { BackLink } from "@/components/lms/BackLink";
+import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
 
-export default async function CollegeStudentsPage() {
+export default async function CollegeStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; branch?: string; semester?: string }>;
+}) {
+  const { view, branch, semester } = await searchParams;
   const session = await auth();
   const collegeId = session!.user.collegeId;
 
-  const { rows, students } = await getCollegeStudentRows(collegeId);
-  const cvByStudentId = new Map(students.map((s) => [s.id, s.cvUrl]));
+  const { rows } = await getCollegeStudentRows(collegeId);
 
-  return (
-    <DashboardShell title="Students" subtitle="Enrolled students" navLinks={navLinks}>
-      <div className="rounded-xl border border-border bg-white">
-        {rows.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">
-            No students enrolled yet.
-          </p>
-        ) : (
+  if (rows.length === 0) {
+    return (
+      <DashboardShell title="Students" subtitle="Enrolled students" navLinks={navLinks}>
+        <p className="rounded-xl border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
+          No students enrolled yet.
+        </p>
+      </DashboardShell>
+    );
+  }
+
+  if (view === "all") {
+    return (
+      <DashboardShell title="All Students" subtitle="Search across your college" navLinks={navLinks}>
+        <BackLink href="/lms/college/students" label="Back to browse by branch" />
+        <StudentSearchTable
+          rows={rows.map((r) => ({
+            id: `${r.studentId}-${r.enrollmentId}`,
+            name: r.studentName,
+            email: r.studentEmail,
+            branch: r.branch,
+            semester: r.semester,
+            courseName: r.courseName,
+            pct: r.pct,
+            eligible: r.eligible,
+            cvUrl: r.cvUrl,
+          }))}
+        />
+      </DashboardShell>
+    );
+  }
+
+  if (branch && semester) {
+    const scoped = rows.filter((r) => (r.branch ?? "Unspecified") === branch && String(r.semester ?? "Unspecified") === semester);
+    return (
+      <DashboardShell title={`${branch} — Sem ${semester}`} subtitle="Students" navLinks={navLinks}>
+        <BackLink href={`/lms/college/students?branch=${encodeURIComponent(branch)}`} label="Back to semesters" />
+        <div className="rounded-xl border border-border bg-white">
           <Table>
             <TableHeader>
               <TableRow>
@@ -38,41 +74,90 @@ export default async function CollegeStudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row, i) => {
-                const cvUrl = cvByStudentId.get(row.studentId);
-                return (
-                  <TableRow key={`${row.studentId}-${i}`}>
-                    <TableCell className="font-medium text-indigo">{row.studentName}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.courseName}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {row.present}/{row.total} ({row.pct}%)
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          row.eligible
-                            ? "bg-green-100 text-green-700 hover:bg-green-100"
-                            : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                        }
-                      >
-                        {row.eligible ? "Eligible" : "Not Yet Eligible"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {cvUrl ? (
-                        <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo underline">
-                          View CV
-                        </a>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {scoped.map((row, i) => (
+                <TableRow key={`${row.studentId}-${i}`}>
+                  <TableCell className="font-medium text-indigo">{row.studentName}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.courseName}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {row.present}/{row.total} ({row.pct}%)
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        row.eligible
+                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                          : "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                      }
+                    >
+                      {row.eligible ? "Eligible" : "Not Yet Eligible"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {row.cvUrl ? (
+                      <a href={row.cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo underline">
+                        View CV
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
-        )}
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  if (branch) {
+    const semesters = new Map<string, number>();
+    for (const r of rows) {
+      if ((r.branch ?? "Unspecified") !== branch) continue;
+      const key = String(r.semester ?? "Unspecified");
+      semesters.set(key, (semesters.get(key) ?? 0) + 1);
+    }
+    return (
+      <DashboardShell title={branch} subtitle="Semesters" navLinks={navLinks}>
+        <BackLink href="/lms/college/students" label="Back to all branches" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from(semesters.entries()).map(([sem, count]) => (
+            <Link
+              key={sem}
+              href={`/lms/college/students?branch=${encodeURIComponent(branch)}&semester=${sem}`}
+              className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+            >
+              <p className="font-semibold text-indigo">{sem === "Unspecified" ? "Unspecified Semester" : `Semester ${sem}`}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{count} students</p>
+            </Link>
+          ))}
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  const branches = new Map<string, number>();
+  for (const r of rows) {
+    const key = r.branch ?? "Unspecified";
+    branches.set(key, (branches.get(key) ?? 0) + 1);
+  }
+
+  return (
+    <DashboardShell title="Students" subtitle="Browse by branch" navLinks={navLinks}>
+      <Link href="/lms/college/students?view=all" className="mb-6 inline-block text-sm text-indigo underline">
+        View / search all students →
+      </Link>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from(branches.entries()).map(([b, count]) => (
+          <Link
+            key={b}
+            href={`/lms/college/students?branch=${encodeURIComponent(b)}`}
+            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+          >
+            <p className="font-semibold text-indigo">{b}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{count} students</p>
+          </Link>
+        ))}
       </div>
     </DashboardShell>
   );

@@ -3,10 +3,83 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { ManualBatchBuilder } from "@/components/lms/ManualBatchBuilder";
+import { BackLink } from "@/components/lms/BackLink";
+import { DeleteButton } from "@/components/lms/DeleteButton";
+import { AddToBatchForm } from "@/components/lms/AddToBatchForm";
+import { Button } from "@/components/ui/button";
+import { removeStudentFromBatch, deleteBatch } from "@/lib/actions/batches";
+import { MANUAL_BATCH_CAP } from "@/lib/batching";
 
-export default async function CollegeBatchesPage() {
+export default async function CollegeBatchesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ batchId?: string }>;
+}) {
+  const { batchId } = await searchParams;
   const session = await auth();
   const collegeId = session!.user.collegeId!;
+
+  if (batchId) {
+    const batch = await prisma.batch.findUnique({
+      where: { id: batchId },
+      include: { course: true, enrollments: { include: { student: true, attendanceRecords: true } } },
+    });
+    if (!batch || batch.collegeId !== collegeId) {
+      return (
+        <DashboardShell title="Batch" subtitle="Not found" navLinks={navLinks}>
+          <p className="text-sm text-muted-foreground">This batch doesn&apos;t belong to your college.</p>
+        </DashboardShell>
+      );
+    }
+
+    const candidates = await prisma.enrollment.findMany({
+      where: { collegeId, courseId: batch.courseId, batchId: null },
+      include: { student: true },
+    });
+
+    return (
+      <DashboardShell title={batch.name} subtitle={batch.course.name} navLinks={navLinks}>
+        <BackLink href="/lms/college/batches" label="Back to all batches" />
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white p-6">
+          <p className="text-sm text-muted-foreground">
+            {batch.enrollments.length}/{MANUAL_BATCH_CAP} students
+            {batch.semester && ` · Sem ${batch.semester}`}
+          </p>
+          <form action={deleteBatch.bind(null, batch.id)}>
+            <Button type="submit" size="sm" variant="outline" className="border-destructive text-destructive">
+              Delete Batch
+            </Button>
+          </form>
+        </div>
+
+        {candidates.length > 0 && (
+          <div className="mb-6">
+            <AddToBatchForm batchId={batch.id} candidates={candidates.map((c) => ({ id: c.id, studentName: c.student.name }))} />
+          </div>
+        )}
+
+        <div className="rounded-xl border border-border bg-white">
+          <div className="divide-y divide-border">
+            {batch.enrollments.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div>
+                  <p className="text-sm font-medium text-indigo">{e.student.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {e.student.email} &middot; {e.attendanceRecords.length} classes recorded
+                  </p>
+                </div>
+                <DeleteButton action={removeStudentFromBatch.bind(null, e.id)} />
+              </div>
+            ))}
+            {batch.enrollments.length === 0 && (
+              <p className="p-8 text-center text-sm text-muted-foreground">No students in this batch yet.</p>
+            )}
+          </div>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   const [unbatched, batches] = await Promise.all([
     prisma.enrollment.findMany({
@@ -27,13 +100,14 @@ export default async function CollegeBatchesPage() {
     collegeName: e.college?.name ?? "—",
     courseId: e.courseId,
     courseName: e.course.name,
+    semester: e.student.semester,
   }));
 
   return (
     <DashboardShell title="Batches" subtitle="Group your students into class batches" navLinks={navLinks}>
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Once your students are approved into a course, group them here into batches of up to 30 so
-        the company can assign a trainer and schedule classes.
+        Once your students are approved into a course, group them here into batches of up to{" "}
+        {MANUAL_BATCH_CAP} so the company can assign a trainer and schedule classes.
       </p>
 
       <div className="mb-8">
@@ -52,14 +126,18 @@ export default async function CollegeBatchesPage() {
         ) : (
           <div className="divide-y divide-border">
             {batches.map((batch) => (
-              <div key={batch.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <p className="text-sm text-indigo">
+              <a
+                key={batch.id}
+                href={`/lms/college/batches?batchId=${batch.id}`}
+                className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-cream"
+              >
+                <p className="text-sm text-indigo underline">
                   {batch.name} &middot; {batch.enrollments.length} students
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {batch.trainer ? `Trainer: ${batch.trainer.name}` : "Trainer not yet assigned"}
                 </p>
-              </div>
+              </a>
             ))}
           </div>
         )}

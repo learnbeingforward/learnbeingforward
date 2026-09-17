@@ -105,6 +105,14 @@ export function AddStudentForm({ colleges }: { colleges?: College[] }) {
           <Label htmlFor="fatherName">Father&apos;s Name (optional)</Label>
           <Input id="fatherName" name="fatherName" className="mt-1.5" />
         </div>
+        <div>
+          <Label htmlFor="branch">Branch (optional)</Label>
+          <Input id="branch" name="branch" className="mt-1.5" placeholder="e.g. Computer Science" />
+        </div>
+        <div>
+          <Label htmlFor="semester">Semester (optional)</Label>
+          <Input id="semester" name="semester" type="number" min="1" max="8" className="mt-1.5" />
+        </div>
 
         {colleges && (
           <div className="sm:col-span-2">

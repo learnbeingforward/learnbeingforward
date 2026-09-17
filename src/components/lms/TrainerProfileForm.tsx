@@ -16,6 +16,10 @@ type Trainer = {
   bio: string | null;
   cvUrl: string | null;
   hourlyRate: number;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  bankIfsc: string | null;
+  bankName: string | null;
 };
 
 export function TrainerProfileForm({ trainer }: { trainer: Trainer }) {
@@ -51,6 +55,28 @@ export function TrainerProfileForm({ trainer }: { trainer: Trainer }) {
       </div>
 
       <FileUploadField name="cvUrl" label="CV / Resume (optional)" category="cv" defaultUrl={trainer.cvUrl} />
+
+      <div>
+        <p className="mb-3 text-sm font-semibold text-indigo">Bank Details (for invoice payments)</p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="bankAccountName">Account Holder Name (optional)</Label>
+            <Input id="bankAccountName" name="bankAccountName" defaultValue={trainer.bankAccountName ?? ""} className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="bankAccountNumber">Account Number (optional)</Label>
+            <Input id="bankAccountNumber" name="bankAccountNumber" defaultValue={trainer.bankAccountNumber ?? ""} className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="bankIfsc">IFSC Code (optional)</Label>
+            <Input id="bankIfsc" name="bankIfsc" defaultValue={trainer.bankIfsc ?? ""} className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="bankName">Bank Name (optional)</Label>
+            <Input id="bankName" name="bankName" defaultValue={trainer.bankName ?? ""} className="mt-1.5" />
+          </div>
+        </div>
+      </div>
 
       {state?.ok && (
         <p className="flex items-center gap-1.5 text-sm text-green-700">

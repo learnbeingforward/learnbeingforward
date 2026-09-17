@@ -46,6 +46,7 @@ yarn-error.log*
 /public/uploads/cv/
 /public/uploads/content/
 /public/uploads/photo/
+/public/uploads/invoices/
 
 # vercel
 .vercel

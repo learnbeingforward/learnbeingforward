@@ -23,6 +23,7 @@ export default async function StudentProfilePage() {
             usn: student.usn,
             fatherName: student.fatherName,
             branch: student.branch,
+            semester: student.semester,
             photoUrl: student.photoUrl,
             cvUrl: student.cvUrl,
           }}

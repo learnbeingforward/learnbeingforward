@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -99,6 +101,15 @@ export default async function CollegeContractsPage() {
                     {inv.totalDays && ` · ${inv.totalDays} days`} &middot;{" "}
                     <span className="font-semibold text-indigo">₹{inv.totalAmount}</span>
                   </p>
+                  {inv.pdfUrl && (
+                    <Link
+                      href={inv.pdfUrl}
+                      target="_blank"
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                    >
+                      <FileText className="size-3.5" /> View Invoice PDF
+                    </Link>
+                  )}
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <form action={decideCollegeInvoice.bind(null, inv.id, true)}>
@@ -140,9 +151,20 @@ export default async function CollegeContractsPage() {
             ))}
             {decidedInvoices.map((inv) => (
               <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <p className="text-sm text-indigo">
-                  {inv.contract.course.name} — Invoice ₹{inv.totalAmount}
-                </p>
+                <div>
+                  <p className="text-sm text-indigo">
+                    {inv.contract.course.name} — Invoice ₹{inv.totalAmount}
+                  </p>
+                  {inv.pdfUrl && (
+                    <Link
+                      href={inv.pdfUrl}
+                      target="_blank"
+                      className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                    >
+                      <FileText className="size-3.5" /> View Invoice PDF
+                    </Link>
+                  )}
+                </div>
                 <Badge
                   className={
                     inv.status === "APPROVED"

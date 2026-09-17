@@ -7,12 +7,24 @@ import { ChangePasswordForm } from "@/components/lms/ChangePasswordForm";
 
 export default async function CompanyProfilePage() {
   const session = await auth();
-  const admin = await prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } });
+  const [admin, settings] = await Promise.all([
+    prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } }),
+    prisma.siteSettings.findUnique({ where: { id: "singleton" } }),
+  ]);
 
   return (
     <DashboardShell title="Profile" subtitle="Your account" navLinks={navLinks}>
       <div className="space-y-8">
-        <CompanyProfileForm admin={{ name: admin.name, email: admin.email, photoUrl: admin.photoUrl }} />
+        <CompanyProfileForm
+          admin={{ name: admin.name, email: admin.email, photoUrl: admin.photoUrl }}
+          bank={{
+            companyBankAccountName: settings?.companyBankAccountName ?? null,
+            companyBankAccountNumber: settings?.companyBankAccountNumber ?? null,
+            companyBankIfsc: settings?.companyBankIfsc ?? null,
+            companyBankName: settings?.companyBankName ?? null,
+            companyGstNumber: settings?.companyGstNumber ?? null,
+          }}
+        />
 
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">

@@ -209,7 +209,7 @@ async function main() {
     { label: "Courses", href: "/courses" },
     { label: "Technologies", href: "/technologies" },
     { label: "About", href: "/about" },
-    { label: "Employees", href: "/team" },
+    { label: "Team", href: "/team" },
     { label: "Contact", href: "/contact" },
   ];
   const existingLinkCount = await prisma.footerLink.count();

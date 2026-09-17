@@ -16,6 +16,7 @@ type Student = {
   usn: string | null;
   fatherName: string | null;
   branch: string | null;
+  semester: number | null;
   photoUrl: string | null;
   cvUrl: string | null;
 };
@@ -47,6 +48,10 @@ export function StudentProfileForm({ student }: { student: Student }) {
         <div>
           <Label htmlFor="branch">Branch (optional)</Label>
           <Input id="branch" name="branch" defaultValue={student.branch ?? ""} className="mt-1.5" placeholder="e.g. Computer Science" />
+        </div>
+        <div>
+          <Label htmlFor="semester">Semester (optional)</Label>
+          <Input id="semester" name="semester" type="number" min="1" max="8" defaultValue={student.semester ?? ""} className="mt-1.5" />
         </div>
         <div>
           <Label htmlFor="usn">USN / Roll Number (optional)</Label>

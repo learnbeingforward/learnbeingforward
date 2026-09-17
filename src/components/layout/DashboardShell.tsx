@@ -1,6 +1,6 @@
 import { Logo } from "@/components/brand/Logo";
 import { SignOutButton } from "@/components/auth/SignOutButton";
-import { LmsNav, type LmsNavLink } from "@/components/layout/LmsNav";
+import { LmsNav, type LmsNavEntry } from "@/components/layout/LmsNav";
 
 export function DashboardShell({
   title,
@@ -10,7 +10,7 @@ export function DashboardShell({
 }: {
   title: string;
   subtitle: string;
-  navLinks?: LmsNavLink[];
+  navLinks?: LmsNavEntry[];
   children: React.ReactNode;
 }) {
   return (

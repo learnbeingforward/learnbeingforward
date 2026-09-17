@@ -10,8 +10,15 @@ import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateCompanyProfile, type UpdateProfileState } from "@/lib/actions/profile";
 
 type Admin = { name: string; email: string; photoUrl: string | null };
+type CompanyBank = {
+  companyBankAccountName: string | null;
+  companyBankAccountNumber: string | null;
+  companyBankIfsc: string | null;
+  companyBankName: string | null;
+  companyGstNumber: string | null;
+};
 
-export function CompanyProfileForm({ admin }: { admin: Admin }) {
+export function CompanyProfileForm({ admin, bank }: { admin: Admin; bank: CompanyBank }) {
   const [state, formAction, isPending] = useActionState<UpdateProfileState, FormData>(
     updateCompanyProfile,
     null
@@ -34,6 +41,44 @@ export function CompanyProfileForm({ admin }: { admin: Admin }) {
       </div>
 
       <FileUploadField name="photoUrl" label="Photo (optional)" category="photo" defaultUrl={admin.photoUrl} />
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+          Bank Details (auto-included on college invoices)
+        </h3>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="companyBankAccountName">Account Holder (optional)</Label>
+            <Input
+              id="companyBankAccountName"
+              name="companyBankAccountName"
+              defaultValue={bank.companyBankAccountName ?? ""}
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="companyBankName">Bank Name (optional)</Label>
+            <Input id="companyBankName" name="companyBankName" defaultValue={bank.companyBankName ?? ""} className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="companyBankAccountNumber">Account Number (optional)</Label>
+            <Input
+              id="companyBankAccountNumber"
+              name="companyBankAccountNumber"
+              defaultValue={bank.companyBankAccountNumber ?? ""}
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="companyBankIfsc">IFSC (optional)</Label>
+            <Input id="companyBankIfsc" name="companyBankIfsc" defaultValue={bank.companyBankIfsc ?? ""} className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="companyGstNumber">GST Number (optional)</Label>
+            <Input id="companyGstNumber" name="companyGstNumber" defaultValue={bank.companyGstNumber ?? ""} className="mt-1.5" />
+          </div>
+        </div>
+      </div>
 
       {state?.ok && (
         <p className="flex items-center gap-1.5 text-sm text-green-700">

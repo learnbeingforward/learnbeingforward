@@ -3,10 +3,11 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import { PasswordResetRow } from "@/components/lms/PasswordResetRow";
+import { ResetTrainerPasswordForm } from "@/components/lms/ResetTrainerPasswordForm";
 import { format } from "date-fns";
 
 export default async function CompanyPasswordResetsPage() {
-  const [pending, decided] = await Promise.all([
+  const [pending, decided, trainers] = await Promise.all([
     prisma.passwordResetRequest.findMany({
       where: { status: "PENDING" },
       orderBy: { requestedAt: "asc" },
@@ -16,6 +17,7 @@ export default async function CompanyPasswordResetsPage() {
       orderBy: { decidedAt: "desc" },
       take: 15,
     }),
+    prisma.trainer.findMany({ where: { loginUser: { isNot: null } }, orderBy: { name: "asc" } }),
   ]);
 
   return (
@@ -40,6 +42,13 @@ export default async function CompanyPasswordResetsPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+          Reset a Trainer&apos;s Password
+        </h2>
+        <ResetTrainerPasswordForm trainers={trainers} />
       </div>
 
       {decided.length > 0 && (
