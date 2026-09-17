@@ -38,8 +38,14 @@ yarn-error.log*
 /prisma/dev.db
 /prisma/dev.db-journal
 
-# uploaded files (CVs, trainer content) — stored on the server's local disk
-/public/uploads/
+# uploaded files (CVs, photos, trainer-authored content) — runtime user uploads,
+# stored on the server's local disk, not checked in. course-content is NOT listed
+# here — those PDFs are static seed content from scripts/generate-course-content.ts
+# and need to ship with the app so they exist on the production server after a deploy.
+# (A parent-folder ignore can't be selectively un-ignored in gitignore, hence per-subfolder.)
+/public/uploads/cv/
+/public/uploads/content/
+/public/uploads/photo/
 
 # vercel
 .vercel
