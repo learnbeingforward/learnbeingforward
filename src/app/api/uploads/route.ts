@@ -10,9 +10,13 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
   ".pptx": "ppt",
   ".doc": "doc",
   ".docx": "doc",
+  ".jpg": "image",
+  ".jpeg": "image",
+  ".png": "image",
+  ".webp": "image",
 };
 const MAX_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_CATEGORIES = new Set(["cv", "content"]);
+const ALLOWED_CATEGORIES = new Set(["cv", "content", "photo"]);
 
 function sanitizeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9.\-]/g, "_").slice(-100);
@@ -42,9 +46,12 @@ export async function POST(request: Request) {
   const fileType = ALLOWED_EXTENSIONS[ext];
   if (!fileType) {
     return NextResponse.json(
-      { error: "Only PDF, PPT, and Word files are allowed." },
+      { error: "Only PDF, PPT, Word, and image (JPG/PNG/WebP) files are allowed." },
       { status: 400 }
     );
+  }
+  if (category === "photo" && fileType !== "image") {
+    return NextResponse.json({ error: "Profile photos must be an image file." }, { status: 400 });
   }
 
   const uploadDir = path.join(process.cwd(), "public", "uploads", category);

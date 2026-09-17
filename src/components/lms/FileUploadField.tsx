@@ -13,7 +13,7 @@ export function FileUploadField({
 }: {
   name: string;
   label: string;
-  category: "cv" | "content";
+  category: "cv" | "content" | "photo";
   defaultUrl?: string | null;
   typeFieldName?: string;
 }) {
@@ -66,7 +66,7 @@ export function FileUploadField({
         <input
           id={`${name}-file`}
           type="file"
-          accept=".pdf,.ppt,.pptx,.doc,.docx"
+          accept={category === "photo" ? ".jpg,.jpeg,.png,.webp" : ".pdf,.ppt,.pptx,.doc,.docx"}
           className="hidden"
           onChange={handleChange}
         />

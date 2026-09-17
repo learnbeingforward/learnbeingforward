@@ -7,6 +7,7 @@ import { IconPicker } from "@/components/lms/IconPicker";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -29,12 +30,18 @@ export default async function EditTechnologiesPage() {
           </h2>
           <form action={createTechnology} className="space-y-5 rounded-xl border border-border bg-white p-6">
             <div>
-              <Label htmlFor="name">Technology Name</Label>
+              <Label htmlFor="name">
+                Technology Name
+                <RequiredMark />
+              </Label>
               <Input id="name" name="name" required className="mt-1.5" placeholder="e.g. Kubernetes" />
             </div>
 
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">
+                Category
+                <RequiredMark />
+              </Label>
               <Select name="category" required>
                 <SelectTrigger className="mt-1.5 w-full">
                   <SelectValue placeholder="Select category">
@@ -52,7 +59,10 @@ export default async function EditTechnologiesPage() {
             </div>
 
             <div>
-              <Label>Logo</Label>
+              <Label>
+                Logo
+                <RequiredMark />
+              </Label>
               <div className="mt-1.5">
                 <IconPicker name="iconName" />
               </div>

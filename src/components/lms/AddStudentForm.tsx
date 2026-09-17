@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import {
   Select,
   SelectContent,
@@ -83,25 +84,31 @@ export function AddStudentForm({ colleges }: { colleges?: College[] }) {
     <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="name">Full Name</Label>
+          <Label htmlFor="name">
+            Full Name
+            <RequiredMark />
+          </Label>
           <Input id="name" name="name" required className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">
+            Email
+            <RequiredMark />
+          </Label>
           <Input id="email" name="email" type="email" required className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="usn">USN / Roll Number</Label>
+          <Label htmlFor="usn">USN / Roll Number (optional)</Label>
           <Input id="usn" name="usn" className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="fatherName">Father&apos;s Name</Label>
+          <Label htmlFor="fatherName">Father&apos;s Name (optional)</Label>
           <Input id="fatherName" name="fatherName" className="mt-1.5" />
         </div>
 
         {colleges && (
           <div className="sm:col-span-2">
-            <Label htmlFor="collegeId">College</Label>
+            <Label htmlFor="collegeId">College (optional)</Label>
             <Select name="collegeId">
               <SelectTrigger className="mt-1.5 w-full">
                 <SelectValue placeholder="Select college" />

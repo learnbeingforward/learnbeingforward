@@ -4,6 +4,7 @@ import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,15 +37,24 @@ export default async function EditEmployeesPage() {
           <form action={createTeamMember} className="space-y-5 rounded-xl border border-border bg-white p-6">
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">
+                  Full Name
+                  <RequiredMark />
+                </Label>
                 <Input id="name" name="name" required className="mt-1.5" />
               </div>
               <div>
-                <Label htmlFor="role">Role / Designation</Label>
+                <Label htmlFor="role">
+                  Role / Designation
+                  <RequiredMark />
+                </Label>
                 <Input id="role" name="role" required className="mt-1.5" placeholder="e.g. Full-Stack Trainer" />
               </div>
               <div>
-                <Label htmlFor="experienceYears">Years of Experience</Label>
+                <Label htmlFor="experienceYears">
+                  Years of Experience
+                  <RequiredMark />
+                </Label>
                 <Input id="experienceYears" name="experienceYears" type="number" min="0" required className="mt-1.5" />
               </div>
               <div className="flex items-center gap-2 pt-6">
@@ -54,17 +64,17 @@ export default async function EditEmployeesPage() {
             </div>
 
             <div>
-              <Label htmlFor="background">Background</Label>
+              <Label htmlFor="background">Background (optional)</Label>
               <Textarea id="background" name="background" rows={2} className="mt-1.5" placeholder="Short summary of their expertise" />
             </div>
 
             <div>
-              <Label htmlFor="specialties">Specialties (comma-separated)</Label>
+              <Label htmlFor="specialties">Specialties (optional, comma-separated)</Label>
               <Input id="specialties" name="specialties" className="mt-1.5" placeholder="React, Node.js, MongoDB" />
             </div>
 
             <div>
-              <Label htmlFor="colleges">Colleges Trained At (comma-separated, freelancers only)</Label>
+              <Label htmlFor="colleges">Colleges Trained At (optional, comma-separated, freelancers only)</Label>
               <Input id="colleges" name="colleges" className="mt-1.5" placeholder="RV College of Engineering, PES University" />
             </div>
 

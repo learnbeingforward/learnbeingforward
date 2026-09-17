@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import {
   Select,
   SelectContent,
@@ -71,19 +72,28 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
       </p>
 
       <div>
-        <Label htmlFor="signup-name">Name</Label>
+        <Label htmlFor="signup-name">
+          Name
+          <RequiredMark />
+        </Label>
         <Input id="signup-name" className="mt-1.5" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="signup-email">Email</Label>
+        <Label htmlFor="signup-email">
+          Email
+          <RequiredMark />
+        </Label>
         <Input id="signup-email" type="email" className="mt-1.5" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="signup-password">Password</Label>
+        <Label htmlFor="signup-password">
+          Password
+          <RequiredMark />
+        </Label>
         <Input id="signup-password" type="password" className="mt-1.5" {...register("password")} />
         {errors.password && (
           <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
@@ -91,7 +101,10 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
       </div>
 
       <div>
-        <Label htmlFor="signup-college">College</Label>
+        <Label htmlFor="signup-college">
+          College
+          <RequiredMark />
+        </Label>
         <Controller
           control={control}
           name="collegeId"

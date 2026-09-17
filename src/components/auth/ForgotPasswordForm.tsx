@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import {
   Select,
   SelectContent,
@@ -77,19 +78,28 @@ export function ForgotPasswordForm({ colleges, onBack }: { colleges: College[]; 
       </p>
 
       <div>
-        <Label htmlFor="forgot-name">Name</Label>
+        <Label htmlFor="forgot-name">
+          Name
+          <RequiredMark />
+        </Label>
         <Input id="forgot-name" className="mt-1.5" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="forgot-email">Email</Label>
+        <Label htmlFor="forgot-email">
+          Email
+          <RequiredMark />
+        </Label>
         <Input id="forgot-email" type="email" className="mt-1.5" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="forgot-college">College</Label>
+        <Label htmlFor="forgot-college">
+          College
+          <RequiredMark />
+        </Label>
         <Controller
           control={control}
           name="collegeName"

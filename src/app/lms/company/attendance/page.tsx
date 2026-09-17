@@ -75,6 +75,7 @@ export default async function CompanyAttendancePage() {
                   <TableHead>Trainer</TableHead>
                   <TableHead>Attendance</TableHead>
                   <TableHead>Certificate</TableHead>
+                  <TableHead>CV</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -108,6 +109,20 @@ export default async function CompanyAttendancePage() {
                         >
                           {status === "ISSUED" ? "Issued" : eligible ? "Eligible" : "Not Yet Eligible"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {enrollment.student.cvUrl ? (
+                          <a
+                            href={enrollment.student.cvUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-indigo underline"
+                          >
+                            View CV
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         {status === "ISSUED" ? (

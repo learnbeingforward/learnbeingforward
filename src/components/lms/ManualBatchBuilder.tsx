@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RequiredMark } from "@/components/ui/required-mark";
 import {
   Select,
   SelectContent,
@@ -71,7 +72,10 @@ export function ManualBatchBuilder({
       <div className="grid gap-4 sm:grid-cols-2">
         {!lockedCollegeId && (
           <div>
-            <label className="text-sm font-medium text-indigo">College</label>
+            <label className="text-sm font-medium text-indigo">
+              College
+              <RequiredMark />
+            </label>
             <Select
               name="collegeId"
               value={collegeId}
@@ -99,7 +103,10 @@ export function ManualBatchBuilder({
         {lockedCollegeId && <input type="hidden" name="collegeId" value={lockedCollegeId} />}
 
         <div>
-          <label className="text-sm font-medium text-indigo">Course</label>
+          <label className="text-sm font-medium text-indigo">
+            Course
+            <RequiredMark />
+          </label>
           <Select
             name="courseId"
             value={courseId}

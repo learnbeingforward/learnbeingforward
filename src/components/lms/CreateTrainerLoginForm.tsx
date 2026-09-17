@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { createTrainerAccount, type CreateTrainerState } from "@/lib/actions/trainers";
 
 export function CreateTrainerLoginForm() {
@@ -49,11 +50,17 @@ export function CreateTrainerLoginForm() {
     <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="trainer-name">Full Name</Label>
+          <Label htmlFor="trainer-name">
+            Full Name
+            <RequiredMark />
+          </Label>
           <Input id="trainer-name" name="name" required className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="trainer-email">Login Email</Label>
+          <Label htmlFor="trainer-email">
+            Login Email
+            <RequiredMark />
+          </Label>
           <Input id="trainer-email" name="email" type="email" required className="mt-1.5" />
         </div>
         <div>

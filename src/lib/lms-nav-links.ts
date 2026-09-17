@@ -2,6 +2,8 @@ export const studentNavLinks = [
   { href: "/lms/student", label: "My Dashboard" },
   { href: "/lms/student/attendance", label: "Attendance" },
   { href: "/lms/student/courses", label: "Browse Courses" },
+  { href: "/lms/student/content", label: "Content" },
+  { href: "/lms/student/profile", label: "Profile" },
 ];
 
 export const collegeNavLinks = [
@@ -11,6 +13,8 @@ export const collegeNavLinks = [
   { href: "/lms/college/courses", label: "Courses" },
   { href: "/lms/college/batches", label: "Batches" },
   { href: "/lms/college/queries", label: "Query from Student" },
+  { href: "/lms/college/contracts", label: "Contracts" },
+  { href: "/lms/college/profile", label: "Profile" },
 ];
 
 export const companyNavLinks = [
@@ -22,6 +26,9 @@ export const companyNavLinks = [
   { href: "/lms/company/accounts", label: "Add Account" },
   { href: "/lms/company/manage-accounts", label: "Manage Accounts" },
   { href: "/lms/company/trainers", label: "Trainers" },
+  { href: "/lms/company/course-content", label: "Course Content" },
+  { href: "/lms/company/colleges", label: "Colleges" },
+  { href: "/lms/company/profile", label: "Profile" },
   { href: "/lms/company/edit-site", label: "Edit Site" },
 ];
 

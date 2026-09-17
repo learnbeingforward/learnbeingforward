@@ -36,7 +36,7 @@ export function TrainerProfileForm({ trainer }: { trainer: Trainer }) {
           <Input value={trainer.email ?? ""} disabled className="mt-1.5 bg-cream" />
         </div>
         <div>
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="phone">Phone (optional)</Label>
           <Input id="phone" name="phone" defaultValue={trainer.phone ?? ""} className="mt-1.5" />
         </div>
         <div>
@@ -46,11 +46,11 @@ export function TrainerProfileForm({ trainer }: { trainer: Trainer }) {
       </div>
 
       <div>
-        <Label htmlFor="bio">About You</Label>
+        <Label htmlFor="bio">About You (optional)</Label>
         <Textarea id="bio" name="bio" rows={4} defaultValue={trainer.bio ?? ""} className="mt-1.5" />
       </div>
 
-      <FileUploadField name="cvUrl" label="CV / Resume" category="cv" defaultUrl={trainer.cvUrl} />
+      <FileUploadField name="cvUrl" label="CV / Resume (optional)" category="cv" defaultUrl={trainer.cvUrl} />
 
       {state?.ok && (
         <p className="flex items-center gap-1.5 text-sm text-green-700">

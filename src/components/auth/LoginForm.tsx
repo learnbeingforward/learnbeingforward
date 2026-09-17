@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { loginSchema, type LoginInput } from "@/lib/validation";
 
 type SessionResponse = {
@@ -56,13 +57,19 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
-        <Label htmlFor="login-email">Email</Label>
+        <Label htmlFor="login-email">
+          Email
+          <RequiredMark />
+        </Label>
         <Input id="login-email" type="email" className="mt-1.5" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="login-password">Password</Label>
+        <Label htmlFor="login-password">
+          Password
+          <RequiredMark />
+        </Label>
         <Input id="login-password" type="password" className="mt-1.5" {...register("password")} />
         {errors.password && (
           <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>

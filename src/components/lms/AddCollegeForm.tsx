@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { createCollegeAccount, type CreateAccountState } from "@/lib/actions/accounts";
 
 export function AddCollegeForm() {
@@ -49,19 +50,28 @@ export function AddCollegeForm() {
     <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="collegeName">College / Organization Name</Label>
+          <Label htmlFor="collegeName">
+            College / Organization Name
+            <RequiredMark />
+          </Label>
           <Input id="collegeName" name="collegeName" required className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="contactEmail">College Contact Email</Label>
+          <Label htmlFor="contactEmail">College Contact Email (optional)</Label>
           <Input id="contactEmail" name="contactEmail" type="email" className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="adminName">Admin Contact Name</Label>
+          <Label htmlFor="adminName">
+            Admin Contact Name
+            <RequiredMark />
+          </Label>
           <Input id="adminName" name="adminName" required className="mt-1.5" />
         </div>
         <div>
-          <Label htmlFor="email">Admin Login Email</Label>
+          <Label htmlFor="email">
+            Admin Login Email
+            <RequiredMark />
+          </Label>
           <Input id="email" name="email" type="email" required className="mt-1.5" />
         </div>
       </div>

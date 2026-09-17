@@ -4,6 +4,7 @@ import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Button } from "@/components/ui/button";
 import { createContactProfile, deleteContactProfile } from "@/lib/actions/site-content";
 
@@ -19,19 +20,31 @@ export default async function EditContactsPage() {
           </h2>
           <form action={createContactProfile} className="space-y-5 rounded-xl border border-border bg-white p-6">
             <div>
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">
+                Full Name
+                <RequiredMark />
+              </Label>
               <Input id="name" name="name" required className="mt-1.5" />
             </div>
             <div>
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">
+                Role
+                <RequiredMark />
+              </Label>
               <Input id="role" name="role" required className="mt-1.5" placeholder="e.g. Placement Coordinator" />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                Email
+                <RequiredMark />
+              </Label>
               <Input id="email" name="email" type="email" required className="mt-1.5" />
             </div>
             <div>
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">
+                Phone
+                <RequiredMark />
+              </Label>
               <Input id="phone" name="phone" required className="mt-1.5" placeholder="+91 98765 43210" />
             </div>
             <div>

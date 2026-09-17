@@ -5,6 +5,7 @@ import { getLucideIcon, LUCIDE_CATALOG } from "@/lib/lucide-catalog";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,10 @@ export default async function EditHomePage() {
           </h2>
           <form action={createHomeFeature} className="space-y-5 rounded-xl border border-border bg-white p-6">
             <div>
-              <Label htmlFor="icon">Icon</Label>
+              <Label htmlFor="icon">
+                Icon
+                <RequiredMark />
+              </Label>
               <Select name="icon" required>
                 <SelectTrigger className="mt-1.5 w-full">
                   <SelectValue placeholder="Select icon" />
@@ -43,11 +47,17 @@ export default async function EditHomePage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">
+                Title
+                <RequiredMark />
+              </Label>
               <Input id="title" name="title" required className="mt-1.5" placeholder="e.g. AI & Emerging Tech Training" />
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">
+                Description
+                <RequiredMark />
+              </Label>
               <Textarea id="description" name="description" required rows={3} className="mt-1.5" />
             </div>
             <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">

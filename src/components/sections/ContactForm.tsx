@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Textarea } from "@/components/ui/textarea";
 import { contactFormSchema, type ContactFormInput } from "@/lib/validation";
 
@@ -59,19 +60,28 @@ export function ContactForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-xl border border-border bg-white p-6 sm:p-8">
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">
+          Name
+          <RequiredMark />
+        </Label>
         <Input id="name" className="mt-1.5" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">
+          Email
+          <RequiredMark />
+        </Label>
         <Input id="email" type="email" className="mt-1.5" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div>
-        <Label htmlFor="message">Message</Label>
+        <Label htmlFor="message">
+          Message
+          <RequiredMark />
+        </Label>
         <Textarea id="message" rows={5} className="mt-1.5" {...register("message")} />
         {errors.message && <p className="mt-1 text-xs text-destructive">{errors.message.message}</p>}
       </div>

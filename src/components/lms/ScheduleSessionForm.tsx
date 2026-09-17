@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import {
   Select,
   SelectContent,
@@ -47,7 +48,10 @@ export function ScheduleSessionForm({
     <form action={formAction} className="space-y-6 rounded-xl border border-border bg-white p-6">
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <Label>Batch</Label>
+          <Label>
+            Batch
+            <RequiredMark />
+          </Label>
           <Select name="batchId" value={batchId} onValueChange={(v) => setBatchId(String(v))}>
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue placeholder="Select batch">
@@ -68,7 +72,10 @@ export function ScheduleSessionForm({
         </div>
 
         <div>
-          <Label>Trainer</Label>
+          <Label>
+            Trainer
+            <RequiredMark />
+          </Label>
           <Select name="trainerId" value={trainerId} onValueChange={(v) => setTrainerId(String(v))}>
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue placeholder="Select trainer">
@@ -86,7 +93,10 @@ export function ScheduleSessionForm({
         </div>
 
         <div>
-          <Label htmlFor="sessionDate">Date</Label>
+          <Label htmlFor="sessionDate">
+            Date
+            <RequiredMark />
+          </Label>
           <Input id="sessionDate" name="sessionDate" type="date" required className="mt-1.5" />
         </div>
       </div>
@@ -107,7 +117,10 @@ export function ScheduleSessionForm({
             {slotOn[n] && (
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <div>
-                  <Label>Time</Label>
+                  <Label>
+                    Time
+                    <RequiredMark />
+                  </Label>
                   <Select name={`slot${n}_time`}>
                     <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder="Select time" />
@@ -122,7 +135,7 @@ export function ScheduleSessionForm({
                   </Select>
                 </div>
                 <div>
-                  <Label>Module / Subject</Label>
+                  <Label>Module / Subject (optional)</Label>
                   <Select name={`slot${n}_moduleId`}>
                     <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder="Select module">

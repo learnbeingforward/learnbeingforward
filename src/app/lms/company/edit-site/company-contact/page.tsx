@@ -3,6 +3,7 @@ import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { getSiteSettings } from "@/lib/site-settings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Button } from "@/components/ui/button";
 import { updateSiteSettings } from "@/lib/actions/site-content";
 
@@ -17,7 +18,10 @@ export default async function EditCompanyContactPage() {
       </p>
       <form action={updateSiteSettings} className="max-w-md space-y-5 rounded-xl border border-border bg-white p-6">
         <div>
-          <Label htmlFor="companyContactName">Name</Label>
+          <Label htmlFor="companyContactName">
+            Name
+            <RequiredMark />
+          </Label>
           <Input
             id="companyContactName"
             name="companyContactName"
@@ -27,7 +31,10 @@ export default async function EditCompanyContactPage() {
           />
         </div>
         <div>
-          <Label htmlFor="companyContactPhone">Phone</Label>
+          <Label htmlFor="companyContactPhone">
+            Phone
+            <RequiredMark />
+          </Label>
           <Input
             id="companyContactPhone"
             name="companyContactPhone"
@@ -37,7 +44,10 @@ export default async function EditCompanyContactPage() {
           />
         </div>
         <div>
-          <Label htmlFor="companyContactEmail">Email</Label>
+          <Label htmlFor="companyContactEmail">
+            Email
+            <RequiredMark />
+          </Label>
           <Input
             id="companyContactEmail"
             name="companyContactEmail"

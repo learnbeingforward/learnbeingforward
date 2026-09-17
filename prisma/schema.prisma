@@ -45,6 +45,12 @@ enum StudentStatus {
   ACTIVE
 }
 
+enum ContractType {
+  CSR
+  PER_STUDENT_HOURLY
+  PER_DAY_FLAT
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -58,10 +64,15 @@ model User {
   college      College? @relation(fields: [collegeId], references: [id])
   trainerId    String?  @unique
   trainer      Trainer? @relation(fields: [trainerId], references: [id])
+  photoUrl     String?
+  avatarSeed   String?
+  cvUrl        String?
+  branch       String?
   createdAt    DateTime @default(now())
 
-  enrollments        Enrollment[]
-  enrollmentRequests EnrollmentRequest[]
+  enrollments           Enrollment[]
+  enrollmentRequests    EnrollmentRequest[]
+  contentAccessRequests ContentAccessRequest[]
 }
 
 model Trainer {
@@ -93,6 +104,7 @@ model College {
   enrollmentRequests   EnrollmentRequest[]
   attendanceExceptions AttendanceException[]
   batches              Batch[]
+  contracts            CollegeContract[]
 }
 
 model Course {
@@ -112,6 +124,8 @@ model Course {
   enrollmentRequests EnrollmentRequest[]
   batches            Batch[]
   sessionContents    SessionContent[]
+  courseContents     CourseContent[]
+  contracts          CollegeContract[]
 }
 
 model CourseModule {
@@ -128,8 +142,66 @@ model CourseModule {
 
   trainingSessions TrainingSession[]
   sessionContents  SessionContent[]
+  subModules       CourseSubModule[]
+  courseContents   CourseContent[]
 
   @@index([courseId])
+}
+
+model CourseSubModule {
+  id             String       @id @default(cuid())
+  courseModuleId String
+  courseModule   CourseModule @relation(fields: [courseModuleId], references: [id], onDelete: Cascade)
+  title          String
+  order          Int          @default(0)
+
+  courseContents CourseContent[]
+
+  @@index([courseModuleId])
+}
+
+model CourseContent {
+  id                String           @id @default(cuid())
+  courseId          String
+  course            Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseModuleId    String?
+  courseModule      CourseModule?    @relation(fields: [courseModuleId], references: [id])
+  courseSubModuleId String?
+  courseSubModule   CourseSubModule? @relation(fields: [courseSubModuleId], references: [id])
+  title             String
+  fileUrl           String
+  createdAt         DateTime         @default(now())
+
+  links          ContentLink[]
+  accessRequests ContentAccessRequest[]
+
+  @@index([courseId])
+  @@index([courseModuleId])
+}
+
+model ContentLink {
+  id              String        @id @default(cuid())
+  courseContentId String
+  courseContent   CourseContent @relation(fields: [courseContentId], references: [id], onDelete: Cascade)
+  label           String
+  url             String
+  order           Int           @default(0)
+
+  @@index([courseContentId])
+}
+
+model ContentAccessRequest {
+  id              String        @id @default(cuid())
+  studentId       String
+  student         User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseContentId String
+  courseContent   CourseContent @relation(fields: [courseContentId], references: [id], onDelete: Cascade)
+  status          RequestStatus @default(PENDING)
+  requestedAt     DateTime      @default(now())
+  decidedAt       DateTime?
+
+  @@unique([studentId, courseContentId])
+  @@index([status])
 }
 
 model Enrollment {
@@ -379,4 +451,43 @@ model SiteSettings {
   companyContactName  String @default("Lohit Kumar")
   companyContactPhone String @default("+91 99729 34418")
   companyContactEmail String @default("info@learnbeingforward.in")
+}
+
+model CollegeContract {
+  id                 String        @id @default(cuid())
+  collegeId          String
+  college            College       @relation(fields: [collegeId], references: [id])
+  courseId           String
+  course             Course        @relation(fields: [courseId], references: [id])
+  contractType       ContractType
+  ratePerStudentHour Int?
+  flatRatePerDay     Int?
+  minStudents        Int           @default(100)
+  totalDays          Int
+  startDate          DateTime
+  endDate            DateTime
+  status             RequestStatus @default(PENDING)
+  requestedAt        DateTime      @default(now())
+  decidedAt          DateTime?
+
+  invoices CollegeInvoice[]
+
+  @@index([collegeId])
+  @@index([status])
+}
+
+model CollegeInvoice {
+  id            String          @id @default(cuid())
+  contractId    String
+  contract      CollegeContract @relation(fields: [contractId], references: [id])
+  totalStudents Int
+  totalHours    Int?
+  totalDays     Int?
+  totalAmount   Int
+  status        RequestStatus   @default(PENDING)
+  submittedAt   DateTime        @default(now())
+  decidedAt     DateTime?
+
+  @@index([contractId])
+  @@index([status])
 }

@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { resetAccountPassword, type ResetAccountResult } from "@/lib/actions/password-resets";
 
 export function ResetAccountForm() {
@@ -17,14 +18,20 @@ export function ResetAccountForm() {
     <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="reset-email">Account email</Label>
+          <Label htmlFor="reset-email">
+            Account email
+            <RequiredMark />
+          </Label>
           <Input id="reset-email" name="email" type="email" required className="mt-1.5" />
           <p className="mt-1 text-xs text-muted-foreground">
             Works for any account — student, college admin, or company.
           </p>
         </div>
         <div>
-          <Label htmlFor="reset-password">New password</Label>
+          <Label htmlFor="reset-password">
+            New password
+            <RequiredMark />
+          </Label>
           <Input id="reset-password" name="newPassword" minLength={8} required className="mt-1.5" />
         </div>
       </div>

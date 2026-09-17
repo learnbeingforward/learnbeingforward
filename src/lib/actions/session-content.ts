@@ -12,7 +12,12 @@ async function requireTrainer() {
   return session.user.trainerId;
 }
 
-export async function createSessionContent(formData: FormData) {
+export type CreateSessionContentState = { ok: boolean; error?: string } | null;
+
+export async function createSessionContent(
+  _prevState: CreateSessionContentState,
+  formData: FormData
+): Promise<CreateSessionContentState> {
   const trainerId = await requireTrainer();
 
   const title = String(formData.get("title") ?? "").trim();
@@ -22,23 +27,24 @@ export async function createSessionContent(formData: FormData) {
   const fileUrl = String(formData.get("fileUrl") ?? "").trim();
   const fileType = String(formData.get("fileType") ?? "").trim();
 
-  if (!title || !fileUrl) {
-    throw new Error("Title and a file upload are required.");
+  if (!title || !description || !courseId || !courseModuleId || !fileUrl) {
+    return { ok: false, error: "Please fill in all fields and attach a file before submitting." };
   }
 
   await prisma.sessionContent.create({
     data: {
       trainerId,
       title,
-      description: description || null,
-      courseId: courseId || null,
-      courseModuleId: courseModuleId || null,
+      description,
+      courseId,
+      courseModuleId,
       fileUrl,
       fileType: fileType || "pdf",
     },
   });
 
   revalidatePath("/lms/trainer/content");
+  return { ok: true };
 }
 
 export async function deleteSessionContent(contentId: string) {

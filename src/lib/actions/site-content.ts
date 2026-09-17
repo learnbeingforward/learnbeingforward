@@ -96,7 +96,7 @@ export async function createCourseModule(formData: FormData) {
     _max: { order: true },
   });
 
-  await prisma.courseModule.create({
+  const created = await prisma.courseModule.create({
     data: {
       courseId,
       trackTitle: trackTitle || "Course Modules",
@@ -109,12 +109,48 @@ export async function createCourseModule(formData: FormData) {
     },
   });
 
+  // Topics double as the module's sub-modules — this is what makes them selectable
+  // as an attachment point when adding course content, without a separate list to maintain.
+  for (const [i, title] of topics.entries()) {
+    await prisma.courseSubModule.create({
+      data: { courseModuleId: created.id, title, order: i },
+    });
+  }
+
   revalidateMarketing();
 }
 
 export async function deleteCourseModule(moduleId: string) {
   await requireCompany();
   await prisma.courseModule.delete({ where: { id: moduleId } });
+  revalidateMarketing();
+}
+
+export async function createCourseSubModule(formData: FormData) {
+  await requireCompany();
+
+  const courseModuleId = String(formData.get("courseModuleId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+
+  if (!courseModuleId || !title) {
+    throw new Error("Module and sub-module title are required.");
+  }
+
+  const maxOrder = await prisma.courseSubModule.aggregate({
+    where: { courseModuleId },
+    _max: { order: true },
+  });
+
+  await prisma.courseSubModule.create({
+    data: { courseModuleId, title, order: (maxOrder._max.order ?? 0) + 1 },
+  });
+
+  revalidateMarketing();
+}
+
+export async function deleteCourseSubModule(subModuleId: string) {
+  await requireCompany();
+  await prisma.courseSubModule.delete({ where: { id: subModuleId } });
   revalidateMarketing();
 }
 

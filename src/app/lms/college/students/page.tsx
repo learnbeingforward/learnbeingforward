@@ -16,7 +16,8 @@ export default async function CollegeStudentsPage() {
   const session = await auth();
   const collegeId = session!.user.collegeId;
 
-  const { rows } = await getCollegeStudentRows(collegeId);
+  const { rows, students } = await getCollegeStudentRows(collegeId);
+  const cvByStudentId = new Map(students.map((s) => [s.id, s.cvUrl]));
 
   return (
     <DashboardShell title="Students" subtitle="Enrolled students" navLinks={navLinks}>
@@ -33,29 +34,42 @@ export default async function CollegeStudentsPage() {
                 <TableHead>Course</TableHead>
                 <TableHead>Attendance</TableHead>
                 <TableHead>Certification</TableHead>
+                <TableHead>CV</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row, i) => (
-                <TableRow key={`${row.studentId}-${i}`}>
-                  <TableCell className="font-medium text-indigo">{row.studentName}</TableCell>
-                  <TableCell className="text-muted-foreground">{row.courseName}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {row.present}/{row.total} ({row.pct}%)
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        row.eligible
-                          ? "bg-green-100 text-green-700 hover:bg-green-100"
-                          : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                      }
-                    >
-                      {row.eligible ? "Eligible" : "Not Yet Eligible"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {rows.map((row, i) => {
+                const cvUrl = cvByStudentId.get(row.studentId);
+                return (
+                  <TableRow key={`${row.studentId}-${i}`}>
+                    <TableCell className="font-medium text-indigo">{row.studentName}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.courseName}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.present}/{row.total} ({row.pct}%)
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          row.eligible
+                            ? "bg-green-100 text-green-700 hover:bg-green-100"
+                            : "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                        }
+                      >
+                        {row.eligible ? "Eligible" : "Not Yet Eligible"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {cvUrl ? (
+                        <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo underline">
+                          View CV
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

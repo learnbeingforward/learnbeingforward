@@ -4,6 +4,7 @@ import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { Button } from "@/components/ui/button";
 import { createFooterLink, deleteFooterLink } from "@/lib/actions/site-content";
 
@@ -19,11 +20,17 @@ export default async function EditFooterPage() {
           </h2>
           <form action={createFooterLink} className="space-y-5 rounded-xl border border-border bg-white p-6">
             <div>
-              <Label htmlFor="label">Label</Label>
+              <Label htmlFor="label">
+                Label
+                <RequiredMark />
+              </Label>
               <Input id="label" name="label" required className="mt-1.5" placeholder="e.g. Careers" />
             </div>
             <div>
-              <Label htmlFor="href">Link (path or URL)</Label>
+              <Label htmlFor="href">
+                Link (path or URL)
+                <RequiredMark />
+              </Label>
               <Input id="href" name="href" required className="mt-1.5" placeholder="/careers" />
             </div>
             <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">
