@@ -499,6 +499,9 @@ model CollegeContract {
   decidedAt          DateTime?
   requestedByAdminId String?
   rejectReason       String?       @db.Text
+  mouNotes           String?       @db.Text
+  mouPdfUrl          String?
+  mouGeneratedAt     DateTime?
 
   invoices CollegeInvoice[]
 

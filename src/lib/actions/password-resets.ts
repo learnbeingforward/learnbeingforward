@@ -114,6 +114,9 @@ export async function resetAccountPassword(
   if (account.role === "SUPER_ADMIN") {
     return { ok: false, error: "The main company admin's password can't be reset here — it can only be changed from its own Profile page." };
   }
+  if (account.role === "ADMIN2" && session.user.role === "ADMIN2") {
+    return { ok: false, error: "A second admin's password can only be reset by the main company admin." };
+  }
 
   await prisma.user.update({
     where: { id: account.id },

@@ -294,49 +294,106 @@ export default async function CollegeContractsPage({
         ) : (
           <div className="divide-y divide-border">
             {pendingInvoices.map((inv) => (
-              <div key={inv.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
-                <div>
-                  <p className="text-sm font-medium text-indigo">{inv.contract.course.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {inv.totalStudents} students
-                    {inv.totalHours && ` · ${inv.totalHours} hrs`}
-                    {inv.totalDays && ` · ${inv.totalDays} days`} &middot;{" "}
-                    <span className="font-semibold text-indigo">₹{inv.totalAmount}</span>
-                  </p>
-                  {inv.pdfUrl && (
-                    <Link
-                      href={inv.pdfUrl}
-                      target="_blank"
-                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
-                    >
-                      <FileText className="size-3.5" /> View Invoice PDF
-                    </Link>
-                  )}
+              <div key={inv.id} className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-indigo">{inv.contract.course.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {inv.totalStudents} students
+                      {inv.totalHours && ` · ${inv.totalHours} hrs`}
+                      {inv.totalDays && ` · ${inv.totalDays} days`} &middot;{" "}
+                      <span className="font-semibold text-indigo">₹{inv.totalAmount}</span>
+                    </p>
+                    {inv.pdfUrl && (
+                      <Link
+                        href={inv.pdfUrl}
+                        target="_blank"
+                        className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo underline underline-offset-2"
+                      >
+                        <FileText className="size-3.5" /> View Invoice PDF
+                      </Link>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-start gap-2">
+                    <details className="group">
+                      <summary className="flex size-8 cursor-pointer list-none items-center justify-center rounded-md border border-border text-sm font-semibold text-indigo hover:bg-cream" title="Invoice details">
+                        i
+                      </summary>
+                      <dl className="mt-2 w-64 space-y-1.5 rounded-lg bg-cream p-3 text-xs">
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-muted-foreground">Training Type</dt>
+                          <dd className="text-indigo">{CONTRACT_TYPE_LABELS[inv.contract.contractType]}</dd>
+                        </div>
+                        {inv.contract.ratePerStudentHour && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-muted-foreground">Rate</dt>
+                            <dd className="text-indigo">₹{inv.contract.ratePerStudentHour}/student/hr</dd>
+                          </div>
+                        )}
+                        {inv.contract.flatRatePerDay && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-muted-foreground">Rate</dt>
+                            <dd className="text-indigo">₹{inv.contract.flatRatePerDay}/day</dd>
+                          </div>
+                        )}
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-muted-foreground">Training Period</dt>
+                          <dd className="text-indigo">
+                            {format(inv.contract.startDate, "MMM d")}–{format(inv.contract.endDate, "MMM d, yyyy")}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-muted-foreground">Students Trained</dt>
+                          <dd className="text-indigo">{inv.totalStudents}</dd>
+                        </div>
+                        {inv.totalHours && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-muted-foreground">Total Hours</dt>
+                            <dd className="text-indigo">{inv.totalHours}</dd>
+                          </div>
+                        )}
+                        {inv.totalDays && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-muted-foreground">Total Days</dt>
+                            <dd className="text-indigo">{inv.totalDays}</dd>
+                          </div>
+                        )}
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-muted-foreground">Amount</dt>
+                          <dd className="font-semibold text-indigo">₹{inv.totalAmount}</dd>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-muted-foreground">Raised On</dt>
+                          <dd className="text-indigo">{format(inv.submittedAt, "MMM d, yyyy")}</dd>
+                        </div>
+                      </dl>
+                    </details>
+                    <details className="group">
+                      <summary className="flex cursor-pointer list-none gap-2">
+                        <form action={decideCollegeInvoice.bind(null, inv.id, true)}>
+                          <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                            Approve
+                          </Button>
+                        </form>
+                        <span className="inline-flex h-8 items-center rounded-md border border-border px-3 text-sm text-muted-foreground">
+                          Reject
+                        </span>
+                      </summary>
+                      <form action={decideCollegeInvoice.bind(null, inv.id, false)} className="mt-2 flex flex-col items-end gap-2">
+                        <Textarea
+                          name="reason"
+                          required
+                          rows={2}
+                          placeholder="Reason for rejecting (required)"
+                          className="w-64"
+                        />
+                        <Button type="submit" size="sm" variant="outline" className="border-destructive text-destructive">
+                          Confirm Reject
+                        </Button>
+                      </form>
+                    </details>
+                  </div>
                 </div>
-                <details className="group shrink-0">
-                  <summary className="flex cursor-pointer list-none gap-2">
-                    <form action={decideCollegeInvoice.bind(null, inv.id, true)}>
-                      <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                        Approve
-                      </Button>
-                    </form>
-                    <span className="inline-flex h-8 items-center rounded-md border border-border px-3 text-sm text-muted-foreground">
-                      Reject
-                    </span>
-                  </summary>
-                  <form action={decideCollegeInvoice.bind(null, inv.id, false)} className="mt-2 flex flex-col items-end gap-2">
-                    <Textarea
-                      name="reason"
-                      required
-                      rows={2}
-                      placeholder="Reason for rejecting (required)"
-                      className="w-64"
-                    />
-                    <Button type="submit" size="sm" variant="outline" className="border-destructive text-destructive">
-                      Confirm Reject
-                    </Button>
-                  </form>
-                </details>
               </div>
             ))}
           </div>

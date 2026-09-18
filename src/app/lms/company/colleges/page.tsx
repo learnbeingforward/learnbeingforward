@@ -1,12 +1,12 @@
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import { RequestTrainingForm } from "@/components/lms/RequestTrainingForm";
-import { RescheduleSessionRow } from "@/components/lms/RescheduleSessionRow";
-import { GenerateCollegeInvoiceButton } from "@/components/lms/GenerateCollegeInvoiceButton";
-import { ApproveContractRateForm } from "@/components/lms/ApproveContractRateForm";
+import { BackLink } from "@/components/lms/BackLink";
 import { format } from "date-fns";
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
@@ -22,9 +22,199 @@ const STATUS_LABELS: Record<string, string> = {
   REJECTED: "Rejected",
 };
 
-export default async function CompanyCollegesPage() {
+function statusBadgeClass(status: string) {
+  return status === "APPROVED"
+    ? "bg-green-100 text-green-700 hover:bg-green-100"
+    : status === "REJECTED"
+      ? "bg-red-100 text-red-700 hover:bg-red-100"
+      : "bg-gold/20 text-indigo hover:bg-gold/20";
+}
+
+export default async function CompanyCollegesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ contractId?: string; invoiceId?: string }>;
+}) {
+  const { contractId, invoiceId } = await searchParams;
   const session = await auth();
   const isAdmin2 = session!.user.role === "ADMIN2";
+  const navLinks = getCompanyNavLinksForRole(session!.user.role);
+
+  if (contractId) {
+    const contract = await prisma.collegeContract.findUnique({
+      where: { id: contractId },
+      include: { course: true, college: true, invoices: true },
+    });
+    if (!contract || (isAdmin2 && contract.requestedByAdminId !== session!.user.id)) {
+      return (
+        <DashboardShell title="Training Request" subtitle="Not found" navLinks={navLinks}>
+          <BackLink href="/lms/company/colleges" label="Back to Colleges" />
+          <p className="text-sm text-muted-foreground">This request is not accessible to you.</p>
+        </DashboardShell>
+      );
+    }
+
+    return (
+      <DashboardShell title={contract.course.name} subtitle="Training request detail" navLinks={navLinks}>
+        <BackLink href="/lms/company/colleges" label="Back to Colleges" />
+        <div className="max-w-lg rounded-xl border border-border bg-white p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-indigo">{contract.course.name}</h2>
+              <p className="text-sm text-muted-foreground">{contract.college.name}</p>
+            </div>
+            <Badge className={statusBadgeClass(contract.status)}>{STATUS_LABELS[contract.status]}</Badge>
+          </div>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Training Type</dt>
+              <dd className="text-indigo">{CONTRACT_TYPE_LABELS[contract.contractType]}</dd>
+            </div>
+            {!isAdmin2 && contract.ratePerStudentHour && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Rate</dt>
+                <dd className="text-indigo">₹{contract.ratePerStudentHour}/student/hr</dd>
+              </div>
+            )}
+            {!isAdmin2 && contract.flatRatePerDay && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Rate</dt>
+                <dd className="text-indigo">₹{contract.flatRatePerDay}/day</dd>
+              </div>
+            )}
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Minimum Students</dt>
+              <dd className="text-indigo">{contract.minStudents}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Duration</dt>
+              <dd className="text-indigo">
+                {contract.totalDays} days ({format(contract.startDate, "MMM d")}–{format(contract.endDate, "MMM d, yyyy")})
+              </dd>
+            </div>
+            {(contract.targetBranch || contract.targetSemester) && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Restricted To</dt>
+                <dd className="text-indigo">
+                  {[contract.targetBranch, contract.targetSemester ? `Sem ${contract.targetSemester}` : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </dd>
+              </div>
+            )}
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Requested</dt>
+              <dd className="text-indigo">{format(contract.requestedAt, "MMM d, yyyy")}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Decided</dt>
+              <dd className="text-indigo">{contract.decidedAt ? format(contract.decidedAt, "MMM d, yyyy") : "—"}</dd>
+            </div>
+            {contract.rejectReason && (
+              <div>
+                <dt className="mb-1 text-muted-foreground">Rejection Reason</dt>
+                <dd className="rounded-lg bg-cream p-3 text-indigo">{contract.rejectReason}</dd>
+              </div>
+            )}
+          </dl>
+          {!isAdmin2 && contract.invoices.filter((inv) => inv.submitted).length > 0 && (
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Invoices</p>
+              <div className="space-y-2">
+                {contract.invoices
+                  .filter((inv) => inv.submitted)
+                  .map((inv) => (
+                    <Link
+                      key={inv.id}
+                      href={`/lms/company/colleges?invoiceId=${inv.id}`}
+                      className="flex items-center justify-between rounded-lg border border-border p-3 text-sm transition-colors hover:border-indigo/40"
+                    >
+                      <span className="font-medium text-indigo">₹{inv.totalAmount}</span>
+                      <Badge className={statusBadgeClass(inv.status)}>{inv.status}</Badge>
+                    </Link>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  if (invoiceId && !isAdmin2) {
+    const invoice = await prisma.collegeInvoice.findUnique({
+      where: { id: invoiceId },
+      include: { contract: { include: { course: true, college: true } } },
+    });
+    if (!invoice) {
+      return (
+        <DashboardShell title="Invoice" subtitle="Not found" navLinks={navLinks}>
+          <BackLink href="/lms/company/colleges" label="Back to Colleges" />
+          <p className="text-sm text-muted-foreground">This invoice could not be found.</p>
+        </DashboardShell>
+      );
+    }
+
+    return (
+      <DashboardShell title={invoice.contract.course.name} subtitle="Invoice detail" navLinks={navLinks}>
+        <BackLink href="/lms/company/colleges" label="Back to Colleges" />
+        <div className="max-w-lg rounded-xl border border-border bg-white p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-indigo">{invoice.contract.course.name}</h2>
+              <p className="text-sm text-muted-foreground">{invoice.contract.college.name}</p>
+            </div>
+            <Badge className={statusBadgeClass(invoice.status)}>{invoice.status}</Badge>
+          </div>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Students Trained</dt>
+              <dd className="text-indigo">{invoice.totalStudents}</dd>
+            </div>
+            {invoice.totalHours && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Total Hours</dt>
+                <dd className="text-indigo">{invoice.totalHours}</dd>
+              </div>
+            )}
+            {invoice.totalDays && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Total Days</dt>
+                <dd className="text-indigo">{invoice.totalDays}</dd>
+              </div>
+            )}
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Amount</dt>
+              <dd className="font-semibold text-indigo">₹{invoice.totalAmount}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Submitted</dt>
+              <dd className="text-indigo">{format(invoice.submittedAt, "MMM d, yyyy")}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Decided</dt>
+              <dd className="text-indigo">{invoice.decidedAt ? format(invoice.decidedAt, "MMM d, yyyy") : "—"}</dd>
+            </div>
+            {invoice.rejectReason && (
+              <div>
+                <dt className="mb-1 text-muted-foreground">Rejection Reason</dt>
+                <dd className="rounded-lg bg-cream p-3 text-indigo">{invoice.rejectReason}</dd>
+              </div>
+            )}
+          </dl>
+          {invoice.pdfUrl && (
+            <Link
+              href={invoice.pdfUrl}
+              target="_blank"
+              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-indigo underline underline-offset-2"
+            >
+              <FileText className="size-4" /> View Invoice PDF
+            </Link>
+          )}
+        </div>
+      </DashboardShell>
+    );
+  }
 
   const [colleges, courses] = await Promise.all([
     prisma.college.findMany({ orderBy: { name: "asc" } }),
@@ -56,7 +246,11 @@ export default async function CompanyCollegesPage() {
           ) : (
             <div className="divide-y divide-border">
               {myContracts.map((c) => (
-                <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <Link
+                  key={c.id}
+                  href={`/lms/company/colleges?contractId=${c.id}`}
+                  className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-cream/60"
+                >
                   <div>
                     <p className="text-sm font-medium text-indigo">
                       {c.college.name} — {c.course.name}
@@ -66,18 +260,10 @@ export default async function CompanyCollegesPage() {
                       {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
                     </p>
                   </div>
-                  <Badge
-                    className={
-                      c.status === "APPROVED"
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : c.status === "REJECTED"
-                          ? "bg-red-100 text-red-700 hover:bg-red-100"
-                          : "bg-gold/20 text-indigo hover:bg-gold/20"
-                    }
-                  >
+                  <Badge className={statusBadgeClass(c.status)}>
                     {STATUS_LABELS[c.status]}
                   </Badge>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -86,34 +272,35 @@ export default async function CompanyCollegesPage() {
     );
   }
 
-  const [contracts, pendingRateContracts, upcomingSessions] = await Promise.all([
-    prisma.collegeContract.findMany({
-      where: { status: { not: "PENDING_RATE" } },
-      include: { college: true, course: true, invoices: true },
-      orderBy: { requestedAt: "desc" },
-    }),
-    prisma.collegeContract.findMany({
-      where: { status: "PENDING_RATE" },
-      include: { college: true, course: true },
-      orderBy: { requestedAt: "asc" },
-    }),
-    prisma.trainingSession.findMany({
-      where: { attendanceTaken: false },
-      include: { batch: { include: { college: true, course: true } } },
-      orderBy: { sessionDate: "asc" },
-      take: 20,
-    }),
+  const [pendingRateCount, sentCount, approvedCount] = await Promise.all([
+    prisma.collegeContract.count({ where: { status: "PENDING_RATE" } }),
+    prisma.collegeContract.count({ where: { status: { not: "PENDING_RATE" } } }),
+    prisma.collegeContract.count({ where: { status: "APPROVED" } }),
   ]);
 
-  const approvedContractKeys = new Set(
-    contracts.filter((c) => c.status === "APPROVED").map((c) => `${c.collegeId}:${c.courseId}`)
-  );
-  const relevantSessions = upcomingSessions.filter((s) =>
-    approvedContractKeys.has(`${s.batch.collegeId}:${s.batch.courseId}`)
-  );
+  const quickLinks = [
+    {
+      href: "/lms/company/colleges/approvals",
+      title: "Approvals",
+      description: "Set the rate on contracts the second admin requested, then send them to the college.",
+      count: pendingRateCount,
+    },
+    {
+      href: "/lms/company/colleges/sent",
+      title: "Sent to College",
+      description: "Every contract sent so far, its status, and invoice generation.",
+      count: sentCount,
+    },
+    {
+      href: "/lms/company/colleges/mous",
+      title: "MOUs",
+      description: "Generate and edit a formal MOU for each training the college has approved.",
+      count: approvedCount,
+    },
+  ];
 
   return (
-    <DashboardShell title="Colleges" subtitle="Training requests, MOUs & invoices" navLinks={navLinks}>
+    <DashboardShell title="Colleges" subtitle="Send Contract" navLinks={navLinks}>
       <div className="mb-8">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
           Request Training
@@ -121,133 +308,24 @@ export default async function CompanyCollegesPage() {
         <RequestTrainingForm colleges={colleges} courses={courses} />
       </div>
 
-      {pendingRateContracts.length > 0 && (
-        <div className="mb-8 rounded-xl border border-gold/40 bg-gold/10">
-          <div className="border-b border-gold/40 p-6">
-            <p className="text-sm font-semibold text-indigo">Training Approvals ({pendingRateContracts.length})</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Requested by the second admin — set the rate (if paid) and send it to the college.
-            </p>
-          </div>
-          <div className="divide-y divide-gold/30">
-            {pendingRateContracts.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="text-sm font-medium text-indigo">
-                    {c.college.name} — {c.course.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {CONTRACT_TYPE_LABELS[c.contractType]} &middot; Min {c.minStudents} students &middot;{" "}
-                    {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
-                    {(c.targetBranch || c.targetSemester) && (
-                      <>
-                        {" "}
-                        &middot;{" "}
-                        <span className="font-medium text-indigo">
-                          {[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null]
-                            .filter(Boolean)
-                            .join(" · ")}{" "}
-                          only
-                        </span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <ApproveContractRateForm contractId={c.id} contractType={c.contractType} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mb-8 rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Training Requests ({contracts.length})</p>
-        </div>
-        {contracts.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">No training requests yet.</p>
-        ) : (
-          <div className="divide-y divide-border">
-            {contracts.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="text-sm font-medium text-indigo">
-                    {c.college.name} — {c.course.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {CONTRACT_TYPE_LABELS[c.contractType]}
-                    {c.ratePerStudentHour && ` · ₹${c.ratePerStudentHour}/student/hr`}
-                    {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} &middot; Min {c.minStudents} students
-                    &middot; {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
-                    {(c.targetBranch || c.targetSemester) && (
-                      <>
-                        {" "}
-                        &middot;{" "}
-                        <span className="font-medium text-indigo">
-                          {[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null]
-                            .filter(Boolean)
-                            .join(" · ")}{" "}
-                          only
-                        </span>
-                      </>
-                    )}
-                  </p>
-                  {c.invoices.filter((inv) => inv.submitted).length > 0 && (
-                    <p className="mt-1 text-xs text-indigo">
-                      Invoices:{" "}
-                      {c.invoices
-                        .filter((inv) => inv.submitted)
-                        .map((inv) => `₹${inv.totalAmount} (${inv.status.toLowerCase()})`)
-                        .join(", ")}
-                    </p>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge
-                    className={
-                      c.status === "APPROVED"
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : c.status === "REJECTED"
-                          ? "bg-red-100 text-red-700 hover:bg-red-100"
-                          : "bg-gold/20 text-indigo hover:bg-gold/20"
-                    }
-                  >
-                    {c.status}
-                  </Badge>
-                  {c.status === "APPROVED" && c.contractType !== "CSR" && (
-                    <GenerateCollegeInvoiceButton
-                      contractId={c.id}
-                      existingDraft={(() => {
-                        const draft = c.invoices.find((inv) => !inv.submitted);
-                        return draft ? { invoiceId: draft.id, pdfUrl: draft.pdfUrl } : null;
-                      })()}
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+        Other Sections
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {quickLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-indigo">{link.title}</p>
+              <Badge className="bg-gold/20 text-indigo hover:bg-gold/20">{link.count}</Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{link.description}</p>
+          </Link>
+        ))}
       </div>
-
-      {relevantSessions.length > 0 && (
-        <div className="rounded-xl border border-border bg-white">
-          <div className="border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">Upcoming Sessions — Reschedule</p>
-          </div>
-          <div className="divide-y divide-border">
-            {relevantSessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <p className="text-sm text-indigo">
-                  {s.batch.college.name} — {s.batch.name} &middot; Slot {s.slotNumber} &middot;{" "}
-                  {format(s.sessionDate, "MMM d, yyyy")}
-                </p>
-                <RescheduleSessionRow sessionId={s.id} currentDate={s.sessionDate.toISOString().slice(0, 10)} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </DashboardShell>
   );
 }

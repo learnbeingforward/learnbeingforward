@@ -12,9 +12,9 @@ import { format } from "date-fns";
 export default async function CompanyCourseContentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string }>;
+  searchParams: Promise<{ courseId?: string; moduleId?: string }>;
 }) {
-  const { courseId } = await searchParams;
+  const { courseId, moduleId } = await searchParams;
   const [courses, modules, subModules, content, pendingRequests] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
@@ -81,16 +81,16 @@ export default async function CompanyCourseContentPage({
         </div>
 
         <div>
-          {courseId ? (
+          {courseId && moduleId ? (
             <>
-              <BackLink href="/lms/company/course-content" label="Back to all courses" />
+              <BackLink href={`/lms/company/course-content?courseId=${courseId}`} label="Back to modules" />
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-                {courses.find((c) => c.id === courseId)?.name} Content (
-                {content.filter((c) => c.courseId === courseId).length})
+                {modules.find((m) => m.id === moduleId)?.title} Content (
+                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length})
               </h2>
               <div className="max-h-[800px] space-y-3 overflow-y-auto">
                 {content
-                  .filter((c) => c.courseId === courseId)
+                  .filter((c) => c.courseId === courseId && c.courseModuleId === moduleId)
                   .map((item) => (
                     <div key={item.id} className="rounded-xl border border-border bg-white p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -101,12 +101,11 @@ export default async function CompanyCourseContentPage({
                             rel="noopener noreferrer"
                             className="text-sm font-semibold text-indigo underline"
                           >
-                            {item.title}
+                            {item.courseSubModule ? item.courseSubModule.title : item.title}
                           </a>
-                          <p className="text-xs text-muted-foreground">
-                            {item.courseModule?.title}
-                            {item.courseSubModule && ` — ${item.courseSubModule.title}`}
-                          </p>
+                          {item.courseSubModule && (
+                            <p className="text-xs text-muted-foreground">Sub-module PDF</p>
+                          )}
                         </div>
                         <DeleteButton action={deleteCourseContent.bind(null, item.id)} />
                       </div>
@@ -121,7 +120,36 @@ export default async function CompanyCourseContentPage({
                       )}
                     </div>
                   ))}
-                {content.filter((c) => c.courseId === courseId).length === 0 && (
+                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground">Nothing added for this module yet.</p>
+                )}
+              </div>
+            </>
+          ) : courseId ? (
+            <>
+              <BackLink href="/lms/company/course-content" label="Back to all courses" />
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+                {courses.find((c) => c.id === courseId)?.name} — Modules
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {modules
+                  .filter((m) => content.some((c) => c.courseId === courseId && c.courseModuleId === m.id))
+                  .map((mod) => {
+                    const count = content.filter(
+                      (c) => c.courseId === courseId && c.courseModuleId === mod.id
+                    ).length;
+                    return (
+                      <Link
+                        key={mod.id}
+                        href={`/lms/company/course-content?courseId=${courseId}&moduleId=${mod.id}`}
+                        className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+                      >
+                        <p className="font-semibold text-indigo">{mod.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{count} item{count !== 1 ? "s" : ""}</p>
+                      </Link>
+                    );
+                  })}
+                {!modules.some((m) => content.some((c) => c.courseId === courseId && c.courseModuleId === m.id)) && (
                   <p className="p-4 text-sm text-muted-foreground">Nothing added for this course yet.</p>
                 )}
               </div>

@@ -50,6 +50,30 @@ export const companyNavLinks: LmsNavEntry[] = [
   { href: "/lms/company/edit-site", label: "Edit Site" },
 ];
 
+/**
+ * Same as companyNavLinks, but the Colleges item becomes a dropdown
+ * (Send Contract / Approvals / Sent to College / MOUs) for SUPER_ADMIN —
+ * that split is main-admin-only, so ADMIN2 keeps the single flat link.
+ * Used by the colleges section's own pages, which already know the role.
+ */
+export function getCompanyNavLinksForRole(role?: string): LmsNavEntry[] {
+  if (role === "ADMIN2") return companyNavLinks;
+
+  const collegesDropdown: LmsNavEntry = {
+    label: "Colleges",
+    children: [
+      { href: "/lms/company/colleges", label: "Send Contract" },
+      { href: "/lms/company/colleges/approvals", label: "Approvals" },
+      { href: "/lms/company/colleges/sent", label: "Sent to College" },
+      { href: "/lms/company/colleges/mous", label: "MOUs" },
+    ],
+  };
+
+  return companyNavLinks.map((entry) =>
+    "href" in entry && entry.href === "/lms/company/colleges" ? collegesDropdown : entry
+  );
+}
+
 export const trainerNavLinks: LmsNavEntry[] = [
   { href: "/lms/trainer", label: "Personal Details" },
   { href: "/lms/trainer/schedule", label: "Schedule" },

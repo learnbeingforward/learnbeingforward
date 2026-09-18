@@ -24,7 +24,7 @@ export async function getUnlockedContentForStudent(studentId: string) {
 
   return prisma.courseContent.findMany({
     where: { courseModuleId: { in: unlockedModuleIds } },
-    include: { course: true, courseModule: true, links: { orderBy: { order: "asc" } } },
+    include: { course: true, courseModule: true, courseSubModule: true, links: { orderBy: { order: "asc" } } },
     orderBy: { title: "asc" },
   });
 }

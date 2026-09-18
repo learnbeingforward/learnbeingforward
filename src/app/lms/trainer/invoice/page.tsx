@@ -9,7 +9,28 @@ import { getBillableSessions } from "@/lib/actions/trainer-invoices";
 import { SubmitInvoiceForm } from "@/components/lms/SubmitInvoiceForm";
 import { TrainerInvoiceDetailView } from "@/components/lms/TrainerInvoiceDetailView";
 import { SubmitDraftInvoiceButton } from "@/components/lms/SubmitDraftInvoiceButton";
+import type { BatchRosterEntry } from "@/components/lms/SessionsTrainedBlocks";
 import { format } from "date-fns";
+
+async function loadBatchRosters(batchIds: string[]): Promise<Record<string, BatchRosterEntry[]>> {
+  const uniqueIds = [...new Set(batchIds)];
+  if (uniqueIds.length === 0) return {};
+  const enrollments = await prisma.enrollment.findMany({
+    where: { batchId: { in: uniqueIds } },
+    include: { student: true },
+  });
+  const rosters: Record<string, BatchRosterEntry[]> = {};
+  for (const e of enrollments) {
+    if (!e.batchId) continue;
+    (rosters[e.batchId] ??= []).push({
+      id: e.student.id,
+      name: e.student.name,
+      branch: e.student.branch,
+      semester: e.student.semester,
+    });
+  }
+  return rosters;
+}
 
 export default async function TrainerInvoicePage({
   searchParams,
@@ -28,6 +49,9 @@ export default async function TrainerInvoicePage({
         lineItems: { include: { trainingSession: { include: { batch: { include: { college: true } } } } } },
       },
     });
+    const rosters = invoice
+      ? await loadBatchRosters(invoice.lineItems.map((li) => li.trainingSession.batchId))
+      : {};
 
     return (
       <DashboardShell title="Invoice" subtitle="Invoice detail" navLinks={navLinks}>
@@ -70,8 +94,10 @@ export default async function TrainerInvoicePage({
                   date: li.trainingSession.sessionDate,
                   collegeName: li.trainingSession.batch.college.name,
                   batchName: li.trainingSession.batch.name,
+                  batchId: li.trainingSession.batchId,
                   hours: 2,
                 })),
+                rosters,
               }}
             />
           </>

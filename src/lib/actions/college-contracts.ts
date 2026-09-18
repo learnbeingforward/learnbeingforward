@@ -207,6 +207,24 @@ export async function generateCollegeInvoice(
     return { ok: false, error: "CSR training is free — no invoice is needed." };
   }
 
+  const mostRecentInvoice = await prisma.collegeInvoice.findFirst({
+    where: { contractId },
+    orderBy: { submittedAt: "desc" },
+  });
+  if (mostRecentInvoice && mostRecentInvoice.status !== "REJECTED") {
+    return {
+      ok: false,
+      error:
+        mostRecentInvoice.status === "APPROVED"
+          ? "An invoice for this contract has already been approved — a new one can't be generated."
+          : mostRecentInvoice.submitted
+            ? "An invoice for this contract is already pending the college's decision."
+            : "A draft invoice for this contract already exists — review and submit it instead.",
+      invoiceId: mostRecentInvoice.id,
+      pdfUrl: mostRecentInvoice.pdfUrl ?? undefined,
+    };
+  }
+
   const batches = await prisma.batch.findMany({
     where: { collegeId: contract.collegeId, courseId: contract.courseId },
     include: {
@@ -272,27 +290,35 @@ export async function generateCollegeInvoice(
     data: { contractId, totalStudents, totalHours, totalDays, totalAmount },
   });
 
-  const settings = await prisma.siteSettings.findUnique({ where: { id: "singleton" } });
-  const pdfUrl = await renderCollegeInvoicePdf(
-    invoice.id,
-    contract.college.name,
-    contract.course.name,
-    { totalStudents, totalHours, totalDays, totalAmount },
-    {
-      companyBankAccountName: settings?.companyBankAccountName ?? null,
-      companyBankAccountNumber: settings?.companyBankAccountNumber ?? null,
-      companyBankIfsc: settings?.companyBankIfsc ?? null,
-      companyBankName: settings?.companyBankName ?? null,
-      companyGstNumber: settings?.companyGstNumber ?? null,
-    },
-    lineItems
-  );
-  await prisma.collegeInvoice.update({ where: { id: invoice.id }, data: { pdfUrl } });
+  let pdfUrl: string | null = null;
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: "singleton" } });
+    pdfUrl = await renderCollegeInvoicePdf(
+      invoice.id,
+      contract.college.name,
+      contract.course.name,
+      { totalStudents, totalHours, totalDays, totalAmount },
+      {
+        companyBankAccountName: settings?.companyBankAccountName ?? null,
+        companyBankAccountNumber: settings?.companyBankAccountNumber ?? null,
+        companyBankIfsc: settings?.companyBankIfsc ?? null,
+        companyBankName: settings?.companyBankName ?? null,
+        companyGstNumber: settings?.companyGstNumber ?? null,
+      },
+      lineItems
+    );
+    await prisma.collegeInvoice.update({ where: { id: invoice.id }, data: { pdfUrl } });
+  } catch (err) {
+    console.error("Failed to render college invoice PDF:", err);
+    // The invoice row still exists with its numbers — the college can see the
+    // full breakdown from the info panel even without a PDF, and the admin can
+    // still submit it. Nothing to roll back.
+  }
 
   revalidatePath("/lms/company/colleges");
   revalidatePath("/lms/college/contracts");
 
-  return { ok: true, invoiceId: invoice.id, pdfUrl };
+  return { ok: true, invoiceId: invoice.id, pdfUrl: pdfUrl ?? undefined };
 }
 
 export type SubmitDraftState = { ok: boolean; error?: string } | null;

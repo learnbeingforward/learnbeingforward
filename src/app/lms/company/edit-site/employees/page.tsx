@@ -7,10 +7,10 @@ import { Label } from "@/components/ui/label";
 import { RequiredMark } from "@/components/ui/required-mark";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { createTeamMember, deleteTeamMember } from "@/lib/actions/site-content";
 import { parseJsonArray } from "@/lib/json-array";
 import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm";
+import { EditTeamMemberDialog } from "@/components/lms/EditTeamMemberDialog";
 
 export default async function EditEmployeesPage() {
   const members = await prisma.teamMember.findMany({ orderBy: { order: "asc" } });
@@ -101,19 +101,23 @@ export default async function EditEmployeesPage() {
           <div className="max-h-[700px] space-y-3 overflow-y-auto">
             {members.map((m) => {
               const specialties = parseJsonArray(m.specialties);
+              const colleges = parseJsonArray(m.colleges);
               return (
                 <div key={m.id} className="flex items-start justify-between gap-3 rounded-xl border border-border bg-white p-4">
-                  <div>
-                    <p className="text-sm font-semibold text-indigo">
-                      {m.name} {m.isFreelancer && <Badge className="ml-1 bg-indigo/10 text-indigo hover:bg-indigo/10">Freelance</Badge>}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{m.role} &middot; {m.experienceYears} yrs</p>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {specialties.map((s) => (
-                        <span key={s} className="rounded-full bg-cream px-2 py-0.5 text-[10px] text-indigo/80">{s}</span>
-                      ))}
-                    </div>
-                  </div>
+                  <EditTeamMemberDialog
+                    member={{
+                      id: m.id,
+                      name: m.name,
+                      role: m.role,
+                      experienceYears: m.experienceYears,
+                      background: m.background,
+                      specialties,
+                      isFreelancer: m.isFreelancer,
+                      colleges,
+                      photoUrl: m.photoUrl,
+                      cvUrl: m.cvUrl,
+                    }}
+                  />
                   <DeleteButton action={deleteTeamMember.bind(null, m.id)} />
                 </div>
               );

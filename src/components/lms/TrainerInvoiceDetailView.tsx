@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { SessionsTrainedBlocks, type SessionLineItem, type BatchRosterEntry } from "@/components/lms/SessionsTrainedBlocks";
 
 export type TrainerInvoiceDetail = {
   trainerName: string;
@@ -23,7 +24,8 @@ export type TrainerInvoiceDetail = {
   bankAccountNumber: string | null;
   bankIfsc: string | null;
   bankName: string | null;
-  lineItems: { id: string; date: Date; collegeName: string; batchName: string; hours: number }[];
+  lineItems: SessionLineItem[];
+  rosters: Record<string, BatchRosterEntry[]>;
 };
 
 export function TrainerInvoiceDetailView({ invoice }: { invoice: TrainerInvoiceDetail }) {
@@ -127,19 +129,9 @@ export function TrainerInvoiceDetailView({ invoice }: { invoice: TrainerInvoiceD
       <div className="rounded-xl border border-border bg-white">
         <div className="border-b border-border p-6">
           <p className="text-sm font-semibold text-indigo">Sessions Trained ({invoice.lineItems.length})</p>
+          <p className="mt-1 text-xs text-muted-foreground">Grouped by college & batch — click a block for dates and the student roster.</p>
         </div>
-        <div className="divide-y divide-border">
-          {invoice.lineItems.map((li) => (
-            <div key={li.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-              <p className="text-indigo">
-                {li.collegeName} — {li.batchName}
-              </p>
-              <p className="text-muted-foreground">
-                {format(li.date, "MMM d, yyyy")} &middot; {li.hours} hrs
-              </p>
-            </div>
-          ))}
-        </div>
+        <SessionsTrainedBlocks lineItems={invoice.lineItems} rosters={invoice.rosters} />
       </div>
     </div>
   );

@@ -246,6 +246,55 @@ export async function deleteTeamMember(id: string) {
   revalidateMarketing();
 }
 
+export type UpdateTeamMemberState = { ok: boolean; error?: string } | null;
+
+export async function updateTeamMember(
+  id: string,
+  _prevState: UpdateTeamMemberState,
+  formData: FormData
+): Promise<UpdateTeamMemberState> {
+  await requireCompany();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const role = String(formData.get("role") ?? "").trim();
+  const experienceYears = Number(formData.get("experienceYears") ?? 0);
+  const background = String(formData.get("background") ?? "").trim();
+  const specialtiesRaw = String(formData.get("specialties") ?? "");
+  const isFreelancer = formData.get("isFreelancer") === "on";
+  const collegesRaw = String(formData.get("colleges") ?? "");
+  const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+  const cvUrl = String(formData.get("cvUrl") ?? "").trim();
+
+  if (!name || !role) return { ok: false, error: "Name and role are required." };
+
+  const specialties = specialtiesRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const colleges = collegesRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  await prisma.teamMember.update({
+    where: { id },
+    data: {
+      name,
+      role,
+      experienceYears: Number.isFinite(experienceYears) ? experienceYears : 0,
+      background: background || role,
+      specialties: JSON.stringify(specialties),
+      isFreelancer,
+      colleges: colleges.length > 0 ? JSON.stringify(colleges) : null,
+      cvUrl: cvUrl || null,
+      photoUrl: photoUrl || null,
+    },
+  });
+
+  revalidateMarketing();
+  return { ok: true };
+}
+
 // ---------- Contact profiles ----------
 
 export async function createContactProfile(formData: FormData) {

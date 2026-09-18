@@ -9,7 +9,28 @@ import { Badge } from "@/components/ui/badge";
 import { BackLink } from "@/components/lms/BackLink";
 import { DecideTrainerInvoiceForm } from "@/components/lms/DecideTrainerInvoiceForm";
 import { TrainerInvoiceDetailView } from "@/components/lms/TrainerInvoiceDetailView";
+import { SessionsTrainedBlocks, type BatchRosterEntry } from "@/components/lms/SessionsTrainedBlocks";
 import { format } from "date-fns";
+
+async function loadBatchRosters(batchIds: string[]): Promise<Record<string, BatchRosterEntry[]>> {
+  const uniqueIds = [...new Set(batchIds)];
+  if (uniqueIds.length === 0) return {};
+  const enrollments = await prisma.enrollment.findMany({
+    where: { batchId: { in: uniqueIds } },
+    include: { student: true },
+  });
+  const rosters: Record<string, BatchRosterEntry[]> = {};
+  for (const e of enrollments) {
+    if (!e.batchId) continue;
+    (rosters[e.batchId] ??= []).push({
+      id: e.student.id,
+      name: e.student.name,
+      branch: e.student.branch,
+      semester: e.student.semester,
+    });
+  }
+  return rosters;
+}
 
 export default async function CompanyTrainerInvoicesPage({
   searchParams,
@@ -28,6 +49,9 @@ export default async function CompanyTrainerInvoicesPage({
         lineItems: { include: { trainingSession: { include: { batch: { include: { college: true } } } } } },
       },
     });
+    const rosters = invoice
+      ? await loadBatchRosters(invoice.lineItems.map((li) => li.trainingSession.batchId))
+      : {};
 
     return (
       <DashboardShell title="Trainer Invoice" subtitle="Decision detail" navLinks={navLinks}>
@@ -61,8 +85,10 @@ export default async function CompanyTrainerInvoicesPage({
                 date: li.trainingSession.sessionDate,
                 collegeName: li.trainingSession.batch.college.name,
                 batchName: li.trainingSession.batch.name,
+                batchId: li.trainingSession.batchId,
                 hours: 2,
               })),
+              rosters,
             }}
           />
         )}
@@ -86,6 +112,10 @@ export default async function CompanyTrainerInvoicesPage({
       take: 15,
     }),
   ]);
+
+  const pendingRosters = await loadBatchRosters(
+    pending.flatMap((inv) => inv.lineItems.map((li) => li.trainingSession.batchId))
+  );
 
   return (
     <DashboardShell title="Trainer Invoices" subtitle="Review and approve payments" navLinks={navLinks}>
@@ -125,13 +155,18 @@ export default async function CompanyTrainerInvoicesPage({
                     <DecideTrainerInvoiceForm invoiceId={inv.id} totalAmount={inv.totalAmount} />
                   </div>
                 </div>
-                <div className="mt-3 space-y-1 border-t border-border pt-3">
-                  {inv.lineItems.map((li) => (
-                    <p key={li.id} className="text-xs text-muted-foreground">
-                      {format(li.trainingSession.sessionDate, "MMM d, yyyy")} &middot;{" "}
-                      {li.trainingSession.batch.college.name} — {li.trainingSession.batch.name} &middot; 2 hrs
-                    </p>
-                  ))}
+                <div className="mt-3 overflow-hidden rounded-lg border border-border">
+                  <SessionsTrainedBlocks
+                    lineItems={inv.lineItems.map((li) => ({
+                      id: li.id,
+                      date: li.trainingSession.sessionDate,
+                      collegeName: li.trainingSession.batch.college.name,
+                      batchName: li.trainingSession.batch.name,
+                      batchId: li.trainingSession.batchId,
+                      hours: 2,
+                    }))}
+                    rosters={pendingRosters}
+                  />
                 </div>
               </div>
             ))}
