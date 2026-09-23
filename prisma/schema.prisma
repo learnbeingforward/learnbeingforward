@@ -53,6 +53,12 @@ enum ContractType {
   PER_DAY_FLAT
 }
 
+enum CourseDomain {
+  TECHNICAL
+  APTITUDE
+  SOFT_SKILL
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -123,6 +129,7 @@ model Course {
   shortDescription String? @db.Text
   description      String  @db.Text
   category         String
+  domain           CourseDomain @default(TECHNICAL)
   techSlugs        String? @db.Text
   isPlaceholder    Boolean @default(false)
   order            Int     @default(0)
@@ -510,6 +517,7 @@ model CollegeContract {
   mouNotes           String?       @db.Text
   mouPdfUrl          String?
   mouGeneratedAt     DateTime?
+  requestGroupId     String?
 
   invoices CollegeInvoice[]
 
