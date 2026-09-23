@@ -195,3 +195,57 @@ export async function decideTrainerInvoice(
 
   return { ok: true };
 }
+
+export type ProposeInvoiceState = { ok: boolean; error?: string } | null;
+
+export async function proposeTrainerInvoiceDecision(
+  invoiceId: string,
+  approve: boolean,
+  _prevState: ProposeInvoiceState,
+  formData: FormData
+): Promise<ProposeInvoiceState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN2") {
+    return { ok: false, error: "Only the second admin can propose a decision here." };
+  }
+
+  const invoice = await prisma.trainerInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice || invoice.status !== "PENDING" || !invoice.submitted) {
+    return { ok: false, error: "This invoice is no longer awaiting a decision." };
+  }
+
+  const deductionInput = String(formData.get("deductionAmount") ?? "").trim();
+  const deductionReasonInput = String(formData.get("deductionReason") ?? "").trim();
+  const timelineInput = String(formData.get("paymentTimelineDays") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim();
+
+  const deductionAmount = deductionInput ? Number.parseInt(deductionInput, 10) : null;
+  const paymentTimelineDays = timelineInput ? Number.parseInt(timelineInput, 10) : null;
+
+  if (deductionInput && (!Number.isFinite(deductionAmount) || (deductionAmount ?? 0) < 0)) {
+    return { ok: false, error: "Enter a valid deduction amount." };
+  }
+  if (deductionAmount && deductionAmount > 0 && !deductionReasonInput) {
+    return { ok: false, error: "Provide a reason for the deduction." };
+  }
+  if (timelineInput && (!Number.isFinite(paymentTimelineDays) || (paymentTimelineDays ?? 0) <= 0)) {
+    return { ok: false, error: "Enter a valid number of days for the payment timeline." };
+  }
+
+  await prisma.trainerInvoice.update({
+    where: { id: invoiceId },
+    data: {
+      proposedByAdminId: session.user.id,
+      proposedApprove: approve,
+      proposedDeductionAmount: approve ? deductionAmount : null,
+      proposedDeductionReason: approve && deductionAmount ? deductionReasonInput : null,
+      proposedPaymentTimelineDays: approve ? paymentTimelineDays : null,
+      proposedNote: note || null,
+      proposedAt: new Date(),
+    },
+  });
+
+  revalidatePath("/lms/company/trainers/invoices");
+
+  return { ok: true };
+}

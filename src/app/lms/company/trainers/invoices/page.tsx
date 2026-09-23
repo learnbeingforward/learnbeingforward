@@ -4,10 +4,12 @@ import { FileText } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { companyNavLinks } from "@/lib/lms-nav-links";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 import { Badge } from "@/components/ui/badge";
 import { BackLink } from "@/components/lms/BackLink";
 import { DecideTrainerInvoiceForm } from "@/components/lms/DecideTrainerInvoiceForm";
+import { ProposeTrainerInvoiceForm } from "@/components/lms/ProposeTrainerInvoiceForm";
 import { TrainerInvoiceDetailView } from "@/components/lms/TrainerInvoiceDetailView";
 import { SessionsTrainedBlocks, type BatchRosterEntry } from "@/components/lms/SessionsTrainedBlocks";
 import { format } from "date-fns";
@@ -39,7 +41,9 @@ export default async function CompanyTrainerInvoicesPage({
 }) {
   const { invoiceId } = await searchParams;
   const session = await auth();
-  if (session?.user.role !== "SUPER_ADMIN") redirect("/lms/company");
+  if (!isCompanyStaff(session?.user.role)) redirect("/lms/company");
+  const isAdmin2 = session!.user.role === "ADMIN2";
+  const navLinks = companyNavLinks;
 
   if (invoiceId) {
     const invoice = await prisma.trainerInvoice.findUnique({
@@ -117,6 +121,12 @@ export default async function CompanyTrainerInvoicesPage({
     pending.flatMap((inv) => inv.lineItems.map((li) => li.trainingSession.batchId))
   );
 
+  const proposerIds = [...new Set(pending.map((inv) => inv.proposedByAdminId).filter((id): id is string => !!id))];
+  const proposers = proposerIds.length
+    ? await prisma.user.findMany({ where: { id: { in: proposerIds } }, select: { id: true, name: true } })
+    : [];
+  const proposerNameById = new Map(proposers.map((p) => [p.id, p.name]));
+
   return (
     <DashboardShell title="Trainer Invoices" subtitle="Review and approve payments" navLinks={navLinks}>
       <BackLink href="/lms/company/trainers" label="Back to Trainers" />
@@ -151,8 +161,47 @@ export default async function CompanyTrainerInvoicesPage({
                       </Link>
                     )}
                   </div>
-                  <div className="shrink-0">
-                    <DecideTrainerInvoiceForm invoiceId={inv.id} totalAmount={inv.totalAmount} />
+                  <div className="w-full shrink-0 sm:w-auto">
+                    {isAdmin2 ? (
+                      <ProposeTrainerInvoiceForm
+                        invoiceId={inv.id}
+                        totalAmount={inv.totalAmount}
+                        existingProposal={
+                          inv.proposedByAdminId
+                            ? {
+                                proposedApprove: inv.proposedApprove!,
+                                proposedDeductionAmount: inv.proposedDeductionAmount,
+                                proposedDeductionReason: inv.proposedDeductionReason,
+                                proposedPaymentTimelineDays: inv.proposedPaymentTimelineDays,
+                                proposedNote: inv.proposedNote,
+                              }
+                            : null
+                        }
+                      />
+                    ) : (
+                      <>
+                        {inv.proposedByAdminId && (
+                          <p className="mb-1 text-xs text-muted-foreground">
+                            Recommended by {proposerNameById.get(inv.proposedByAdminId) ?? "the second admin"}
+                          </p>
+                        )}
+                        <DecideTrainerInvoiceForm
+                          invoiceId={inv.id}
+                          totalAmount={inv.totalAmount}
+                          proposal={
+                            inv.proposedByAdminId
+                              ? {
+                                  proposedApprove: inv.proposedApprove!,
+                                  proposedDeductionAmount: inv.proposedDeductionAmount,
+                                  proposedDeductionReason: inv.proposedDeductionReason,
+                                  proposedPaymentTimelineDays: inv.proposedPaymentTimelineDays,
+                                  proposedNote: inv.proposedNote,
+                                }
+                              : null
+                          }
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="mt-3 overflow-hidden rounded-lg border border-border">

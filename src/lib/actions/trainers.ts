@@ -75,8 +75,8 @@ export async function createTrainerAccount(
 
 export async function updateTrainerRate(trainerId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Only the company admin can update trainer rates.");
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
+    throw new Error("Only company staff can update trainer rates.");
   }
 
   const hourlyRate = Number.parseInt(String(formData.get("hourlyRate") ?? "0"), 10);

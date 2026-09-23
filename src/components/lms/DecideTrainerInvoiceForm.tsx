@@ -7,8 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { decideTrainerInvoice, type DecideInvoiceState } from "@/lib/actions/trainer-invoices";
 
-export function DecideTrainerInvoiceForm({ invoiceId, totalAmount }: { invoiceId: string; totalAmount: number }) {
-  const [showAdjust, setShowAdjust] = useState(false);
+export type AdminProposal = {
+  proposedApprove: boolean;
+  proposedDeductionAmount: number | null;
+  proposedDeductionReason: string | null;
+  proposedPaymentTimelineDays: number | null;
+  proposedNote: string | null;
+} | null;
+
+export function DecideTrainerInvoiceForm({
+  invoiceId,
+  totalAmount,
+  proposal,
+}: {
+  invoiceId: string;
+  totalAmount: number;
+  proposal?: AdminProposal;
+}) {
+  const [showAdjust, setShowAdjust] = useState(!!proposal);
   const approveAction = decideTrainerInvoice.bind(null, invoiceId, true);
   const rejectAction = decideTrainerInvoice.bind(null, invoiceId, false);
   const [approveState, approveFormAction, approvePending] = useActionState<DecideInvoiceState, FormData>(
@@ -26,6 +42,23 @@ export function DecideTrainerInvoiceForm({ invoiceId, totalAmount }: { invoiceId
 
   return (
     <div className="space-y-3">
+      {proposal && (
+        <div className="rounded-lg border border-gold/40 bg-gold/10 p-3 text-xs">
+          <p className="font-semibold text-indigo">
+            Second admin recommends: {proposal.proposedApprove ? "Approve" : "Reject"}
+          </p>
+          {proposal.proposedDeductionAmount ? (
+            <p className="mt-1 text-muted-foreground">
+              Deduction ₹{proposal.proposedDeductionAmount}
+              {proposal.proposedDeductionReason ? ` — ${proposal.proposedDeductionReason}` : ""}
+            </p>
+          ) : null}
+          {proposal.proposedPaymentTimelineDays && (
+            <p className="mt-1 text-muted-foreground">Payment within {proposal.proposedPaymentTimelineDays} days</p>
+          )}
+          {proposal.proposedNote && <p className="mt-1 text-muted-foreground">&ldquo;{proposal.proposedNote}&rdquo;</p>}
+        </div>
+      )}
       {!showAdjust ? (
         <button
           type="button"
@@ -46,6 +79,7 @@ export function DecideTrainerInvoiceForm({ invoiceId, totalAmount }: { invoiceId
               type="number"
               min={0}
               max={totalAmount}
+              defaultValue={proposal?.proposedDeductionAmount ?? undefined}
               form={`approve-form-${invoiceId}`}
               className="mt-1 bg-white"
             />
@@ -58,6 +92,7 @@ export function DecideTrainerInvoiceForm({ invoiceId, totalAmount }: { invoiceId
               id={`reason-${invoiceId}`}
               name="deductionReason"
               placeholder="e.g. late delivery penalty"
+              defaultValue={proposal?.proposedDeductionReason ?? undefined}
               form={`approve-form-${invoiceId}`}
               className="mt-1 bg-white"
             />
@@ -71,6 +106,7 @@ export function DecideTrainerInvoiceForm({ invoiceId, totalAmount }: { invoiceId
               name="paymentTimelineDays"
               type="number"
               min={1}
+              defaultValue={proposal?.proposedPaymentTimelineDays ?? undefined}
               form={`approve-form-${invoiceId}`}
               className="mt-1 bg-white"
             />

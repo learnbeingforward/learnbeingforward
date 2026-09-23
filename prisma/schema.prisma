@@ -323,6 +323,14 @@ model TrainerInvoice {
   approvalPdfUrl      String?
   submitted           Boolean  @default(false)
 
+  proposedByAdminId           String?
+  proposedApprove             Boolean?
+  proposedDeductionAmount     Int?
+  proposedDeductionReason     String? @db.Text
+  proposedPaymentTimelineDays Int?
+  proposedNote                String? @db.Text
+  proposedAt                  DateTime?
+
   lineItems TrainerInvoiceSession[]
 
   @@index([trainerId])

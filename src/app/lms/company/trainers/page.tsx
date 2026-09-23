@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginButton";
 import { updateTrainerRate } from "@/lib/actions/trainers";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 export default async function CompanyTrainersPage() {
   const session = await auth();
   const isSuperAdmin = session!.user.role === "SUPER_ADMIN";
+  const isStaff = isCompanyStaff(session!.user.role);
 
   const trainers = await prisma.trainer.findMany({
     include: { loginUser: true, batches: true },
@@ -34,13 +36,15 @@ export default async function CompanyTrainersPage() {
           <p className="font-semibold text-indigo">Schedule Training</p>
           <p className="mt-1 text-sm text-muted-foreground">Assign a trainer, date and session slots to a batch.</p>
         </Link>
-        {isSuperAdmin && (
+        {isStaff && (
           <Link
             href="/lms/company/trainers/invoices"
             className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
           >
             <p className="font-semibold text-indigo">Invoices</p>
-            <p className="mt-1 text-sm text-muted-foreground">Review and approve trainer invoices.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isSuperAdmin ? "Review and approve trainer invoices." : "Review trainer invoices and recommend a decision."}
+            </p>
           </Link>
         )}
       </div>
@@ -75,7 +79,7 @@ export default async function CompanyTrainersPage() {
                     hasEmail={!!trainer.email}
                     hasLogin={!!trainer.loginUser}
                   />
-                  {isSuperAdmin && (
+                  {isStaff && (
                     <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">₹</span>
                       <Input
