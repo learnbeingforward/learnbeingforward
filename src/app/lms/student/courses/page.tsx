@@ -38,56 +38,67 @@ export default async function BrowseCoursesPage() {
           </span>
         </div>
       )}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => {
-          const enrolled = enrolledCourseIds.has(course.id);
-          const request = latestRequestByCourse.get(course.id);
-
+      <div className="space-y-10">
+        {DOMAIN_ORDER.map((domain) => {
+          const domainCourses = courses.filter((c) => c.domain === domain);
+          if (domainCourses.length === 0) return null;
           return (
-            <div key={course.id} className="flex flex-col rounded-xl border border-border bg-white p-6">
-              <h3 className="font-semibold text-indigo">{course.name}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3">
-                {course.description}
-              </p>
+            <div key={domain}>
+              <h2 className="mb-4 text-lg font-bold text-indigo">{DOMAIN_LABELS[domain]}</h2>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {domainCourses.map((course) => {
+                  const enrolled = enrolledCourseIds.has(course.id);
+                  const request = latestRequestByCourse.get(course.id);
 
-              <div className="mt-5">
-                {enrolled ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-                    <CheckCircle2 className="size-3.5" /> Enrolled
-                  </span>
-                ) : request?.status === "PENDING" ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-xs font-semibold text-indigo">
-                    <Clock className="size-3.5" /> Request pending
-                  </span>
-                ) : request?.status === "REJECTED" ? (
-                  <div className="space-y-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700">
-                      <XCircle className="size-3.5" /> Request declined
-                    </span>
-                    <form action={requestEnrollment.bind(null, course.id)}>
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant="outline"
-                        disabled={!isActive}
-                        className="w-full border-border text-indigo disabled:opacity-50"
-                      >
-                        Request again
-                      </Button>
-                    </form>
-                  </div>
-                ) : (
-                  <form action={requestEnrollment.bind(null, course.id)}>
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={!isActive}
-                      className="w-full bg-indigo text-white hover:bg-indigo/90 disabled:opacity-50"
-                    >
-                      Request Enrollment
-                    </Button>
-                  </form>
-                )}
+                  return (
+                    <div key={course.id} className="flex flex-col rounded-xl border border-border bg-white p-6">
+                      <h3 className="font-semibold text-indigo">{course.name}</h3>
+                      <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                        {course.description}
+                      </p>
+
+                      <div className="mt-5">
+                        {enrolled ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+                            <CheckCircle2 className="size-3.5" /> Enrolled
+                          </span>
+                        ) : request?.status === "PENDING" ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-xs font-semibold text-indigo">
+                            <Clock className="size-3.5" /> Request pending
+                          </span>
+                        ) : request?.status === "REJECTED" ? (
+                          <div className="space-y-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700">
+                              <XCircle className="size-3.5" /> Request declined
+                            </span>
+                            <form action={requestEnrollment.bind(null, course.id)}>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                variant="outline"
+                                disabled={!isActive}
+                                className="w-full border-border text-indigo disabled:opacity-50"
+                              >
+                                Request again
+                              </Button>
+                            </form>
+                          </div>
+                        ) : (
+                          <form action={requestEnrollment.bind(null, course.id)}>
+                            <Button
+                              type="submit"
+                              size="sm"
+                              disabled={!isActive}
+                              className="w-full bg-indigo text-white hover:bg-indigo/90 disabled:opacity-50"
+                            >
+                              Request Enrollment
+                            </Button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -96,3 +107,10 @@ export default async function BrowseCoursesPage() {
     </DashboardShell>
   );
 }
+
+const DOMAIN_ORDER = ["TECHNICAL", "APTITUDE", "SOFT_SKILL"] as const;
+const DOMAIN_LABELS: Record<(typeof DOMAIN_ORDER)[number], string> = {
+  TECHNICAL: "Technical Courses",
+  APTITUDE: "Aptitude Training",
+  SOFT_SKILL: "Soft Skills",
+};

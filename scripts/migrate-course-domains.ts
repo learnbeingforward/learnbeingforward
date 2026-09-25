@@ -36,7 +36,13 @@ async function main() {
   // Rename + re-tag PTP itself — it keeps only the Java/DSA modules going forward.
   await prisma.course.update({
     where: { id: ptp.id },
-    data: { name: "Java & DSA", domain: "TECHNICAL" },
+    data: {
+      name: "Java & DSA",
+      domain: "TECHNICAL",
+      shortDescription: "Deep, interview-focused Java and Data Structures & Algorithms training for placement readiness.",
+      description:
+        "A comprehensive Java and DSA program — from core syntax and OOP through collections, concurrency, and design patterns, alongside a full data-structures-and-algorithms track covering arrays, trees, graphs, dynamic programming, and mock coding interviews.",
+    },
   });
 
   let maxOrder = (await prisma.course.aggregate({ _max: { order: true } }))._max.order ?? 0;

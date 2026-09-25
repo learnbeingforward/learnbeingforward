@@ -16,8 +16,11 @@ function slugify(value: string) {
 async function loadAllCourseData(): Promise<CourseSubModuleContentData[]> {
   const modules = await Promise.all([
     import("./content/submodules/placement-training-program-technical"),
-    import("./content/submodules/placement-training-program-aptitude"),
-    import("./content/submodules/placement-training-program-softskills"),
+    import("./content/submodules/quantitative-aptitude"),
+    import("./content/submodules/logical-reasoning"),
+    import("./content/submodules/verbal-reasoning"),
+    import("./content/submodules/non-verbal-reasoning"),
+    import("./content/submodules/soft-skills"),
     import("./content/submodules/full-stack-development"),
     import("./content/submodules/frontend-development"),
     import("./content/submodules/backend-development"),
@@ -33,7 +36,7 @@ async function main() {
   let generated = 0;
   const touchedModuleIds = new Set<string>();
 
-  // Group content by courseSlug since PTP is split across three files.
+  // Group content by courseSlug in case any course's content is split across files.
   const bySlug = new Map<string, CourseSubModuleContentData["submodules"]>();
   for (const courseData of allCourseData) {
     const list = bySlug.get(courseData.courseSlug) ?? [];

@@ -26,12 +26,30 @@ export default async function CoursesPage() {
       />
 
       <section className="pb-24">
-        <div className="container-page grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course, i) => (
-            <CourseCard key={course.slug} course={course} techLookup={techLookup} delay={i * 0.06} />
-          ))}
+        <div className="container-page space-y-14">
+          {DOMAIN_ORDER.map((domain) => {
+            const domainCourses = courses.filter((c) => c.domain === domain);
+            if (domainCourses.length === 0) return null;
+            return (
+              <div key={domain}>
+                <h2 className="mb-6 text-xl font-bold text-indigo">{DOMAIN_LABELS[domain]}</h2>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {domainCourses.map((course, i) => (
+                    <CourseCard key={course.slug} course={course} techLookup={techLookup} delay={i * 0.06} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
     </>
   );
 }
+
+const DOMAIN_ORDER = ["TECHNICAL", "APTITUDE", "SOFT_SKILL"] as const;
+const DOMAIN_LABELS: Record<(typeof DOMAIN_ORDER)[number], string> = {
+  TECHNICAL: "Technical Courses",
+  APTITUDE: "Aptitude Training",
+  SOFT_SKILL: "Soft Skills",
+};

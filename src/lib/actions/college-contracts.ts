@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -21,7 +22,10 @@ export async function requestTraining(
   const isAdmin2 = session.user.role === "ADMIN2";
 
   const collegeId = String(formData.get("collegeId") ?? "").trim();
-  const courseId = String(formData.get("courseId") ?? "").trim();
+  const courseIds = String(formData.get("courseIds") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
   const contractType = String(formData.get("contractType") ?? "").trim();
   const minStudentsInput = String(formData.get("minStudents") ?? "100").trim();
   const totalDaysInput = String(formData.get("totalDays") ?? "").trim();
@@ -31,8 +35,8 @@ export async function requestTraining(
   const targetBranchInput = String(formData.get("targetBranch") ?? "").trim();
   const targetSemesterInput = String(formData.get("targetSemester") ?? "").trim();
 
-  if (!collegeId || !courseId || !contractType || !totalDaysInput || !startDateInput) {
-    return { ok: false, error: "Please fill in all fields before submitting." };
+  if (!collegeId || courseIds.length === 0 || !contractType || !totalDaysInput || !startDateInput) {
+    return { ok: false, error: "Please fill in all fields before submitting — including at least one domain and course." };
   }
   if (!["CSR", "PER_STUDENT_HOURLY", "PER_DAY_FLAT"].includes(contractType)) {
     return { ok: false, error: "Select a valid training type." };
@@ -70,24 +74,30 @@ export async function requestTraining(
   endDate.setDate(endDate.getDate() + totalDays - 1);
 
   const targetSemester = targetSemesterInput ? Number.parseInt(targetSemesterInput, 10) : null;
+  const requestGroupId = courseIds.length > 1 ? randomUUID() : null;
 
-  await prisma.collegeContract.create({
-    data: {
-      collegeId,
-      courseId,
-      contractType: contractType as never,
-      ratePerStudentHour,
-      flatRatePerDay,
-      minStudents,
-      totalDays,
-      startDate,
-      endDate,
-      targetBranch: targetBranchInput || null,
-      targetSemester,
-      status: isAdmin2 ? "PENDING_RATE" : "PENDING",
-      requestedByAdminId: isAdmin2 ? session.user.id : null,
-    },
-  });
+  await prisma.$transaction(
+    courseIds.map((courseId) =>
+      prisma.collegeContract.create({
+        data: {
+          collegeId,
+          courseId,
+          contractType: contractType as never,
+          ratePerStudentHour,
+          flatRatePerDay,
+          minStudents,
+          totalDays,
+          startDate,
+          endDate,
+          targetBranch: targetBranchInput || null,
+          targetSemester,
+          status: isAdmin2 ? "PENDING_RATE" : "PENDING",
+          requestedByAdminId: isAdmin2 ? session.user.id : null,
+          requestGroupId,
+        },
+      })
+    )
+  );
 
   revalidatePath("/lms/company/colleges");
   revalidatePath("/lms/college/contracts");
