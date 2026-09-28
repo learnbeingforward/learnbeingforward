@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { AddStudentForm } from "@/components/lms/AddStudentForm";
+import { AddStudentSection } from "@/components/lms/AddStudentSection";
 import { AddCollegeForm } from "@/components/lms/AddCollegeForm";
 import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm";
 import { CreateAdmin2AccountForm } from "@/components/lms/CreateAdmin2AccountForm";
@@ -23,7 +23,7 @@ export default async function CompanyAccountsPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
             New Student Account
           </h2>
-          <AddStudentForm colleges={colleges} />
+          <AddStudentSection colleges={colleges} />
         </div>
 
         <div>

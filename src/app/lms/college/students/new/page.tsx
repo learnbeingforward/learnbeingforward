@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { AddStudentForm } from "@/components/lms/AddStudentForm";
+import { AddStudentSection } from "@/components/lms/AddStudentSection";
 
 export default function AddCollegeStudentPage() {
   return (
@@ -9,9 +9,11 @@ export default function AddCollegeStudentPage() {
         Add a student to your college&apos;s roster. This doesn&apos;t create a login by itself —
         the student signs up themselves on the login page, and it only succeeds if their name and
         email match exactly what you enter here for your college. Once they sign up, the company
-        reviews and approves the registration before they can request courses.
+        reviews and approves the registration before they can request courses. If you bulk-upload
+        students with a password column filled in, those accounts are active immediately with that
+        password instead.
       </p>
-      <AddStudentForm />
+      <AddStudentSection />
     </DashboardShell>
   );
 }

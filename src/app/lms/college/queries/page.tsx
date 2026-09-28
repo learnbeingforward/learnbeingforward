@@ -4,7 +4,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { getCollegeStudentRows } from "@/lib/college-data";
 import { Badge } from "@/components/ui/badge";
-import { RequestExceptionForm } from "@/components/lms/RequestExceptionForm";
+import { ExceptionRequestList } from "@/components/lms/ExceptionRequestList";
 
 export default async function CollegeQueriesPage() {
   const session = await auth();
@@ -33,18 +33,16 @@ export default async function CollegeQueriesPage() {
           All your students currently meet the attendance requirement — nothing to request.
         </div>
       ) : (
-        <div className="mb-10 grid gap-4 sm:grid-cols-2">
-          {ineligibleRows.map((row) => (
-            <RequestExceptionForm
-              key={row.enrollmentId}
-              enrollmentId={row.enrollmentId}
-              studentName={row.studentName}
-              studentUsn={row.studentUsn}
-              courseName={row.courseName}
-              pct={row.pct}
-            />
-          ))}
-        </div>
+        <ExceptionRequestList
+          rows={ineligibleRows.map((row) => ({
+            enrollmentId: row.enrollmentId,
+            studentName: row.studentName,
+            studentEmail: row.studentEmail,
+            studentUsn: row.studentUsn,
+            courseName: row.courseName,
+            pct: row.pct,
+          }))}
+        />
       )}
 
       {pastRequests.length > 0 && (
