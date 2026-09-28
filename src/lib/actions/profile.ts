@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isCompanyStaff } from "@/lib/auth-helpers";
 
 function slugify(value: string) {
   return value
@@ -54,6 +55,53 @@ export async function updateStudentProfile(
   });
 
   revalidatePath("/lms/student/profile");
+  revalidatePath("/lms/college/students");
+  return { ok: true };
+}
+
+export type UpdateStudentDetailsState = { ok: boolean; error?: string } | null;
+
+// Company staff or the student's own college can edit a student's record directly —
+// unlike the student's own self-service form, this isn't gated behind a request/approval
+// step since these are already the parties who'd approve such a change anyway.
+export async function updateStudentDetailsByStaff(
+  studentId: string,
+  _prevState: UpdateStudentDetailsState,
+  formData: FormData
+): Promise<UpdateStudentDetailsState> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Not authorized." };
+
+  const student = await prisma.user.findUnique({ where: { id: studentId, role: "STUDENT" } });
+  if (!student) return { ok: false, error: "Student not found." };
+
+  const isStaff = isCompanyStaff(session.user.role);
+  const isOwningCollege = session.user.role === "COLLEGE_ADMIN" && session.user.collegeId === student.collegeId;
+  if (!isStaff && !isOwningCollege) {
+    return { ok: false, error: "Not authorized to edit this student." };
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const usn = String(formData.get("usn") ?? "").trim();
+  const fatherName = String(formData.get("fatherName") ?? "").trim();
+  const branch = String(formData.get("branch") ?? "").trim();
+  const semesterInput = String(formData.get("semester") ?? "").trim();
+  const semester = semesterInput ? Number.parseInt(semesterInput, 10) : null;
+
+  if (!name) return { ok: false, error: "Name is required." };
+
+  await prisma.user.update({
+    where: { id: studentId },
+    data: {
+      name,
+      usn: usn || null,
+      fatherName: fatherName || null,
+      branch: branch || null,
+      semester,
+    },
+  });
+
+  revalidatePath("/lms/company/students");
   revalidatePath("/lms/college/students");
   return { ok: true };
 }

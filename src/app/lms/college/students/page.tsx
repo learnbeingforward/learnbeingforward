@@ -12,28 +12,46 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCollegeStudentRows, getStudentDetail } from "@/lib/college-data";
+import { getEnrollmentProgress } from "@/lib/enrollment-progress";
 import { BackLink } from "@/components/lms/BackLink";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
 import { StudentDetailView } from "@/components/lms/StudentDetailView";
+import { EnrollmentProgressView } from "@/components/lms/EnrollmentProgressView";
+
+const BASE_PATH = "/lms/college/students";
 
 export default async function CollegeStudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; branch?: string; semester?: string; studentId?: string }>;
+  searchParams: Promise<{ view?: string; branch?: string; semester?: string; studentId?: string; enrollmentId?: string }>;
 }) {
-  const { view, branch, semester, studentId } = await searchParams;
+  const { view, branch, semester, studentId, enrollmentId } = await searchParams;
   const session = await auth();
   const collegeId = session!.user.collegeId;
+
+  if (studentId && enrollmentId) {
+    const progress = await getEnrollmentProgress(enrollmentId);
+    return (
+      <DashboardShell title="Enrollment Progress" subtitle="Session-by-session detail" navLinks={navLinks}>
+        <BackLink href={`${BASE_PATH}?studentId=${studentId}`} label="Back to Student" />
+        {!progress || progress.collegeId !== collegeId ? (
+          <p className="text-sm text-muted-foreground">This enrollment doesn&apos;t belong to your college.</p>
+        ) : (
+          <EnrollmentProgressView progress={progress} />
+        )}
+      </DashboardShell>
+    );
+  }
 
   if (studentId) {
     const detail = await getStudentDetail(studentId);
     return (
       <DashboardShell title="Student" subtitle="Full profile" navLinks={navLinks}>
-        <BackLink href="/lms/college/students" label="Back to Students" />
+        <BackLink href={BASE_PATH} label="Back to Students" />
         {!detail || detail.collegeId !== collegeId ? (
           <p className="text-sm text-muted-foreground">This student doesn&apos;t belong to your college.</p>
         ) : (
-          <StudentDetailView student={detail} />
+          <StudentDetailView student={detail} basePath={BASE_PATH} />
         )}
       </DashboardShell>
     );

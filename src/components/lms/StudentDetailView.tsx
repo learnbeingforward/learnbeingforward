@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { EditStudentDialog } from "@/components/lms/EditStudentDialog";
 
 export type StudentDetailEnrollment = {
   id: string;
@@ -11,8 +13,10 @@ export type StudentDetailEnrollment = {
 };
 
 export type StudentDetail = {
+  id: string;
   name: string;
   email: string;
+  fatherName: string | null;
   branch: string | null;
   semester: number | null;
   usn: string | null;
@@ -20,11 +24,23 @@ export type StudentDetail = {
   enrollments: StudentDetailEnrollment[];
 };
 
-export function StudentDetailView({ student }: { student: StudentDetail }) {
+export function StudentDetailView({ student, basePath }: { student: StudentDetail; basePath: string }) {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="rounded-xl border border-border bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-indigo">{student.name}</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-indigo">{student.name}</h2>
+          <EditStudentDialog
+            student={{
+              id: student.id,
+              name: student.name,
+              fatherName: student.fatherName,
+              branch: student.branch,
+              semester: student.semester,
+              usn: student.usn,
+            }}
+          />
+        </div>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Email</dt>
@@ -33,6 +49,10 @@ export function StudentDetailView({ student }: { student: StudentDetail }) {
           <div>
             <dt className="text-muted-foreground">USN</dt>
             <dd className="text-indigo">{student.usn ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Father&apos;s Name</dt>
+            <dd className="text-indigo">{student.fatherName ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Branch</dt>
@@ -60,13 +80,18 @@ export function StudentDetailView({ student }: { student: StudentDetail }) {
       <div className="rounded-xl border border-border bg-white">
         <div className="border-b border-border p-6">
           <p className="text-sm font-semibold text-indigo">Enrollments ({student.enrollments.length})</p>
+          <p className="mt-1 text-xs text-muted-foreground">Click a course to see session-by-session progress.</p>
         </div>
         {student.enrollments.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">Not enrolled in any course yet.</p>
         ) : (
           <div className="divide-y divide-border">
             {student.enrollments.map((e) => (
-              <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <Link
+                key={e.id}
+                href={`${basePath}?studentId=${student.id}&enrollmentId=${e.id}`}
+                className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-cream/60"
+              >
                 <div>
                   <p className="text-sm font-medium text-indigo">{e.courseName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -82,7 +107,7 @@ export function StudentDetailView({ student }: { student: StudentDetail }) {
                 >
                   {e.pct}% {e.eligible ? "· Eligible" : "· Not Yet Eligible"}
                 </Badge>
-              </div>
+              </Link>
             ))}
           </div>
         )}

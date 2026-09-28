@@ -35,6 +35,7 @@ export async function submitSessionAttendance(sessionId: string, formData: FormD
           enrollmentId: enrollment.id,
           classDate,
           present: formData.get(`present_${enrollment.id}`) === "on",
+          trainingSessionId: sessionId,
         },
       })
     ),

@@ -23,6 +23,7 @@ import {
   deleteCourseSubModule,
 } from "@/lib/actions/site-content";
 import { TechCheckboxGrid } from "@/components/lms/TechCheckboxGrid";
+import { SubModuleModuleSelect } from "@/components/lms/SubModuleModuleSelect";
 
 export default async function EditCoursesPage() {
   const [courses, technologies, modulesForSelect] = await Promise.all([
@@ -155,23 +156,7 @@ export default async function EditCoursesPage() {
                 Module
                 <RequiredMark />
               </Label>
-              <Select name="courseModuleId" required>
-                <SelectTrigger className="mt-1.5 w-full">
-                  <SelectValue placeholder="Select module">
-                    {(value: string | null) => {
-                      const m = modulesForSelect.find((x) => x.id === value);
-                      return m ? `${m.course.name} — ${m.title}` : "Select module";
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {modulesForSelect.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.course.name} — {m.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SubModuleModuleSelect modules={modulesForSelect} />
             </div>
             <div>
               <Label htmlFor="subModuleTitle">

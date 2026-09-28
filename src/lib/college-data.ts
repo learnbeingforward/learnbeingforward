@@ -78,8 +78,10 @@ export async function getStudentDetail(studentId: string) {
   if (!student) return null;
 
   return {
+    id: student.id,
     name: student.name,
     email: student.email,
+    fatherName: student.fatherName,
     branch: student.branch,
     semester: student.semester,
     usn: student.usn,

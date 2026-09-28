@@ -7,6 +7,8 @@ import { AttendanceBar } from "@/components/shared/AttendanceBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
+import { EnrollmentProgressView } from "@/components/lms/EnrollmentProgressView";
+import { getEnrollmentProgress } from "@/lib/enrollment-progress";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { format } from "date-fns";
@@ -14,76 +16,24 @@ import { format } from "date-fns";
 export default async function StudentDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string }>;
+  searchParams: Promise<{ enrollmentId?: string }>;
 }) {
-  const { courseId } = await searchParams;
+  const { enrollmentId } = await searchParams;
   const session = await auth();
   const userId = session!.user.id;
 
-  if (courseId) {
-    const enrollment = await prisma.enrollment.findFirst({
-      where: { studentId: userId, courseId },
-      include: { course: true, trainer: true, attendanceRecords: true },
-    });
-
-    if (!enrollment) {
-      return (
-        <DashboardShell title="Course" subtitle="Not found" navLinks={navLinks}>
-          <BackLink href="/lms/student" label="Back to Dashboard" />
-          <p className="text-sm text-muted-foreground">You&apos;re not enrolled in this course.</p>
-        </DashboardShell>
-      );
-    }
-
-    const upcoming = enrollment.batchId
-      ? await prisma.trainingSession.findMany({
-          where: { batchId: enrollment.batchId, attendanceTaken: false, sessionDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-          include: { courseModule: true },
-          orderBy: [{ sessionDate: "asc" }, { slotNumber: "asc" }],
-        })
-      : [];
-
-    const total = enrollment.attendanceRecords.length || enrollment.totalClasses;
-    const present = enrollment.attendanceRecords.filter((r) => r.present).length;
-    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+  if (enrollmentId) {
+    const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId }, select: { studentId: true } });
+    const progress = enrollment?.studentId === userId ? await getEnrollmentProgress(enrollmentId) : null;
 
     return (
-      <DashboardShell title={enrollment.course.name} subtitle="Course detail" navLinks={navLinks}>
+      <DashboardShell title="Course Progress" subtitle="Session-by-session detail" navLinks={navLinks}>
         <BackLink href="/lms/student" label="Back to Dashboard" />
-        <div className="max-w-lg space-y-6">
-          <div className="rounded-xl border border-border bg-white p-6">
-            <dl className="space-y-3 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Trainer</dt>
-                <dd className="text-indigo">{enrollment.trainer?.name ?? "Not yet assigned"}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Classes Attended</dt>
-                <dd className="text-indigo">
-                  {present} / {total} ({pct}%)
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          {upcoming.length > 0 && (
-            <div className="rounded-xl border border-border bg-white">
-              <div className="border-b border-border p-4">
-                <p className="text-sm font-semibold text-indigo">Upcoming Sessions</p>
-              </div>
-              <div className="divide-y divide-border">
-                {upcoming.map((s) => (
-                  <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
-                    <span className="text-indigo">{s.courseModule?.title ?? s.topic ?? "Topic TBD"}</span>
-                    <span className="text-muted-foreground">
-                      {format(s.sessionDate, "EEE, MMM d")} &middot; {s.startTime}–{s.endTime}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {!progress ? (
+          <p className="text-sm text-muted-foreground">You&apos;re not enrolled in this course.</p>
+        ) : (
+          <EnrollmentProgressView progress={progress} />
+        )}
       </DashboardShell>
     );
   }
@@ -196,7 +146,7 @@ export default async function StudentDashboardPage({
                     <h2 className="mt-1 text-xl font-bold text-indigo">{enrollment.course.name}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Trainer: {enrollment.trainer?.name ?? "Not yet assigned"} &middot;{" "}
-                      <Link href={`/lms/student?courseId=${enrollment.courseId}`} className="text-indigo underline">
+                      <Link href={`/lms/student?enrollmentId=${enrollment.id}`} className="text-indigo underline">
                         View Details
                       </Link>
                     </p>

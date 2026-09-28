@@ -3,26 +3,44 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
 import { StudentDetailView } from "@/components/lms/StudentDetailView";
+import { EnrollmentProgressView } from "@/components/lms/EnrollmentProgressView";
 import { BackLink } from "@/components/lms/BackLink";
 import { getStudentDetail } from "@/lib/college-data";
+import { getEnrollmentProgress } from "@/lib/enrollment-progress";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
+
+const BASE_PATH = "/lms/company/students";
 
 export default async function CompanyAllStudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ studentId?: string }>;
+  searchParams: Promise<{ studentId?: string; enrollmentId?: string }>;
 }) {
-  const { studentId } = await searchParams;
+  const { studentId, enrollmentId } = await searchParams;
+
+  if (studentId && enrollmentId) {
+    const progress = await getEnrollmentProgress(enrollmentId);
+    return (
+      <DashboardShell title="Enrollment Progress" subtitle="Session-by-session detail" navLinks={navLinks}>
+        <BackLink href={`${BASE_PATH}?studentId=${studentId}`} label="Back to Student" />
+        {!progress ? (
+          <p className="text-sm text-muted-foreground">This enrollment no longer exists.</p>
+        ) : (
+          <EnrollmentProgressView progress={progress} />
+        )}
+      </DashboardShell>
+    );
+  }
 
   if (studentId) {
     const detail = await getStudentDetail(studentId);
     return (
       <DashboardShell title="Student" subtitle="Full profile" navLinks={navLinks}>
-        <BackLink href="/lms/company/students" label="Back to All Students" />
+        <BackLink href={BASE_PATH} label="Back to All Students" />
         {!detail ? (
           <p className="text-sm text-muted-foreground">This student no longer exists.</p>
         ) : (
-          <StudentDetailView student={detail} />
+          <StudentDetailView student={detail} basePath={BASE_PATH} />
         )}
       </DashboardShell>
     );

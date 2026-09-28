@@ -284,7 +284,8 @@ model TrainingSession {
   attendanceTaken Boolean       @default(false)
   createdAt       DateTime      @default(now())
 
-  invoiceLineItems TrainerInvoiceSession[]
+  invoiceLineItems  TrainerInvoiceSession[]
+  attendanceRecords AttendanceRecord[]
 
   @@unique([batchId, sessionDate, slotNumber])
   @@index([batchId])
@@ -374,13 +375,16 @@ model EnrollmentRequest {
 }
 
 model AttendanceRecord {
-  id           String     @id @default(cuid())
-  enrollmentId String
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  classDate    DateTime
-  present      Boolean
+  id                String           @id @default(cuid())
+  enrollmentId      String
+  enrollment        Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  classDate         DateTime
+  present           Boolean
+  trainingSessionId String?
+  trainingSession   TrainingSession? @relation(fields: [trainingSessionId], references: [id])
 
   @@index([enrollmentId])
+  @@index([trainingSessionId])
 }
 
 model Certification {
