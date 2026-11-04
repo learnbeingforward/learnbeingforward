@@ -95,6 +95,8 @@
   --font-sans: var(--font-poppins);
 
   --animate-marquee: marquee 32s linear infinite;
+  --animate-footer-logo-drift: footer-logo-drift 9s ease-in-out infinite alternate;
+  --animate-footer-logo-shine: footer-logo-shine 3.5s ease-in-out infinite;
 }
 
 @keyframes marquee {
@@ -103,6 +105,27 @@
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes footer-logo-drift {
+  from {
+    transform: translateX(-3%);
+  }
+  to {
+    transform: translateX(3%);
+  }
+}
+
+@keyframes footer-logo-shine {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 

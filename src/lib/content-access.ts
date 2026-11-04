@@ -28,3 +28,22 @@ export async function getUnlockedContentForStudent(studentId: string) {
     orderBy: { title: "asc" },
   });
 }
+
+// Course book PDFs are a whole-course reference, not tied to a specific class session —
+// visible to a student as soon as they're enrolled in the course, independent of the
+// per-module attendance-based unlock above. Still gated behind its own access request.
+export async function getCourseBooksForStudent(studentId: string) {
+  const enrollments = await prisma.enrollment.findMany({
+    where: { studentId },
+    select: { courseId: true },
+  });
+  if (enrollments.length === 0) return [];
+
+  const courseIds = enrollments.map((e) => e.courseId);
+
+  return prisma.courseModule.findMany({
+    where: { courseId: { in: courseIds }, mainPdfUrl: { not: null } },
+    include: { course: true },
+    orderBy: { title: "asc" },
+  });
+}

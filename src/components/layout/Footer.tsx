@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { FooterLogoDrift } from "@/components/brand/FooterLogoDrift";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -60,6 +61,8 @@ export async function Footer() {
           </ul>
         </div>
       </div>
+
+      <FooterLogoDrift />
 
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-white/50 sm:flex-row">

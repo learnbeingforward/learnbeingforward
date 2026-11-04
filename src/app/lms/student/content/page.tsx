@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { Download, Clock } from "lucide-react";
+import { Download, Clock, BookOpen } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
-import { getUnlockedContentForStudent } from "@/lib/content-access";
-import { requestContentAccess } from "@/lib/actions/content-access";
+import { getUnlockedContentForStudent, getCourseBooksForStudent } from "@/lib/content-access";
+import { requestContentAccess, requestModulePdfAccess } from "@/lib/actions/content-access";
 
 export default async function StudentContentPage({
   searchParams,
@@ -18,14 +18,16 @@ export default async function StudentContentPage({
   const session = await auth();
   const studentId = session!.user.id;
 
-  const [unlocked, myRequests] = await Promise.all([
+  const [unlocked, courseBooks, myRequests] = await Promise.all([
     getUnlockedContentForStudent(studentId),
+    getCourseBooksForStudent(studentId),
     prisma.contentAccessRequest.findMany({ where: { studentId } }),
   ]);
 
   const requestByContentId = new Map(myRequests.map((r) => [r.courseContentId, r]));
+  const requestByModuleId = new Map(myRequests.map((r) => [r.courseModuleId, r]));
 
-  if (unlocked.length === 0) {
+  if (unlocked.length === 0 && courseBooks.length === 0) {
     return (
       <DashboardShell title="Content" subtitle="Course materials" navLinks={navLinks}>
         <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
@@ -38,14 +40,50 @@ export default async function StudentContentPage({
 
   // Level 3: a specific module's sub-modules (or flat items, for legacy module-level content)
   if (courseId && moduleId) {
-    const course = unlocked.find((i) => i.courseId === courseId)?.course;
-    const courseModule = unlocked.find((i) => i.courseModuleId === moduleId)?.courseModule;
+    const courseBook = courseBooks.find((m) => m.id === moduleId);
+    const course = unlocked.find((i) => i.courseId === courseId)?.course ?? courseBook?.course;
+    const courseModule = unlocked.find((i) => i.courseModuleId === moduleId)?.courseModule ?? courseBook;
     const items = unlocked.filter((i) => i.courseId === courseId && i.courseModuleId === moduleId);
+    const bookRequest = requestByModuleId.get(moduleId);
 
     return (
       <DashboardShell title={courseModule?.title ?? "Module"} subtitle={course?.name ?? "Content"} navLinks={navLinks}>
         <BackLink href={`/lms/student/content?courseId=${courseId}`} label={`Back to ${course?.name ?? "course"}`} />
         <div className="space-y-3">
+          {courseBook && (
+            <div className="rounded-xl border border-indigo/20 bg-indigo/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="size-4 text-indigo" />
+                  <div>
+                    <p className="text-sm font-semibold text-indigo">{courseBook.mainPdfTitle}</p>
+                    <p className="text-xs text-muted-foreground">Whole course book</p>
+                  </div>
+                </div>
+                {bookRequest?.status === "APPROVED" ? (
+                  <Button
+                    render={<a href={courseBook.mainPdfUrl!} target="_blank" rel="noopener noreferrer" />}
+                    nativeButton={false}
+                    size="sm"
+                    className="bg-indigo text-white hover:bg-indigo/90"
+                  >
+                    <Download className="size-3.5" />
+                    Download
+                  </Button>
+                ) : bookRequest?.status === "PENDING" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-xs font-semibold text-indigo">
+                    <Clock className="size-3.5" /> Request pending
+                  </span>
+                ) : (
+                  <form action={requestModulePdfAccess.bind(null, moduleId)}>
+                    <Button type="submit" size="sm" variant="outline" className="border-indigo/30 text-indigo">
+                      Request Access
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
           {items.map((item) => {
             const request = requestByContentId.get(item.id);
             return (
@@ -100,7 +138,7 @@ export default async function StudentContentPage({
               </div>
             );
           })}
-          {items.length === 0 && (
+          {items.length === 0 && !courseBook && (
             <p className="p-4 text-sm text-muted-foreground">Nothing unlocked for this module yet.</p>
           )}
         </div>
@@ -110,15 +148,20 @@ export default async function StudentContentPage({
 
   // Level 2: a course's modules
   if (courseId) {
-    const course = unlocked.find((i) => i.courseId === courseId)?.course;
+    const course = unlocked.find((i) => i.courseId === courseId)?.course ?? courseBooks.find((m) => m.courseId === courseId)?.course;
     const courseItems = unlocked.filter((i) => i.courseId === courseId);
 
-    const byModule = new Map<string, { title: string; count: number }>();
+    const byModule = new Map<string, { title: string; count: number; hasBook: boolean }>();
     for (const item of courseItems) {
       if (!item.courseModuleId || !item.courseModule) continue;
       const existing = byModule.get(item.courseModuleId);
       if (existing) existing.count += 1;
-      else byModule.set(item.courseModuleId, { title: item.courseModule.title, count: 1 });
+      else byModule.set(item.courseModuleId, { title: item.courseModule.title, count: 1, hasBook: false });
+    }
+    for (const mod of courseBooks.filter((m) => m.courseId === courseId)) {
+      const existing = byModule.get(mod.id);
+      if (existing) existing.hasBook = true;
+      else byModule.set(mod.id, { title: mod.title, count: 0, hasBook: true });
     }
 
     return (
@@ -133,7 +176,9 @@ export default async function StudentContentPage({
             >
               <p className="font-semibold text-indigo">{mod.title}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {mod.count} sub-module{mod.count !== 1 ? "s" : ""}
+                {mod.count > 0 && `${mod.count} sub-module${mod.count !== 1 ? "s" : ""}`}
+                {mod.count > 0 && mod.hasBook && " · "}
+                {mod.hasBook && "Course book available"}
               </p>
             </Link>
           ))}
@@ -142,12 +187,17 @@ export default async function StudentContentPage({
     );
   }
 
-  // Level 1: courses with unlocked content
+  // Level 1: courses with unlocked content or a course book
   const byCourse = new Map<string, { name: string; count: number }>();
   for (const item of unlocked) {
     const existing = byCourse.get(item.courseId);
     if (existing) existing.count += 1;
     else byCourse.set(item.courseId, { name: item.course.name, count: 1 });
+  }
+  for (const mod of courseBooks) {
+    if (!byCourse.has(mod.courseId)) {
+      byCourse.set(mod.courseId, { name: mod.course.name, count: 0 });
+    }
   }
 
   return (
@@ -161,7 +211,7 @@ export default async function StudentContentPage({
           >
             <p className="font-semibold text-indigo">{course.name}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {course.count} item{course.count !== 1 ? "s" : ""} unlocked
+              {course.count > 0 ? `${course.count} item${course.count !== 1 ? "s" : ""} unlocked` : "Course book available"}
             </p>
           </Link>
         ))}

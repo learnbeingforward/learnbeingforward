@@ -22,3 +22,22 @@ export async function requestContentAccess(courseContentId: string) {
   revalidatePath("/lms/student/content");
   revalidatePath("/lms/company/course-content");
 }
+
+export async function requestModulePdfAccess(courseModuleId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    throw new Error("Only students can request content access.");
+  }
+
+  const existing = await prisma.contentAccessRequest.findUnique({
+    where: { studentId_courseModuleId: { studentId: session.user.id, courseModuleId } },
+  });
+  if (existing) return;
+
+  await prisma.contentAccessRequest.create({
+    data: { studentId: session.user.id, courseModuleId },
+  });
+
+  revalidatePath("/lms/student/content");
+  revalidatePath("/lms/company/course-content");
+}

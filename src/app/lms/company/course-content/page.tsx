@@ -5,6 +5,7 @@ import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
+import { SetModuleMainPdfForm } from "@/components/lms/SetModuleMainPdfForm";
 import { BackLink } from "@/components/lms/BackLink";
 import { deleteCourseContent, decideContentAccessRequest } from "@/lib/actions/course-content";
 import { format } from "date-fns";
@@ -15,7 +16,7 @@ export default async function CompanyCourseContentPage({
   searchParams: Promise<{ courseId?: string; moduleId?: string }>;
 }) {
   const { courseId, moduleId } = await searchParams;
-  const [courses, modules, subModules, content, pendingRequests] = await Promise.all([
+  const [courses, modules, subModules, content, pendingContentRequests, pendingPdfRequests] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
     prisma.courseSubModule.findMany({ orderBy: { order: "asc" } }),
@@ -24,11 +25,18 @@ export default async function CompanyCourseContentPage({
       orderBy: [{ course: { name: "asc" } }, { title: "asc" }],
     }),
     prisma.contentAccessRequest.findMany({
-      where: { status: "PENDING" },
+      where: { status: "PENDING", courseContentId: { not: null } },
       include: { student: true, courseContent: { include: { course: true, courseModule: true } } },
       orderBy: { requestedAt: "asc" },
     }),
+    prisma.contentAccessRequest.findMany({
+      where: { status: "PENDING", courseModuleId: { not: null } },
+      include: { student: true, courseModule: { include: { course: true } } },
+      orderBy: { requestedAt: "asc" },
+    }),
   ]);
+
+  const pendingCount = pendingContentRequests.length + pendingPdfRequests.length;
 
   return (
     <DashboardShell title="Course Content" subtitle="Internal only — not on the public site" navLinks={navLinks}>
@@ -37,20 +45,45 @@ export default async function CompanyCourseContentPage({
         content once their batch has had a class on it, and can download it once you approve.
       </p>
 
-      {pendingRequests.length > 0 && (
+      {pendingCount > 0 && (
         <div className="mb-8 rounded-xl border border-border bg-white">
           <div className="border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">
-              Pending Access Requests ({pendingRequests.length})
+            <p className="text-sm font-semibold text-indigo">Pending Access Requests ({pendingCount})</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              A student can ask for a specific content item and its course book separately — approve or reject
+              each independently; only what you approve becomes downloadable.
             </p>
           </div>
           <div className="divide-y divide-border">
-            {pendingRequests.map((req) => (
+            {pendingContentRequests.map((req) => (
               <div key={req.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
                 <div>
                   <p className="text-sm font-medium text-indigo">{req.student.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {req.courseContent.course.name} — {req.courseContent.courseModule?.title} &middot;{" "}
+                    Course content &middot; {req.courseContent!.course.name} — {req.courseContent!.courseModule?.title}{" "}
+                    &middot; {format(req.requestedAt, "MMM d, yyyy")}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <form action={decideContentAccessRequest.bind(null, req.id, true)}>
+                    <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                      Approve
+                    </Button>
+                  </form>
+                  <form action={decideContentAccessRequest.bind(null, req.id, false)}>
+                    <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
+                      Reject
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            ))}
+            {pendingPdfRequests.map((req) => (
+              <div key={req.id} className="flex flex-wrap items-center justify-between gap-3 bg-indigo/5 p-4">
+                <div>
+                  <p className="text-sm font-medium text-indigo">{req.student.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Course book PDF &middot; {req.courseModule!.course.name} — {req.courseModule!.title} &middot;{" "}
                     {format(req.requestedAt, "MMM d, yyyy")}
                   </p>
                 </div>
@@ -84,6 +117,12 @@ export default async function CompanyCourseContentPage({
           {courseId && moduleId ? (
             <>
               <BackLink href={`/lms/company/course-content?courseId=${courseId}`} label="Back to modules" />
+              {(() => {
+                const mod = modules.find((m) => m.id === moduleId);
+                return mod ? (
+                  <SetModuleMainPdfForm courseModuleId={mod.id} mainPdfTitle={mod.mainPdfTitle} mainPdfUrl={mod.mainPdfUrl} />
+                ) : null;
+              })()}
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
                 {modules.find((m) => m.id === moduleId)?.title} Content (
                 {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length})
@@ -133,7 +172,11 @@ export default async function CompanyCourseContentPage({
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {modules
-                  .filter((m) => content.some((c) => c.courseId === courseId && c.courseModuleId === m.id))
+                  .filter(
+                    (m) =>
+                      m.courseId === courseId &&
+                      (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl)
+                  )
                   .map((mod) => {
                     const count = content.filter(
                       (c) => c.courseId === courseId && c.courseModuleId === mod.id
@@ -145,13 +188,20 @@ export default async function CompanyCourseContentPage({
                         className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
                       >
                         <p className="font-semibold text-indigo">{mod.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">{count} item{count !== 1 ? "s" : ""}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {count > 0 && `${count} item${count !== 1 ? "s" : ""}`}
+                          {count > 0 && mod.mainPdfUrl && " · "}
+                          {mod.mainPdfUrl && "Course book attached"}
+                          {count === 0 && !mod.mainPdfUrl && "0 items"}
+                        </p>
                       </Link>
                     );
                   })}
-                {!modules.some((m) => content.some((c) => c.courseId === courseId && c.courseModuleId === m.id)) && (
-                  <p className="p-4 text-sm text-muted-foreground">Nothing added for this course yet.</p>
-                )}
+                {!modules.some(
+                  (m) =>
+                    m.courseId === courseId &&
+                    (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl)
+                ) && <p className="p-4 text-sm text-muted-foreground">Nothing added for this course yet.</p>}
               </div>
             </>
           ) : (

@@ -15,7 +15,7 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
   ".png": "image",
   ".webp": "image",
 };
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_SIZE_BYTES = 40 * 1024 * 1024;
 const ALLOWED_CATEGORIES = new Set(["cv", "content", "photo"]);
 
 function sanitizeFilename(name: string) {
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid upload category." }, { status: 400 });
   }
   if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "File is too large (max 10MB)." }, { status: 400 });
+    return NextResponse.json({ error: "File is too large (max 40MB)." }, { status: 400 });
   }
 
   const ext = path.extname(file.name).toLowerCase();

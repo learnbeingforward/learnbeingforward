@@ -55,6 +55,45 @@ export async function createCourseContent(
   return { ok: true };
 }
 
+export type SetModuleMainPdfState = { ok: boolean; error?: string } | null;
+
+export async function setModuleMainPdf(
+  courseModuleId: string,
+  _prevState: SetModuleMainPdfState,
+  formData: FormData
+): Promise<SetModuleMainPdfState> {
+  const session = await auth();
+  if (!session?.user || !isCompanyStaff(session.user.role)) {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const title = String(formData.get("mainPdfTitle") ?? "").trim();
+  const fileUrl = String(formData.get("mainPdfUrl") ?? "").trim();
+
+  if (!title || !fileUrl) {
+    return { ok: false, error: "Please provide a title and attach a PDF." };
+  }
+
+  await prisma.courseModule.update({
+    where: { id: courseModuleId },
+    data: { mainPdfTitle: title, mainPdfUrl: fileUrl },
+  });
+
+  revalidatePath("/lms/company/course-content");
+  revalidatePath("/lms/student/content");
+  return { ok: true };
+}
+
+export async function removeModuleMainPdf(courseModuleId: string) {
+  await requireCompany();
+  await prisma.courseModule.update({
+    where: { id: courseModuleId },
+    data: { mainPdfTitle: null, mainPdfUrl: null },
+  });
+  revalidatePath("/lms/company/course-content");
+  revalidatePath("/lms/student/content");
+}
+
 export async function deleteCourseContent(contentId: string) {
   await requireCompany();
   await prisma.courseContent.delete({ where: { id: contentId } });
