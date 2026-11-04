@@ -3,6 +3,8 @@ import { GraduationCap, Handshake, Rocket } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
 import { Reveal } from "@/components/shared/Reveal";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "About",
   description: "Learn Being Forward's mission, pillars, and founder story.",
