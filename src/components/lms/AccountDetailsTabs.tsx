@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -155,7 +156,11 @@ export function AccountDetailsTabs({
             <TableBody>
               {filteredStudents.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="font-medium text-indigo">{s.name}</TableCell>
+                  <TableCell className="font-medium text-indigo">
+                    <Link href={`/lms/company/account-details?type=student&id=${s.id}`} className="underline underline-offset-2 hover:text-indigo/70">
+                      {s.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{s.email}</TableCell>
                   <TableCell>
                     <RevealPasswordCell email={s.email} />
@@ -203,7 +208,11 @@ export function AccountDetailsTabs({
             <TableBody>
               {filteredColleges.map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium text-indigo">{c.collegeName}</TableCell>
+                  <TableCell className="font-medium text-indigo">
+                    <Link href={`/lms/company/account-details?type=college&id=${c.id}`} className="underline underline-offset-2 hover:text-indigo/70">
+                      {c.collegeName}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{c.adminName}</TableCell>
                   <TableCell className="text-muted-foreground">{c.adminEmail}</TableCell>
                   <TableCell>
@@ -241,7 +250,11 @@ export function AccountDetailsTabs({
             <TableBody>
               {filteredTrainers.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium text-indigo">{t.name}</TableCell>
+                  <TableCell className="font-medium text-indigo">
+                    <Link href={`/lms/company/account-details?type=trainer&id=${t.id}`} className="underline underline-offset-2 hover:text-indigo/70">
+                      {t.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{t.email}</TableCell>
                   <TableCell>
                     <RevealPasswordCell email={t.email} />
@@ -293,7 +306,11 @@ export function AccountDetailsTabs({
             <TableBody>
               {filteredAdmins.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell className="font-medium text-indigo">{a.name}</TableCell>
+                  <TableCell className="font-medium text-indigo">
+                    <Link href={`/lms/company/account-details?type=admin&id=${a.id}`} className="underline underline-offset-2 hover:text-indigo/70">
+                      {a.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{a.email}</TableCell>
                   <TableCell>
                     <RevealPasswordCell email={a.email} />

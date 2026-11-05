@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
+import { BackLink } from "@/components/lms/BackLink";
+import { AccountDetailView, type AccountDetail } from "@/components/lms/AccountDetailView";
+import type { AccountKind } from "@/lib/actions/account-details";
 import {
   AccountDetailsTabs,
   type StudentRow,
@@ -11,10 +14,61 @@ import {
   type AdminRow,
 } from "@/components/lms/AccountDetailsTabs";
 
-export default async function AccountDetailsPage() {
+async function loadAccountDetail(kind: AccountKind, id: string): Promise<AccountDetail | null> {
+  if (kind === "student") {
+    const s = await prisma.user.findUnique({ where: { id, role: "STUDENT" } });
+    if (!s) return null;
+    return { id: s.id, kind, name: s.name, email: s.email, phone: s.phone, branch: s.branch, semester: s.semester, usn: s.usn };
+  }
+  if (kind === "college") {
+    const a = await prisma.user.findUnique({ where: { id, role: "COLLEGE_ADMIN" }, include: { college: true } });
+    if (!a || !a.college) return null;
+    return {
+      id: a.id,
+      kind,
+      name: a.name,
+      email: a.email,
+      phone: a.phone,
+      collegeName: a.college.name,
+      contactEmail: a.college.contactEmail,
+    };
+  }
+  if (kind === "trainer") {
+    const t = await prisma.trainer.findUnique({ where: { id }, include: { loginUser: true } });
+    if (!t || !t.loginUser) return null;
+    return { id: t.id, kind, name: t.name, email: t.loginUser.email, phone: t.phone, hourlyRate: t.hourlyRate };
+  }
+  if (kind === "admin") {
+    const a = await prisma.user.findUnique({ where: { id, role: { in: ["SUPER_ADMIN", "ADMIN2"] } } });
+    if (!a) return null;
+    return { id: a.id, kind, name: a.name, email: a.email, phone: a.phone };
+  }
+  return null;
+}
+
+export default async function AccountDetailsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; id?: string }>;
+}) {
   const session = await auth();
   if (!session?.user || session.user.role !== "SUPER_ADMIN") {
     redirect("/lms/company");
+  }
+
+  const { type, id } = await searchParams;
+  if (type && id && ["student", "college", "trainer", "admin"].includes(type)) {
+    const account = await loadAccountDetail(type as AccountKind, id);
+    return (
+      <DashboardShell title="Account Details" subtitle="Full profile" navLinks={getCompanyNavLinksForRole(session.user.role)}>
+        <BackLink href="/lms/company/account-details" label="Back to Account Details" />
+        {!account ? (
+          <p className="text-sm text-muted-foreground">This account no longer exists.</p>
+        ) : (
+          <AccountDetailView account={account} />
+        )}
+      </DashboardShell>
+    );
   }
 
   const [studentUsers, collegeAdmins, trainers, admins] = await Promise.all([
@@ -59,7 +113,7 @@ export default async function AccountDetailsPage() {
   const colleges: CollegeRow[] = collegeAdmins
     .filter((a) => a.college)
     .map((a) => ({
-      id: a.college!.id,
+      id: a.id,
       collegeName: a.college!.name,
       contactEmail: a.college!.contactEmail,
       adminName: a.name,

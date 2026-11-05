@@ -46,6 +46,7 @@ export const companyNavLinks: LmsNavEntry[] = [
   { href: "/lms/company/trainers", label: "Trainers" },
   { href: "/lms/company/course-content", label: "Course Content" },
   { href: "/lms/company/colleges", label: "Colleges" },
+  { href: "/lms/company/account-details", label: "Account Details" },
   { href: "/lms/company/profile", label: "Profile" },
   { href: "/lms/company/edit-site", label: "Edit Site" },
 ];
@@ -55,6 +56,10 @@ export const companyNavLinks: LmsNavEntry[] = [
  * (Send Contract / Approvals / Sent to College / MOUs) for SUPER_ADMIN —
  * that split is main-admin-only, so ADMIN2 keeps the single flat link.
  * Used by the colleges section's own pages, which already know the role.
+ *
+ * Most other company pages render the static companyNavLinks directly rather
+ * than calling this, so any item that should show up everywhere (like Account
+ * Details above) has to live in the base array, not be appended only here.
  */
 export function getCompanyNavLinksForRole(role?: string): LmsNavEntry[] {
   if (role === "ADMIN2") return companyNavLinks;
@@ -69,16 +74,9 @@ export function getCompanyNavLinksForRole(role?: string): LmsNavEntry[] {
     ],
   };
 
-  const withCollegesDropdown = companyNavLinks.map((entry) =>
+  return companyNavLinks.map((entry) =>
     "href" in entry && entry.href === "/lms/company/colleges" ? collegesDropdown : entry
   );
-
-  // Account Details is main-admin-only — it surfaces every account's contact
-  // info and a password-reset-and-reveal control, so it stays out of ADMIN2's nav.
-  return [
-    ...withCollegesDropdown,
-    { href: "/lms/company/account-details", label: "Account Details" },
-  ];
 }
 
 export const trainerNavLinks: LmsNavEntry[] = [
