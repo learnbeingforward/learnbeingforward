@@ -33,6 +33,11 @@ export async function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href="/auth" className="text-sm text-white/70 hover:text-white">
+                Login
+              </Link>
+            </li>
           </ul>
         </div>
 

@@ -69,9 +69,16 @@ export function getCompanyNavLinksForRole(role?: string): LmsNavEntry[] {
     ],
   };
 
-  return companyNavLinks.map((entry) =>
+  const withCollegesDropdown = companyNavLinks.map((entry) =>
     "href" in entry && entry.href === "/lms/company/colleges" ? collegesDropdown : entry
   );
+
+  // Account Details is main-admin-only — it surfaces every account's contact
+  // info and a password-reset-and-reveal control, so it stays out of ADMIN2's nav.
+  return [
+    ...withCollegesDropdown,
+    { href: "/lms/company/account-details", label: "Account Details" },
+  ];
 }
 
 export const trainerNavLinks: LmsNavEntry[] = [

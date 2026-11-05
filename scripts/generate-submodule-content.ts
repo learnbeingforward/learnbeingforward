@@ -25,6 +25,9 @@ async function loadAllCourseData(): Promise<CourseSubModuleContentData[]> {
     import("./content/submodules/frontend-development"),
     import("./content/submodules/backend-development"),
     import("./content/submodules/data-science-ai-fundamentals"),
+    import("./content/submodules/programming-c-family"),
+    import("./content/submodules/programming-java-js"),
+    import("./content/submodules/programming-python-ts"),
   ]);
   return modules.map((m) => m.default as CourseSubModuleContentData);
 }

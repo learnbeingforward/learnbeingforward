@@ -1,5 +1,6 @@
 import { Logo } from "@/components/brand/Logo";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { SessionGuard } from "@/components/auth/SessionGuard";
 import { LmsNav, type LmsNavEntry } from "@/components/layout/LmsNav";
 
 export function DashboardShell({
@@ -15,6 +16,7 @@ export function DashboardShell({
 }) {
   return (
     <div className="min-h-screen bg-cream">
+      <SessionGuard />
       <header className="border-b border-border bg-white">
         <div className="container-page flex h-16 items-center justify-between md:h-20">
           <Logo iconSize={32} textSize="text-lg" />

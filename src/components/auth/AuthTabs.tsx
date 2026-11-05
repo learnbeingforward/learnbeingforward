@@ -18,11 +18,28 @@ const TAB_LABELS: Record<"login" | "signup", string> = {
 
 export function AuthTabs({ colleges }: { colleges: College[] }) {
   const searchParams = useSearchParams();
-  const initialMode: Mode = searchParams.get("mode") === "signup" ? "signup" : "login";
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const urlMode: Mode = searchParams.get("mode") === "signup" ? "signup" : "login";
+  const [mode, setMode] = useState<Mode>(urlMode);
+
+  // Clicking "Login"/"Sign Up" in the header or footer does a client-side navigation to
+  // the same /auth route with a different (or missing) ?mode= param — that doesn't remount
+  // this component, so the tab needs to react to the param changing, not just read it once.
+  // Adjusted during render (not in an effect) to avoid an extra render pass.
+  const [handledUrlMode, setHandledUrlMode] = useState(urlMode);
+  if (urlMode !== handledUrlMode) {
+    setHandledUrlMode(urlMode);
+    setMode(urlMode);
+  }
+
+  const timedOut = searchParams.get("reason") === "timeout";
 
   return (
     <div className="rounded-2xl border border-border bg-white p-7 shadow-sm sm:p-9">
+      {timedOut && mode === "login" && (
+        <p className="mb-5 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm text-indigo">
+          You were signed out after 5 minutes of inactivity. Please log in again.
+        </p>
+      )}
       {mode !== "forgot" && (
         <div className="mb-7 grid grid-cols-2 rounded-lg bg-cream p-1">
           {(["login", "signup"] as const).map((m) => (
