@@ -54,3 +54,46 @@ export async function backupUploadToGitHub(publicPath: string, buffer: Buffer): 
 
   console.log(`[github-upload] Backed up ${repoPath} to GitHub.`);
 }
+
+/**
+ * Companion to backupUploadToGitHub — removes a previously-backed-up file from the
+ * repo, used when an admin deletes a proctoring snapshot to actually free up
+ * storage rather than leaving an orphaned copy behind. Best-effort: silently no-ops
+ * without GITHUB_TOKEN, and never throws (logs and returns on any failure) so a
+ * failed GitHub cleanup never blocks the local/DB deletion the caller already did.
+ */
+export async function deleteUploadFromGitHub(publicPath: string): Promise<void> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return;
+
+  const owner = process.env.GITHUB_REPO_OWNER || "learnbeingforward";
+  const repo = process.env.GITHUB_REPO_NAME || "learnbeingforward";
+  const branch = process.env.GITHUB_REPO_BRANCH || "main";
+  const repoPath = `public${publicPath}`;
+  const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURI(repoPath)}`;
+
+  try {
+    const getRes = await fetch(`${url}?ref=${branch}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    });
+    if (!getRes.ok) return; // already gone, or never made it to GitHub — nothing to clean up
+    const { sha } = (await getRes.json()) as { sha: string };
+
+    const delRes = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: `Delete ${repoPath} via admin panel`, sha, branch }),
+    });
+    if (!delRes.ok) {
+      console.error(`[github-upload] Failed to delete ${repoPath} from GitHub: ${delRes.status}`);
+      return;
+    }
+    console.log(`[github-upload] Deleted ${repoPath} from GitHub.`);
+  } catch (err) {
+    console.error(`[github-upload] Unexpected error deleting ${repoPath} from GitHub:`, err);
+  }
+}

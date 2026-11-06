@@ -28,6 +28,14 @@ export default async function TakeAssessmentPage({
     redirect("/lms/student/assessments");
   }
 
+  const now = new Date();
+  const { availableFrom, availableUntil } = assignment.assessment;
+  if (assignment.status === "ASSIGNED") {
+    if ((availableFrom && now < availableFrom) || (availableUntil && now > availableUntil)) {
+      redirect("/lms/student/assessments");
+    }
+  }
+
   const answersByQuestion = new Map(assignment.answers.map((a) => [a.questionId, a]));
 
   const questions = assignment.assessment.questions.map((q) => ({
@@ -53,6 +61,9 @@ export default async function TakeAssessmentPage({
       initialViolationCount={assignment.violationCount}
       durationMinutes={assignment.assessment.durationMinutes}
       startedAt={assignment.startedAt?.toISOString() ?? null}
+      availableUntil={assignment.assessment.availableUntil?.toISOString() ?? null}
+      proctoringEnabled={assignment.assessment.proctoringEnabled}
+      initialAudioViolationCount={assignment.audioViolationCount}
     />
   );
 }

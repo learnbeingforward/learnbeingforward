@@ -4,8 +4,12 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getEmployeeKeys, type EmployeePageKey } from "@/lib/employee-access";
+import { deleteUploadFromGitHub } from "@/lib/github-upload";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
 
 const VIOLATION_LIMIT = 3;
+const AUDIO_VIOLATION_LIMIT = 3;
 
 /**
  * SUPER_ADMIN always passes. An EMPLOYEE passes only when granted the specific
@@ -38,14 +42,36 @@ export async function createAssessment(
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const durationMinutes = Math.max(1, Number.parseInt(String(formData.get("durationMinutes") ?? "30"), 10) || 30);
+  const proctoringEnabled = formData.get("proctoringEnabled") === "on";
+  const availableFromRaw = String(formData.get("availableFrom") ?? "");
+  const availableUntilRaw = String(formData.get("availableUntil") ?? "");
 
   if (!["APTITUDE", "TECHNICAL_APTITUDE", "CODING"].includes(type)) {
     return { ok: false, error: "Invalid assessment type." };
   }
   if (!title) return { ok: false, error: "Title is required." };
+  if (!availableFromRaw || !availableUntilRaw) {
+    return { ok: false, error: "Set both the start and end date/time the assessment is open." };
+  }
+  const availableFrom = new Date(availableFromRaw);
+  const availableUntil = new Date(availableUntilRaw);
+  if (Number.isNaN(availableFrom.getTime()) || Number.isNaN(availableUntil.getTime())) {
+    return { ok: false, error: "Enter valid dates." };
+  }
+  if (availableUntil <= availableFrom) {
+    return { ok: false, error: "The closing date/time must be after the opening date/time." };
+  }
 
   const assessment = await prisma.assessment.create({
-    data: { type: type as never, title, description: description || null, durationMinutes },
+    data: {
+      type: type as never,
+      title,
+      description: description || null,
+      durationMinutes,
+      proctoringEnabled,
+      availableFrom,
+      availableUntil,
+    },
   });
 
   revalidatePath("/lms/company/assessments");
@@ -196,10 +222,23 @@ export async function startAssessmentAttempt(assignmentId: string) {
     throw new Error("Only students can take assessments.");
   }
 
-  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  const assignment = await prisma.assessmentAssignment.findUnique({
+    where: { id: assignmentId },
+    include: { assessment: true },
+  });
   if (!assignment || assignment.studentId !== session.user.id) {
     throw new Error("Not your assessment.");
   }
+
+  const now = new Date();
+  const { availableFrom, availableUntil } = assignment.assessment;
+  if (availableFrom && now < availableFrom) {
+    throw new Error("This assessment isn't open yet.");
+  }
+  if (availableUntil && now > availableUntil) {
+    throw new Error("The window to take this assessment has closed.");
+  }
+
   if (assignment.status === "ASSIGNED") {
     await prisma.assessmentAssignment.update({
       where: { id: assignmentId },
@@ -322,6 +361,37 @@ export async function recordAssessmentViolation(assignmentId: string) {
 }
 
 /**
+ * Separate from recordAssessmentViolation — sustained noise detected while
+ * proctoring audio monitoring is on. Tracked and limited independently from the
+ * tab-switch/fullscreen violation count, as requested, with its own 3-strike cap.
+ */
+export async function recordAudioViolation(assignmentId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    throw new Error("Only students can do this.");
+  }
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment || assignment.studentId !== session.user.id) {
+    throw new Error("Not your assessment.");
+  }
+  if (assignment.status === "SUBMITTED" || assignment.status === "AUTO_SUBMITTED") {
+    return { audioViolationCount: assignment.audioViolationCount, autoSubmitted: true };
+  }
+
+  const updated = await prisma.assessmentAssignment.update({
+    where: { id: assignmentId },
+    data: { audioViolationCount: { increment: 1 } },
+  });
+
+  if (updated.audioViolationCount >= AUDIO_VIOLATION_LIMIT) {
+    await finalizeSubmission(assignmentId, true);
+    return { audioViolationCount: updated.audioViolationCount, autoSubmitted: true };
+  }
+
+  return { audioViolationCount: updated.audioViolationCount, autoSubmitted: false };
+}
+
+/**
  * Called when the student doesn't click back into full-screen within the
  * 5-second grace window shown after any "left the exam" event (tab switch,
  * window blur, or exiting full-screen). Unlike recordAssessmentViolation,
@@ -376,16 +446,18 @@ export async function gradeWrittenAnswer(answerId: string, marksAwarded: number)
   revalidatePath("/lms/company/assessments/submissions");
 }
 
-export async function sendResultToCollege(assignmentId: string) {
+export async function sendResultToCollege(assignmentId: string, formData: FormData) {
   await requireSuperAdmin("assessments.submissions");
+  const snapshotIds = formData.getAll("snapshotIds").map(String);
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: { student: { include: { college: true } }, assessment: true },
   });
   if (!assignment) return;
 
+  const photoNote = snapshotIds.length > 0 ? ` with ${snapshotIds.length} selected proctoring photo(s) attached` : "";
   console.log(
-    `[dummy email] Assessment result for ${assignment.student.name} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks} sent to ${assignment.student.college?.contactEmail ?? "the college"}`
+    `[dummy email] Assessment result for ${assignment.student.name} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks} sent to ${assignment.student.college?.contactEmail ?? "the college"}${photoNote}`
   );
 
   await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { sentToCollegeAt: new Date() } });
@@ -393,19 +465,45 @@ export async function sendResultToCollege(assignmentId: string) {
   revalidatePath("/lms/college/assessment-data");
 }
 
-export async function sendResultToStudent(assignmentId: string) {
+export async function sendResultToStudent(assignmentId: string, formData: FormData) {
   await requireSuperAdmin("assessments.submissions");
+  const snapshotIds = formData.getAll("snapshotIds").map(String);
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: { student: true, assessment: true },
   });
   if (!assignment) return;
 
+  const photoNote = snapshotIds.length > 0 ? ` with ${snapshotIds.length} selected proctoring photo(s) attached` : "";
   console.log(
-    `[dummy email] Assessment result for ${assignment.student.email} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks}`
+    `[dummy email] Assessment result for ${assignment.student.email} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks}${photoNote}`
   );
 
   await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { sentToStudentAt: new Date() } });
   revalidatePath("/lms/company/assessments/submissions");
   revalidatePath("/lms/student/assessments");
+}
+
+// ---------- Admin: proctoring snapshots ----------
+
+export async function deleteAssessmentSnapshots(assignmentId: string, formData: FormData) {
+  await requireSuperAdmin("assessments.submissions");
+  const snapshotIds = formData.getAll("snapshotIds").map(String);
+  if (snapshotIds.length === 0) return;
+
+  const snapshots = await prisma.assessmentSnapshot.findMany({
+    where: { id: { in: snapshotIds }, assignmentId },
+  });
+
+  for (const snap of snapshots) {
+    try {
+      await unlink(path.join(process.cwd(), "public", snap.imageUrl));
+    } catch {
+      // Already gone locally (e.g. after a redeploy) — fine, still clean up GitHub + the DB row.
+    }
+    await deleteUploadFromGitHub(snap.imageUrl);
+  }
+
+  await prisma.assessmentSnapshot.deleteMany({ where: { id: { in: snapshotIds }, assignmentId } });
+  revalidatePath("/lms/company/assessments/submissions");
 }

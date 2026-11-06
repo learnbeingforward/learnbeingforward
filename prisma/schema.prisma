@@ -85,6 +85,10 @@ model User {
   // Only populated for role EMPLOYEE: the list of EmployeePageKey strings (see
   // src/lib/employee-access.ts) this custom staff account was granted access to.
   employeePageKeys Json?
+  // Only populated for role EMPLOYEE: "ADMIN" or "EMPLOYEE" — a display label only,
+  // chosen when the account is created. Access is governed entirely by
+  // employeePageKeys regardless of this label; it does not grant anything by itself.
+  employeeKind     String?
 
   enrollments           Enrollment[]
   enrollmentRequests    EnrollmentRequest[]
@@ -581,13 +585,16 @@ enum AssessmentAttemptStatus {
 }
 
 model Assessment {
-  id              String         @id @default(cuid())
-  type            AssessmentType
-  title           String
-  description     String?        @db.Text
-  durationMinutes Int            @default(30)
-  published       Boolean        @default(false)
-  createdAt       DateTime       @default(now())
+  id                String         @id @default(cuid())
+  type              AssessmentType
+  title             String
+  description       String?        @db.Text
+  durationMinutes    Int            @default(30)
+  proctoringEnabled  Boolean        @default(false)
+  availableFrom      DateTime?
+  availableUntil     DateTime?
+  published          Boolean        @default(false)
+  createdAt          DateTime       @default(now())
 
   questions   AssessmentQuestion[]
   assignments AssessmentAssignment[]
@@ -621,23 +628,35 @@ model AssessmentAssignment {
   assessment      Assessment               @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   studentId       String
   student         User                     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  status          AssessmentAttemptStatus  @default(ASSIGNED)
-  violationCount  Int                      @default(0)
-  autoSubmitted   Boolean                  @default(false)
-  startedAt       DateTime?
-  submittedAt     DateTime?
-  totalMarks      Int?
-  maxMarks        Int?
-  needsGrading    Boolean                  @default(false)
-  sentToCollegeAt DateTime?
-  sentToStudentAt DateTime?
-  assignedAt      DateTime                 @default(now())
+  status              AssessmentAttemptStatus  @default(ASSIGNED)
+  violationCount      Int                      @default(0)
+  audioViolationCount Int                      @default(0)
+  autoSubmitted       Boolean                  @default(false)
+  startedAt           DateTime?
+  submittedAt         DateTime?
+  totalMarks          Int?
+  maxMarks            Int?
+  needsGrading        Boolean                  @default(false)
+  sentToCollegeAt     DateTime?
+  sentToStudentAt     DateTime?
+  assignedAt          DateTime                 @default(now())
 
-  answers AssessmentAnswer[]
+  answers   AssessmentAnswer[]
+  snapshots AssessmentSnapshot[]
 
   @@unique([assessmentId, studentId])
   @@index([studentId])
   @@index([status])
+}
+
+model AssessmentSnapshot {
+  id           String               @id @default(cuid())
+  assignmentId String
+  assignment   AssessmentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  imageUrl     String
+  capturedAt   DateTime             @default(now())
+
+  @@index([assignmentId])
 }
 
 model AssessmentAnswer {

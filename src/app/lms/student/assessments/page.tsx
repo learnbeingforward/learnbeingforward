@@ -6,6 +6,7 @@ import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
+import { format } from "date-fns";
 
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude",
@@ -126,25 +127,40 @@ export default async function StudentAssessmentsPage({
             <div>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">To Take</h2>
               <div className="space-y-3">
-                {toTake.map((a) => (
-                  <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white p-4">
-                    <div>
-                      <p className="font-medium text-indigo">{a.assessment.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {TYPE_LABELS[a.assessment.type]} &middot; {a.assessment.questions.length} question
-                        {a.assessment.questions.length !== 1 ? "s" : ""}
-                      </p>
+                {toTake.map((a) => {
+                  const now = new Date();
+                  const notOpenYet = a.assessment.availableFrom && now < a.assessment.availableFrom;
+                  const windowClosed = a.assessment.availableUntil && now > a.assessment.availableUntil;
+                  return (
+                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white p-4">
+                      <div>
+                        <p className="font-medium text-indigo">{a.assessment.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {TYPE_LABELS[a.assessment.type]} &middot; {a.assessment.questions.length} question
+                          {a.assessment.questions.length !== 1 ? "s" : ""}
+                        </p>
+                        {a.assessment.availableFrom && a.assessment.availableUntil && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {notOpenYet
+                              ? `Opens ${format(a.assessment.availableFrom, "MMM d, h:mm a")}`
+                              : windowClosed
+                                ? "Window closed — can no longer be taken"
+                                : `Open until ${format(a.assessment.availableUntil, "MMM d, h:mm a")}`}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        render={<Link href={`/lms/student/assessments/${a.id}/take`} />}
+                        nativeButton={false}
+                        size="sm"
+                        disabled={!!notOpenYet || !!windowClosed}
+                        className="bg-indigo text-white hover:bg-indigo/90"
+                      >
+                        {a.status === "IN_PROGRESS" ? "Resume" : "Start"} Assessment
+                      </Button>
                     </div>
-                    <Button
-                      render={<Link href={`/lms/student/assessments/${a.id}/take`} />}
-                      nativeButton={false}
-                      size="sm"
-                      className="bg-indigo text-white hover:bg-indigo/90"
-                    >
-                      {a.status === "IN_PROGRESS" ? "Resume" : "Start"} Assessment
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 Once started, the assessment opens full-screen. Switching tabs or leaving full-screen counts as a

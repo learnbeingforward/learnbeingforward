@@ -27,6 +27,7 @@ export async function createEmployeeAccount(
   const password = String(formData.get("password") ?? "");
   const phone = String(formData.get("phone") ?? "").trim();
   const pageKeys = parseEmployeeKeys(formData.getAll("pageKeys"));
+  const employeeKind = formData.get("employeeKind") === "ADMIN" ? "ADMIN" : "EMPLOYEE";
 
   if (!name || !email) return { ok: false, error: "Name and email are required." };
   if (password.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
@@ -43,6 +44,7 @@ export async function createEmployeeAccount(
       role: "EMPLOYEE",
       phone: phone || null,
       employeePageKeys: pageKeys,
+      employeeKind,
     },
   });
 

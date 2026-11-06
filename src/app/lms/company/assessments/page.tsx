@@ -117,7 +117,13 @@ export default async function CompanyAssessmentsPage({
                         <p className="mt-1 text-xs text-muted-foreground">
                           {a.questions.length} question{a.questions.length !== 1 ? "s" : ""} &middot;{" "}
                           {a.assignments.length} sent &middot; {a.durationMinutes} min
+                          {a.proctoringEnabled && " · Proctored"}
                         </p>
+                        {a.availableFrom && a.availableUntil && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {a.availableFrom.toLocaleString()} – {a.availableUntil.toLocaleString()}
+                          </p>
+                        )}
                       </div>
                       <DeleteButton action={deleteAssessment.bind(null, a.id)} />
                     </div>

@@ -6,6 +6,7 @@ import { BackLink } from "@/components/lms/BackLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GradeWrittenAnswerForm } from "@/components/lms/GradeWrittenAnswerForm";
+import { AssessmentSnapshotGallery } from "@/components/lms/AssessmentSnapshotGallery";
 import { sendResultToCollege, sendResultToStudent } from "@/lib/actions/assessments";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ export default async function AssessmentSubmissionsPage({
         student: { include: { college: true } },
         assessment: true,
         answers: { include: { question: true } },
+        snapshots: { orderBy: { capturedAt: "asc" } },
       },
     });
 
@@ -63,7 +65,8 @@ export default async function AssessmentSubmissionsPage({
           </div>
           {assignment.autoSubmitted && (
             <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-              Auto-submitted after 3 proctoring violations (switched tabs/windows during the assessment).
+              Auto-submitted after proctoring violations — {assignment.violationCount} screen/tab violation(s),{" "}
+              {assignment.audioViolationCount} audio violation(s).
             </p>
           )}
           {assignment.needsGrading && (
@@ -85,6 +88,20 @@ export default async function AssessmentSubmissionsPage({
             </form>
           </div>
         </div>
+
+        {assignment.assessment.proctoringEnabled && (
+          <div className="mb-6">
+            <p className="mb-3 text-sm font-semibold text-indigo">Proctoring Snapshots</p>
+            <AssessmentSnapshotGallery
+              assignmentId={assignmentId}
+              snapshots={assignment.snapshots.map((s) => ({
+                id: s.id,
+                imageUrl: s.imageUrl,
+                capturedAt: s.capturedAt.toISOString(),
+              }))}
+            />
+          </div>
+        )}
 
         <div className="space-y-3">
           {sortedAnswers.map((ans, i) => (

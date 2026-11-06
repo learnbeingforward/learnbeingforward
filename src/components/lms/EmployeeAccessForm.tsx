@@ -40,6 +40,24 @@ export function EmployeeAccessForm() {
 
   return (
     <form action={formAction} className="space-y-6 rounded-xl border border-border bg-white p-6">
+      <div>
+        <p className="mb-2 text-sm font-semibold text-indigo">Account Type</p>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 text-sm text-indigo">
+            <input type="radio" name="employeeKind" value="EMPLOYEE" defaultChecked className="accent-indigo" />
+            Employee
+          </label>
+          <label className="flex items-center gap-2 text-sm text-indigo">
+            <input type="radio" name="employeeKind" value="ADMIN" className="accent-indigo" />
+            Admin
+          </label>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Just a label shown in the account list — access is governed entirely by what you check below either
+          way, so an "Admin" created here only gets the sections you grant them, not full access automatically.
+        </p>
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <Label htmlFor="employee-name">

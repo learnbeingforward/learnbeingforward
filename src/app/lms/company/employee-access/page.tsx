@@ -45,6 +45,7 @@ export default async function EmployeeAccessPage() {
               email: e.email,
               phone: e.phone,
               pageKeys: parseEmployeeKeys(e.employeePageKeys),
+              kind: e.employeeKind === "ADMIN" ? "ADMIN" : "EMPLOYEE",
             }))}
           />
         </div>

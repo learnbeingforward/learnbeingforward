@@ -14,7 +14,14 @@ const LABEL_BY_KEY = new Map(
 export function EmployeeAccessList({
   employees,
 }: {
-  employees: { id: string; name: string; email: string; phone: string | null; pageKeys: EmployeePageKey[] }[];
+  employees: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    pageKeys: EmployeePageKey[];
+    kind: "ADMIN" | "EMPLOYEE";
+  }[];
 }) {
   if (employees.length === 0) {
     return (
@@ -32,7 +39,18 @@ export function EmployeeAccessList({
             <div className="flex items-center gap-2">
               <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
               <div>
-                <p className="font-medium text-indigo">{emp.name}</p>
+                <p className="font-medium text-indigo">
+                  {emp.name}{" "}
+                  <Badge
+                    className={
+                      emp.kind === "ADMIN"
+                        ? "bg-gold/20 text-indigo hover:bg-gold/20"
+                        : "bg-cream text-indigo hover:bg-cream"
+                    }
+                  >
+                    {emp.kind === "ADMIN" ? "Admin" : "Employee"}
+                  </Badge>
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {emp.email}
                   {emp.phone ? ` · ${emp.phone}` : ""}
