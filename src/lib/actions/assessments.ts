@@ -3,15 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getEmployeeKeys, type EmployeePageKey } from "@/lib/employee-access";
 
 const VIOLATION_LIMIT = 3;
 
-async function requireSuperAdmin() {
+/**
+ * SUPER_ADMIN always passes. An EMPLOYEE passes only when granted the specific
+ * assessments key for the page they're acting from (build vs. submissions) — this
+ * deliberately does NOT extend to ADMIN2, matching this feature's existing
+ * super-admin-only scope; Employee Access is the only way to delegate it.
+ */
+async function requireSuperAdmin(employeeKey: EmployeePageKey) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Only the main company admin can manage assessments.");
+  if (!session?.user) throw new Error("Only the main company admin can manage assessments.");
+  if (session.user.role === "SUPER_ADMIN") return session;
+  if (session.user.role === "EMPLOYEE") {
+    const keys = await getEmployeeKeys(session.user.id);
+    if (keys.includes(employeeKey)) return session;
   }
-  return session;
+  throw new Error("Only the main company admin can manage assessments.");
 }
 
 // ---------- Admin: build assessments ----------
@@ -22,7 +32,7 @@ export async function createAssessment(
   _prevState: CreateAssessmentState,
   formData: FormData
 ): Promise<CreateAssessmentState> {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.build");
 
   const type = String(formData.get("type") ?? "");
   const title = String(formData.get("title") ?? "").trim();
@@ -43,7 +53,7 @@ export async function createAssessment(
 }
 
 export async function deleteAssessment(assessmentId: string) {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.build");
   await prisma.assessment.delete({ where: { id: assessmentId } });
   revalidatePath("/lms/company/assessments");
 }
@@ -55,7 +65,7 @@ export async function addAssessmentQuestion(
   _prevState: AddQuestionState,
   formData: FormData
 ): Promise<AddQuestionState> {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.build");
 
   const questionType = String(formData.get("questionType") ?? "");
   const questionText = String(formData.get("questionText") ?? "").trim();
@@ -117,13 +127,13 @@ export async function addAssessmentQuestion(
 }
 
 export async function deleteAssessmentQuestion(questionId: string) {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.build");
   await prisma.assessmentQuestion.delete({ where: { id: questionId } });
   revalidatePath("/lms/company/assessments");
 }
 
 export async function publishAssessment(assessmentId: string) {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.build");
   await prisma.assessment.update({ where: { id: assessmentId }, data: { published: true } });
   revalidatePath("/lms/company/assessments");
 }
@@ -137,7 +147,7 @@ export async function assignAssessmentToStudents(
   _prevState: AssignAssessmentState,
   formData: FormData
 ): Promise<AssignAssessmentState> {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.build");
 
   const studentIds = formData.getAll("studentIds").map(String);
   if (studentIds.length === 0) return { ok: false, error: "Select at least one student." };
@@ -342,7 +352,7 @@ export async function recordAssessmentTimeout(assignmentId: string) {
 // ---------- Admin: grading & results ----------
 
 export async function gradeWrittenAnswer(answerId: string, marksAwarded: number) {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.submissions");
 
   const answer = await prisma.assessmentAnswer.update({
     where: { id: answerId },
@@ -367,7 +377,7 @@ export async function gradeWrittenAnswer(answerId: string, marksAwarded: number)
 }
 
 export async function sendResultToCollege(assignmentId: string) {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.submissions");
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: { student: { include: { college: true } }, assessment: true },
@@ -384,7 +394,7 @@ export async function sendResultToCollege(assignmentId: string) {
 }
 
 export async function sendResultToStudent(assignmentId: string) {
-  await requireSuperAdmin();
+  await requireSuperAdmin("assessments.submissions");
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: { student: true, assessment: true },

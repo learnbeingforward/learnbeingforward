@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookOpen, Cpu, Users, Contact, Home, Link2, Phone } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 
 const sections = [
   {
@@ -48,7 +48,8 @@ const sections = [
   },
 ];
 
-export default function EditSitePage() {
+export default async function EditSitePage() {
+  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
   return (
     <DashboardShell title="Edit Site" subtitle="Content management" navLinks={navLinks}>
       <p className="mb-8 max-w-2xl text-sm text-muted-foreground">

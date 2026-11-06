@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { ResetAccountForm } from "@/components/lms/ResetAccountForm";
 import { ResetStudentPasswordForm } from "@/components/lms/ResetStudentPasswordForm";
 import { ResetCollegePasswordForm } from "@/components/lms/ResetCollegePasswordForm";
 import { ResetTrainerPasswordForm } from "@/components/lms/ResetTrainerPasswordForm";
 
 export default async function CompanyManageAccountsPage() {
+  const { navLinks } = await requireCompanyPageAccess("accounts.manage");
   const [students, collegeAdmins, trainers] = await Promise.all([
     prisma.user.findMany({ where: { role: "STUDENT" }, orderBy: { name: "asc" } }),
     prisma.user.findMany({ where: { role: "COLLEGE_ADMIN" }, include: { college: true }, orderBy: { name: "asc" } }),

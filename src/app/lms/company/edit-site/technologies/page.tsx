@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { getIconByName } from "@/lib/icon-catalog";
 import { TECH_CATEGORY_LABELS } from "@/lib/tech-categories";
 import { IconPicker } from "@/components/lms/IconPicker";
@@ -13,6 +13,7 @@ import { createTechnology, deleteTechnology } from "@/lib/actions/site-content";
 import { TechCategorySelect } from "@/components/lms/TechCategorySelect";
 
 export default async function EditTechnologiesPage() {
+  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
   const technologies = await prisma.technology.findMany({ orderBy: { order: "asc" } });
 
   return (

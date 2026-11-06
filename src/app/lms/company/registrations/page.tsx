@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Button } from "@/components/ui/button";
 import { approveRegistration, rejectRegistration } from "@/lib/actions/registration";
 import { format } from "date-fns";
 
 export default async function CompanyRegistrationsPage() {
+  const { navLinks } = await requireCompanyPageAccess("registrations.new");
   const pending = await prisma.user.findMany({
     where: { role: "STUDENT", studentStatus: "PENDING_APPROVAL" },
     include: { college: true },

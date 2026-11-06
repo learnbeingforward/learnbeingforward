@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export default async function CompanyAttendancePage({
   searchParams: Promise<{ collegeId?: string; batchId?: string }>;
 }) {
   const { collegeId, batchId } = await searchParams;
+  const { navLinks } = await requireCompanyPageAccess("overview.attendance");
 
   const enrollments = await prisma.enrollment.findMany({
     include: {

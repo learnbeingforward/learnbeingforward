@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Button } from "@/components/ui/button";
 import { ManualBatchBuilder } from "@/components/lms/ManualBatchBuilder";
 import { AssignTrainerSelect } from "@/components/lms/AssignTrainerSelect";
@@ -26,8 +25,8 @@ export default async function CompanyBatchesPage({
   searchParams: Promise<{ collegeId?: string; batchId?: string }>;
 }) {
   const { collegeId, batchId } = await searchParams;
-  const session = await auth();
-  const isSuperAdmin = session!.user.role === "SUPER_ADMIN";
+  const { session, navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const isSuperAdmin = session.user.role === "SUPER_ADMIN";
 
   // Level 2: a single batch's roster
   if (collegeId && batchId) {

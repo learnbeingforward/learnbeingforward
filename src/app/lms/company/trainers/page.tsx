@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginButton";
@@ -10,9 +9,9 @@ import { updateTrainerRate } from "@/lib/actions/trainers";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 
 export default async function CompanyTrainersPage() {
-  const session = await auth();
-  const isSuperAdmin = session!.user.role === "SUPER_ADMIN";
-  const isStaff = isCompanyStaff(session!.user.role);
+  const { session, navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const isSuperAdmin = session.user.role === "SUPER_ADMIN";
+  const isStaff = isCompanyStaff(session.user.role) || session.user.role === "EMPLOYEE";
 
   const trainers = await prisma.trainer.findMany({
     include: { loginUser: true, batches: true },

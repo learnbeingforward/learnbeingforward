@@ -36,6 +36,7 @@ export const companyNavLinks: LmsNavEntry[] = [
       { href: "/lms/company/colleges", label: "Colleges" },
       { href: "/lms/company/trainers", label: "Trainers" },
       { href: "/lms/company/account-details", label: "Account Details" },
+      { href: "/lms/company/employee-access", label: "Employee Access" },
     ],
   },
   {

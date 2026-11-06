@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Badge } from "@/components/ui/badge";
 import { RequestTrainingForm } from "@/components/lms/RequestTrainingForm";
 import { BackLink } from "@/components/lms/BackLink";
@@ -36,9 +35,8 @@ export default async function CompanyCollegesPage({
   searchParams: Promise<{ contractId?: string; invoiceId?: string }>;
 }) {
   const { contractId, invoiceId } = await searchParams;
-  const session = await auth();
-  const isAdmin2 = session!.user.role === "ADMIN2";
-  const navLinks = getCompanyNavLinksForRole(session!.user.role);
+  const { session, navLinks } = await requireCompanyPageAccess("accounts.colleges");
+  const isAdmin2 = session.user.role === "ADMIN2";
 
   if (contractId) {
     const contract = await prisma.collegeContract.findUnique({

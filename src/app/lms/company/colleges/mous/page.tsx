@@ -1,15 +1,11 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { MouCard } from "@/components/lms/MouCard";
 
 export default async function CompanyCollegeMousPage() {
-  const session = await auth();
-  if (session?.user.role !== "SUPER_ADMIN") redirect("/lms/company/colleges");
-  const navLinks = getCompanyNavLinksForRole(session.user.role);
+  const { navLinks } = await requireCompanyPageAccess("colleges.mous");
 
   const contracts = await prisma.collegeContract.findMany({
     where: { status: "APPROVED" },

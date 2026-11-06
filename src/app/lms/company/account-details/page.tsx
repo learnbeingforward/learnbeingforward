@@ -1,8 +1,6 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { AccountDetailView, type AccountDetail } from "@/components/lms/AccountDetailView";
 import type { AccountKind } from "@/lib/actions/account-details";
@@ -51,16 +49,13 @@ export default async function AccountDetailsPage({
 }: {
   searchParams: Promise<{ type?: string; id?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    redirect("/lms/company");
-  }
+  const { navLinks } = await requireCompanyPageAccess("accounts.details");
 
   const { type, id } = await searchParams;
   if (type && id && ["student", "college", "trainer", "admin"].includes(type)) {
     const account = await loadAccountDetail(type as AccountKind, id);
     return (
-      <DashboardShell title="Account Details" subtitle="Full profile" navLinks={getCompanyNavLinksForRole(session.user.role)}>
+      <DashboardShell title="Account Details" subtitle="Full profile" navLinks={navLinks}>
         <BackLink href="/lms/company/account-details" label="Back to Account Details" />
         {!account ? (
           <p className="text-sm text-muted-foreground">This account no longer exists.</p>
@@ -154,7 +149,7 @@ export default async function AccountDetailsPage({
     <DashboardShell
       title="Account Details"
       subtitle="Every account on the platform, in one place"
-      navLinks={getCompanyNavLinksForRole(session.user.role)}
+      navLinks={navLinks}
     >
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
         A single directory of every student, college, trainer, and admin account — so you don&apos;t need

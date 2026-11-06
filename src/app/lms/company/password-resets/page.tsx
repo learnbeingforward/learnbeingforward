@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Badge } from "@/components/ui/badge";
 import { PasswordResetRow } from "@/components/lms/PasswordResetRow";
 import { format } from "date-fns";
 
 export default async function CompanyPasswordResetsPage() {
+  const { navLinks } = await requireCompanyPageAccess("registrations.password-resets");
   const [pending, decided] = await Promise.all([
     prisma.passwordResetRequest.findMany({
       where: { status: "PENDING" },

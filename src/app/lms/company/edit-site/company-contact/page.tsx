@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { getSiteSettings } from "@/lib/site-settings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { updateSiteSettings } from "@/lib/actions/site-content";
 
 export default async function EditCompanyContactPage() {
+  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
   const settings = await getSiteSettings();
 
   return (

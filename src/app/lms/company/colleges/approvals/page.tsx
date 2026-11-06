@@ -1,8 +1,6 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { ApproveContractRateForm } from "@/components/lms/ApproveContractRateForm";
 import { format } from "date-fns";
@@ -14,9 +12,7 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function CompanyCollegeApprovalsPage() {
-  const session = await auth();
-  if (session?.user.role !== "SUPER_ADMIN") redirect("/lms/company/colleges");
-  const navLinks = getCompanyNavLinksForRole(session.user.role);
+  const { navLinks } = await requireCompanyPageAccess("colleges.approvals");
 
   const pendingRateContracts = await prisma.collegeContract.findMany({
     where: { status: "PENDING_RATE" },

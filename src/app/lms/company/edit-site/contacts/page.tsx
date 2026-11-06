@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { createContactProfile, deleteContactProfile } from "@/lib/actions/site-content";
 
 export default async function EditContactsPage() {
+  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
   const profiles = await prisma.contactProfile.findMany({ orderBy: { order: "asc" } });
 
   return (

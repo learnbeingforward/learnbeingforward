@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { getLucideIcon, LUCIDE_CATALOG } from "@/lib/lucide-catalog";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
 import { createHomeFeature, deleteHomeFeature } from "@/lib/actions/site-content";
 
 export default async function EditHomePage() {
+  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
   const features = await prisma.homeFeature.findMany({ orderBy: { order: "asc" } });
 
   return (

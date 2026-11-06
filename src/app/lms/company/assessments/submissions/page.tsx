@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,10 +19,7 @@ export default async function AssessmentSubmissionsPage({
 }: {
   searchParams: Promise<{ assignmentId?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    redirect("/lms/company");
-  }
+  const { navLinks } = await requireCompanyPageAccess("assessments.submissions");
 
   const { assignmentId } = await searchParams;
 

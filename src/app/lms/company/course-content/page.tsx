@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
@@ -16,6 +16,7 @@ export default async function CompanyCourseContentPage({
   searchParams: Promise<{ courseId?: string; moduleId?: string }>;
 }) {
   const { courseId, moduleId } = await searchParams;
+  const { navLinks } = await requireCompanyPageAccess("course-content");
   const [courses, modules, subModules, content, pendingContentRequests, pendingPdfRequests] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),

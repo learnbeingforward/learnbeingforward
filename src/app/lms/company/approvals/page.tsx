@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,6 +10,7 @@ import {
 import { format } from "date-fns";
 
 export default async function CompanyApprovalsPage() {
+  const { navLinks } = await requireCompanyPageAccess("registrations.approvals");
   const [pending, decided] = await Promise.all([
     prisma.attendanceException.findMany({
       where: { status: "PENDING" },

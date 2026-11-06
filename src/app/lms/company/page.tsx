@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { BackLink } from "@/components/lms/BackLink";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/lib/actions/enrollment-requests";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 
 export default async function CompanyDashboardPage({
   searchParams,
@@ -23,6 +23,7 @@ export default async function CompanyDashboardPage({
   searchParams: Promise<{ requestId?: string }>;
 }) {
   const { requestId } = await searchParams;
+  const { navLinks } = await requireCompanyPageAccess("overview.requests");
 
   if (requestId) {
     const request = await prisma.enrollmentRequest.findUnique({

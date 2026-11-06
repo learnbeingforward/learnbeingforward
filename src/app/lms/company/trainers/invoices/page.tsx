@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { FileText } from "lucide-react";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks } from "@/lib/lms-nav-links";
-import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Badge } from "@/components/ui/badge";
 import { BackLink } from "@/components/lms/BackLink";
 import { DecideTrainerInvoiceForm } from "@/components/lms/DecideTrainerInvoiceForm";
@@ -40,10 +37,8 @@ export default async function CompanyTrainerInvoicesPage({
   searchParams: Promise<{ invoiceId?: string }>;
 }) {
   const { invoiceId } = await searchParams;
-  const session = await auth();
-  if (!isCompanyStaff(session?.user.role)) redirect("/lms/company");
-  const isAdmin2 = session!.user.role === "ADMIN2";
-  const navLinks = companyNavLinks;
+  const { session, navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const isAdmin2 = session.user.role === "ADMIN2";
 
   if (invoiceId) {
     const invoice = await prisma.trainerInvoice.findUnique({

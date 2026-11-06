@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
 import { StudentDetailView } from "@/components/lms/StudentDetailView";
 import { EnrollmentProgressView } from "@/components/lms/EnrollmentProgressView";
@@ -17,6 +17,7 @@ export default async function CompanyAllStudentsPage({
   searchParams: Promise<{ studentId?: string; enrollmentId?: string }>;
 }) {
   const { studentId, enrollmentId } = await searchParams;
+  const { navLinks } = await requireCompanyPageAccess("accounts.students");
 
   if (studentId && enrollmentId) {
     const progress = await getEnrollmentProgress(enrollmentId);

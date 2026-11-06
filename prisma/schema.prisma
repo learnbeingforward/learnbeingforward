@@ -14,6 +14,7 @@ enum Role {
   SUPER_ADMIN
   TRAINER
   ADMIN2
+  EMPLOYEE
 }
 
 enum CertificationStatus {
@@ -80,6 +81,10 @@ model User {
   phone        String?
   gender       String?
   createdAt    DateTime @default(now())
+
+  // Only populated for role EMPLOYEE: the list of EmployeePageKey strings (see
+  // src/lib/employee-access.ts) this custom staff account was granted access to.
+  employeePageKeys Json?
 
   enrollments           Enrollment[]
   enrollmentRequests    EnrollmentRequest[]

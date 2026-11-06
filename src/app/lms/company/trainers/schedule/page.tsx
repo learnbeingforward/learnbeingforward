@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { ScheduleSessionForm } from "@/components/lms/ScheduleSessionForm";
 import { BackLink } from "@/components/lms/BackLink";
 import { DeleteButton } from "@/components/lms/DeleteButton";
@@ -16,6 +16,7 @@ export default async function CompanyScheduleTrainingPage({
   searchParams: Promise<{ trainerId?: string; sessionId?: string }>;
 }) {
   const { trainerId, sessionId } = await searchParams;
+  const { navLinks } = await requireCompanyPageAccess("accounts.trainers");
 
   // Level 2: mark attendance for a specific pending session
   if (trainerId && sessionId) {

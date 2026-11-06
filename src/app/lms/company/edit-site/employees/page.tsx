@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { companyNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm"
 import { EditTeamMemberDialog } from "@/components/lms/EditTeamMemberDialog";
 
 export default async function EditEmployeesPage() {
+  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
   const members = await prisma.teamMember.findMany({ orderBy: { order: "asc" } });
 
   return (
