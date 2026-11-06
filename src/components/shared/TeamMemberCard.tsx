@@ -1,6 +1,4 @@
-import { Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/shared/Reveal";
 import { parseJsonArray } from "@/lib/json-array";
 
@@ -36,7 +34,7 @@ export function TeamMemberCard({ member, delay = 0 }: { member: TeamMemberData; 
 
         <h3 className="mt-4 font-semibold text-indigo">{member.name}</h3>
         <p className="text-sm font-medium text-indigo">{member.role}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{member.experienceYears} years experience</p>
+        <p className="mt-1 text-xs text-muted-foreground">{member.experienceYears}+ years experience</p>
 
         {member.isFreelancer && (
           <Badge className="mt-3 bg-indigo/10 text-indigo hover:bg-indigo/10">Freelance Trainer</Badge>
@@ -57,19 +55,6 @@ export function TeamMemberCard({ member, delay = 0 }: { member: TeamMemberData; 
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
             Trained at: {colleges.join(", ")}
           </p>
-        )}
-
-        {member.cvUrl && (
-          <Button
-            render={<a href={member.cvUrl} download />}
-            nativeButton={false}
-            variant="outline"
-            size="sm"
-            className="mt-5 border-gold text-indigo hover:bg-gold"
-          >
-            <Download className="size-4" />
-            Download Profile
-          </Button>
         )}
       </div>
     </Reveal>

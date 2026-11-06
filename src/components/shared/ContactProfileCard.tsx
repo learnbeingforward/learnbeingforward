@@ -1,4 +1,4 @@
-import { Mail, Phone } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Reveal } from "@/components/shared/Reveal";
 
 export type ContactProfileData = {
@@ -30,9 +30,6 @@ export function ContactProfileCard({ profile, delay = 0 }: { profile: ContactPro
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
           <a href={`mailto:${profile.email}`} className="flex items-center justify-center gap-2 hover:text-indigo">
             <Mail className="size-4 shrink-0" /> {profile.email}
-          </a>
-          <a href={`tel:${profile.phone.replace(/\s+/g, "")}`} className="flex items-center justify-center gap-2 hover:text-indigo">
-            <Phone className="size-4 shrink-0" /> {profile.phone}
           </a>
         </div>
       </div>

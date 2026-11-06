@@ -84,6 +84,7 @@ model User {
   enrollments           Enrollment[]
   enrollmentRequests    EnrollmentRequest[]
   contentAccessRequests ContentAccessRequest[]
+  assessmentAssignments AssessmentAssignment[]
 }
 
 model Trainer {
@@ -552,4 +553,98 @@ model CollegeInvoice {
 
   @@index([contractId])
   @@index([status])
+}
+
+// ---------- Assessments ----------
+
+enum AssessmentType {
+  APTITUDE
+  TECHNICAL_APTITUDE
+  CODING
+}
+
+enum AssessmentQuestionType {
+  MCQ
+  WRITTEN
+}
+
+enum AssessmentAttemptStatus {
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
+
+model Assessment {
+  id          String         @id @default(cuid())
+  type        AssessmentType
+  title       String
+  description String?        @db.Text
+  published   Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  questions   AssessmentQuestion[]
+  assignments AssessmentAssignment[]
+
+  @@index([type])
+}
+
+model AssessmentQuestion {
+  id            String                 @id @default(cuid())
+  assessmentId  String
+  assessment    Assessment             @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  order         Int                    @default(0)
+  questionType  AssessmentQuestionType
+  questionText  String                 @db.Text
+  marks         Int                    @default(1)
+
+  optionA       String?  @db.Text
+  optionB       String?  @db.Text
+  optionC       String?  @db.Text
+  optionD       String?  @db.Text
+  correctOption String?
+
+  answers       AssessmentAnswer[]
+
+  @@index([assessmentId])
+}
+
+model AssessmentAssignment {
+  id              String                   @id @default(cuid())
+  assessmentId    String
+  assessment      Assessment               @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User                     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status          AssessmentAttemptStatus  @default(ASSIGNED)
+  violationCount  Int                      @default(0)
+  autoSubmitted   Boolean                  @default(false)
+  startedAt       DateTime?
+  submittedAt     DateTime?
+  totalMarks      Int?
+  maxMarks        Int?
+  needsGrading    Boolean                  @default(false)
+  sentToCollegeAt DateTime?
+  sentToStudentAt DateTime?
+  assignedAt      DateTime                 @default(now())
+
+  answers AssessmentAnswer[]
+
+  @@unique([assessmentId, studentId])
+  @@index([studentId])
+  @@index([status])
+}
+
+model AssessmentAnswer {
+  id             String               @id @default(cuid())
+  assignmentId   String
+  assignment     AssessmentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  questionId     String
+  question       AssessmentQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption String?
+  writtenAnswer  String?              @db.Text
+  isCorrect      Boolean?
+  marksAwarded   Int?
+
+  @@unique([assignmentId, questionId])
+  @@index([questionId])
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type LmsNavLink = {
@@ -89,29 +89,84 @@ function NavGroup({ label, items, active }: { label: string; items: LmsNavLink[]
 
 export function LmsNav({ links }: { links: LmsNavEntry[] }) {
   const pathname = usePathname();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+
+    const resizeObserver = new ResizeObserver(updateScrollState);
+    resizeObserver.observe(el);
+    el.addEventListener("scroll", updateScrollState);
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      resizeObserver.disconnect();
+      el.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [updateScrollState, links]);
+
+  function scrollByArrow(direction: "left" | "right") {
+    scrollRef.current?.scrollBy({ left: direction === "left" ? -220 : 220, behavior: "smooth" });
+  }
 
   return (
-    <nav className="border-b border-border bg-white">
-      <div className="container-page flex gap-1 overflow-x-auto">
-        {links.map((entry) => {
-          if (isGroup(entry)) {
-            const active = entry.children.some((c) => c.href === pathname);
-            return <NavGroup key={entry.label} label={entry.label} items={entry.children} active={active} />;
-          }
-          const active = pathname === entry.href;
-          return (
-            <Link
-              key={entry.href}
-              href={entry.href}
-              className={cn(
-                "shrink-0 border-b-2 border-transparent px-3.5 py-3 text-sm font-medium text-indigo/70 transition-colors hover:text-indigo",
-                active && "border-gold font-semibold text-indigo"
-              )}
-            >
-              {entry.label}
-            </Link>
-          );
-        })}
+    <nav className="relative border-b border-border bg-white">
+      <div className="container-page relative flex items-center">
+        {canScrollLeft && (
+          <button
+            type="button"
+            onClick={() => scrollByArrow("left")}
+            aria-label="Scroll menu left"
+            className="absolute left-0 z-10 hidden h-full items-center bg-gradient-to-r from-white via-white to-transparent pr-4 pl-1 text-indigo/70 hover:text-indigo sm:flex"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+        )}
+        <div
+          ref={scrollRef}
+          className="scrollbar-hide flex gap-1 overflow-x-auto scroll-smooth"
+        >
+          {links.map((entry) => {
+            if (isGroup(entry)) {
+              const active = entry.children.some((c) => c.href === pathname);
+              return <NavGroup key={entry.label} label={entry.label} items={entry.children} active={active} />;
+            }
+            const active = pathname === entry.href;
+            return (
+              <Link
+                key={entry.href}
+                href={entry.href}
+                className={cn(
+                  "shrink-0 border-b-2 border-transparent px-3.5 py-3 text-sm font-medium text-indigo/70 transition-colors hover:text-indigo",
+                  active && "border-gold font-semibold text-indigo"
+                )}
+              >
+                {entry.label}
+              </Link>
+            );
+          })}
+        </div>
+        {canScrollRight && (
+          <button
+            type="button"
+            onClick={() => scrollByArrow("right")}
+            aria-label="Scroll menu right"
+            className="absolute right-0 z-10 hidden h-full items-center bg-gradient-to-l from-white via-white to-transparent pr-1 pl-4 text-indigo/70 hover:text-indigo sm:flex"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        )}
       </div>
     </nav>
   );

@@ -5,6 +5,7 @@ export const studentNavLinks: LmsNavEntry[] = [
   { href: "/lms/student/attendance", label: "Attendance" },
   { href: "/lms/student/courses", label: "Browse Courses" },
   { href: "/lms/student/content", label: "Content" },
+  { href: "/lms/student/assessments", label: "Assessments" },
   { href: "/lms/student/profile", label: "Profile" },
 ];
 
@@ -21,11 +22,22 @@ export const collegeNavLinks: LmsNavEntry[] = [
   { href: "/lms/college/batches", label: "Batches" },
   { href: "/lms/college/queries", label: "Query from Student" },
   { href: "/lms/college/contracts", label: "Contracts" },
+  { href: "/lms/college/assessment-data", label: "Assessment Data" },
   { href: "/lms/college/profile", label: "Profile" },
 ];
 
 export const companyNavLinks: LmsNavEntry[] = [
-  { href: "/lms/company", label: "Requests" },
+  {
+    label: "Accounts",
+    children: [
+      { href: "/lms/company/accounts", label: "Add Account" },
+      { href: "/lms/company/manage-accounts", label: "Manage Accounts" },
+      { href: "/lms/company/students", label: "All Students" },
+      { href: "/lms/company/colleges", label: "Colleges" },
+      { href: "/lms/company/trainers", label: "Trainers" },
+      { href: "/lms/company/account-details", label: "Account Details" },
+    ],
+  },
   {
     label: "Registrations & Approvals",
     children: [
@@ -34,48 +46,39 @@ export const companyNavLinks: LmsNavEntry[] = [
       { href: "/lms/company/password-resets", label: "Password Reset Requests" },
     ],
   },
-  { href: "/lms/company/attendance", label: "Attendance" },
   {
-    label: "Accounts",
+    label: "Overview",
     children: [
-      { href: "/lms/company/accounts", label: "Add Account" },
-      { href: "/lms/company/manage-accounts", label: "Manage Accounts" },
-      { href: "/lms/company/students", label: "All Students" },
+      { href: "/lms/company", label: "Requests" },
+      { href: "/lms/company/attendance", label: "Attendance" },
+      { href: "/lms/company/edit-site", label: "Edit Site" },
     ],
   },
-  { href: "/lms/company/trainers", label: "Trainers" },
+  {
+    label: "Assessments",
+    children: [
+      { href: "/lms/company/assessments", label: "Build & Send" },
+      { href: "/lms/company/assessments/submissions", label: "Submissions" },
+    ],
+  },
   { href: "/lms/company/course-content", label: "Course Content" },
-  { href: "/lms/company/colleges", label: "Colleges" },
-  { href: "/lms/company/account-details", label: "Account Details" },
   { href: "/lms/company/profile", label: "Profile" },
-  { href: "/lms/company/edit-site", label: "Edit Site" },
 ];
 
 /**
- * Same as companyNavLinks, but the Colleges item becomes a dropdown
- * (Send Contract / Approvals / Sent to College / MOUs) for SUPER_ADMIN —
- * that split is main-admin-only, so ADMIN2 keeps the single flat link.
- * Used by the colleges section's own pages, which already know the role.
- *
- * Most other company pages render the static companyNavLinks directly rather
- * than calling this, so any item that should show up everywhere (like Account
- * Details above) has to live in the base array, not be appended only here.
+ * Same links, but ADMIN2 doesn't get "Account Details" in the Accounts dropdown
+ * (it surfaces every account's contact info and a password-reset-and-reveal
+ * control, so it stays main-admin-only). Most company pages render the static
+ * companyNavLinks directly rather than calling this — Account Details itself
+ * still enforces SUPER_ADMIN-only server-side regardless of what the nav shows.
  */
 export function getCompanyNavLinksForRole(role?: string): LmsNavEntry[] {
-  if (role === "ADMIN2") return companyNavLinks;
-
-  const collegesDropdown: LmsNavEntry = {
-    label: "Colleges",
-    children: [
-      { href: "/lms/company/colleges", label: "Send Contract" },
-      { href: "/lms/company/colleges/approvals", label: "Approvals" },
-      { href: "/lms/company/colleges/sent", label: "Sent to College" },
-      { href: "/lms/company/colleges/mous", label: "MOUs" },
-    ],
-  };
+  if (role !== "ADMIN2") return companyNavLinks;
 
   return companyNavLinks.map((entry) =>
-    "href" in entry && entry.href === "/lms/company/colleges" ? collegesDropdown : entry
+    "children" in entry && entry.label === "Accounts"
+      ? { ...entry, children: entry.children.filter((c) => c.label !== "Account Details") }
+      : entry
   );
 }
 

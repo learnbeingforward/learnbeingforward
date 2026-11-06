@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { backupUploadToGitHub } from "@/lib/github-upload";
 
 const ALLOWED_EXTENSIONS: Record<string, string> = {
   ".pdf": "pdf",
@@ -62,5 +63,16 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(filePath, buffer);
 
-  return NextResponse.json({ url: `/uploads/${category}/${filename}`, fileType });
+  const publicUrl = `/uploads/${category}/${filename}`;
+
+  // Best-effort: back the file up to GitHub so it survives the next deploy.
+  // Never fails the upload itself — the file is already saved locally and
+  // usable on this running instance either way.
+  try {
+    await backupUploadToGitHub(publicUrl, buffer);
+  } catch (err) {
+    console.error("[uploads] GitHub backup threw unexpectedly:", err);
+  }
+
+  return NextResponse.json({ url: publicUrl, fileType });
 }
