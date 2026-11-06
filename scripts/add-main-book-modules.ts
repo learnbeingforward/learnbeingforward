@@ -277,18 +277,28 @@ function slugify(value: string) {
 }
 
 function copyPdf(sourceFileName: string): string {
-  fs.mkdirSync(DEST_DIR, { recursive: true });
-  const sourcePath = path.join(SOURCE_DIR, sourceFileName);
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`Source PDF not found: ${sourcePath}`);
-  }
   // Derive the destination name from the (already-unique) source filename rather than
   // slugifying the module title — "C Programming"/"C++ Programming"/"C# Programming" all
   // slugify to the same "c-programming" string, which silently overwrote files on disk.
   const destFileName = slugify(path.basename(sourceFileName, ".pdf")) + ".pdf";
   const destPath = path.join(DEST_DIR, destFileName);
+  const publicUrl = `/uploads/course-content/main-books/${destFileName}`;
+
+  // These PDFs are committed to git, so on a fresh deploy (Hostinger clones the repo
+  // fresh every time, and has no access to the author's local L: drive) the file is
+  // already present at destPath — nothing to copy. This is what makes this script safe
+  // to run as part of the automated production build, not just locally.
+  if (fs.existsSync(destPath)) {
+    return publicUrl;
+  }
+
+  fs.mkdirSync(DEST_DIR, { recursive: true });
+  const sourcePath = path.join(SOURCE_DIR, sourceFileName);
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error(`Source PDF not found at ${sourcePath}, and no existing file at ${destPath}.`);
+  }
   fs.copyFileSync(sourcePath, destPath);
-  return `/uploads/course-content/main-books/${destFileName}`;
+  return publicUrl;
 }
 
 async function createModulesForCourse(courseSlug: string, modules: NewModule[]) {
