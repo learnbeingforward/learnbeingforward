@@ -1,9 +1,26 @@
-import { CheckCircle2, Clock, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronDown, Clock, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import type { EnrollmentProgress } from "@/lib/enrollment-progress";
+import type { EnrollmentProgress, SessionRecord } from "@/lib/enrollment-progress";
+
+function groupByDate(sessions: SessionRecord[]) {
+  const groups = new Map<string, SessionRecord[]>();
+  for (const s of sessions) {
+    const key = format(s.date, "yyyy-MM-dd");
+    const existing = groups.get(key);
+    if (existing) existing.push(s);
+    else groups.set(key, [s]);
+  }
+  return Array.from(groups.entries())
+    .map(([key, items]) => ({
+      date: items[0].date,
+      sessions: [...items].sort((a, b) => (a.slotNumber ?? 0) - (b.slotNumber ?? 0)),
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
 
 export function EnrollmentProgressView({ progress }: { progress: EnrollmentProgress }) {
+  const dayGroups = groupByDate(progress.sessions);
   return (
     <div className="max-w-2xl space-y-6">
       <div className="rounded-xl border border-border bg-white p-6">
@@ -64,27 +81,68 @@ export function EnrollmentProgressView({ progress }: { progress: EnrollmentProgr
         <div className="border-b border-border p-6">
           <p className="text-sm font-semibold text-indigo">Session-by-Session Attendance ({progress.sessions.length})</p>
         </div>
-        {progress.sessions.length === 0 ? (
+        {dayGroups.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">No classes recorded yet.</p>
         ) : (
           <div className="divide-y divide-border">
-            {progress.sessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-                <div>
-                  <p className="font-medium text-indigo">{format(s.date, "MMM d, yyyy")}</p>
-                  {s.topic && <p className="text-xs text-muted-foreground">{s.topic}</p>}
-                </div>
-                <Badge
-                  className={
-                    s.present
-                      ? "bg-green-100 text-green-700 hover:bg-green-100"
-                      : "bg-red-100 text-red-700 hover:bg-red-100"
-                  }
-                >
-                  {s.present ? "Present" : "Absent"}
-                </Badge>
-              </div>
-            ))}
+            {dayGroups.map((group) => {
+              const presentCount = group.sessions.filter((s) => s.present).length;
+              return (
+                <details key={group.date.toISOString()} className="group p-4">
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                      <div>
+                        <p className="font-medium text-indigo">{format(group.date, "MMM d, yyyy")}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {group.sessions.length} session{group.sessions.length !== 1 ? "s" : ""} &middot;{" "}
+                          {presentCount}/{group.sessions.length} present
+                        </p>
+                      </div>
+                    </div>
+                    <Badge
+                      className={
+                        presentCount === group.sessions.length
+                          ? "bg-green-100 text-green-700 hover:bg-green-100"
+                          : presentCount === 0
+                            ? "bg-red-100 text-red-700 hover:bg-red-100"
+                            : "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                      }
+                    >
+                      {presentCount === group.sessions.length
+                        ? "Present"
+                        : presentCount === 0
+                          ? "Absent"
+                          : "Partial"}
+                    </Badge>
+                  </summary>
+                  <div className="mt-3 space-y-2 pl-6">
+                    {group.sessions.map((s, i) => (
+                      <div
+                        key={s.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-cream px-3 py-2 text-sm"
+                      >
+                        <div>
+                          <p className="font-medium text-indigo">
+                            Session {s.slotNumber ?? i + 1}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{s.topic ?? "Topic not recorded"}</p>
+                        </div>
+                        <Badge
+                          className={
+                            s.present
+                              ? "bg-green-100 text-green-700 hover:bg-green-100"
+                              : "bg-red-100 text-red-700 hover:bg-red-100"
+                          }
+                        >
+                          {s.present ? "Present" : "Absent"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
           </div>
         )}
       </div>

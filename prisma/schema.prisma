@@ -576,12 +576,13 @@ enum AssessmentAttemptStatus {
 }
 
 model Assessment {
-  id          String         @id @default(cuid())
-  type        AssessmentType
-  title       String
-  description String?        @db.Text
-  published   Boolean        @default(false)
-  createdAt   DateTime       @default(now())
+  id              String         @id @default(cuid())
+  type            AssessmentType
+  title           String
+  description     String?        @db.Text
+  durationMinutes Int            @default(30)
+  published       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
 
   questions   AssessmentQuestion[]
   assignments AssessmentAssignment[]

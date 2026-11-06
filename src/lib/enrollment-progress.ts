@@ -6,6 +6,7 @@ export type SessionRecord = {
   date: Date;
   present: boolean;
   topic: string | null;
+  slotNumber: number | null;
 };
 
 export type EnrollmentProgress = {
@@ -67,6 +68,7 @@ export async function getEnrollmentProgress(enrollmentId: string): Promise<Enrol
       date: r.classDate,
       present: r.present,
       topic: r.trainingSession?.courseModule?.title ?? r.trainingSession?.topic ?? null,
+      slotNumber: r.trainingSession?.slotNumber ?? null,
     })),
   };
 }

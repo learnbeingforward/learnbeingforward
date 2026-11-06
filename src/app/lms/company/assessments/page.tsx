@@ -121,7 +121,7 @@ export default async function CompanyAssessmentsPage({
                         </Link>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {a.questions.length} question{a.questions.length !== 1 ? "s" : ""} &middot;{" "}
-                          {a.assignments.length} sent
+                          {a.assignments.length} sent &middot; {a.durationMinutes} min
                         </p>
                       </div>
                       <DeleteButton action={deleteAssessment.bind(null, a.id)} />

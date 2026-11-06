@@ -27,6 +27,7 @@ export async function createAssessment(
   const type = String(formData.get("type") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const durationMinutes = Math.max(1, Number.parseInt(String(formData.get("durationMinutes") ?? "30"), 10) || 30);
 
   if (!["APTITUDE", "TECHNICAL_APTITUDE", "CODING"].includes(type)) {
     return { ok: false, error: "Invalid assessment type." };
@@ -34,7 +35,7 @@ export async function createAssessment(
   if (!title) return { ok: false, error: "Title is required." };
 
   const assessment = await prisma.assessment.create({
-    data: { type: type as never, title, description: description || null },
+    data: { type: type as never, title, description: description || null, durationMinutes },
   });
 
   revalidatePath("/lms/company/assessments");
@@ -308,6 +309,34 @@ export async function recordAssessmentViolation(assignmentId: string) {
   }
 
   return { violationCount: updated.violationCount, autoSubmitted: false };
+}
+
+/**
+ * Called when the student doesn't click back into full-screen within the
+ * 5-second grace window shown after any "left the exam" event (tab switch,
+ * window blur, or exiting full-screen). Unlike recordAssessmentViolation,
+ * this always finalizes the attempt immediately regardless of how many
+ * violations came before it — that's the rule the product asked for.
+ */
+export async function recordAssessmentTimeout(assignmentId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    throw new Error("Only students can do this.");
+  }
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment || assignment.studentId !== session.user.id) {
+    throw new Error("Not your assessment.");
+  }
+  if (assignment.status === "SUBMITTED" || assignment.status === "AUTO_SUBMITTED") {
+    return { autoSubmitted: true };
+  }
+
+  await prisma.assessmentAssignment.update({
+    where: { id: assignmentId },
+    data: { violationCount: { increment: 1 } },
+  });
+  await finalizeSubmission(assignmentId, true);
+  return { autoSubmitted: true };
 }
 
 // ---------- Admin: grading & results ----------

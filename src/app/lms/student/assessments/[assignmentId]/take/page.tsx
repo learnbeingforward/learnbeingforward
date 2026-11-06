@@ -51,6 +51,8 @@ export default async function TakeAssessmentPage({
       assessmentTitle={assignment.assessment.title}
       questions={questions}
       initialViolationCount={assignment.violationCount}
+      durationMinutes={assignment.assessment.durationMinutes}
+      startedAt={assignment.startedAt?.toISOString() ?? null}
     />
   );
 }
