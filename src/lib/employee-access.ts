@@ -87,6 +87,22 @@ export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
   },
 ];
 
+/**
+ * Pages that were SUPER_ADMIN-exclusive (ADMIN2 blocked) before Employee Access
+ * existed — Account Details, Assessments, and the College MOUs/Approvals/Sent
+ * pages. ADMIN2 must stay excluded here exactly as before; Employee Access is the
+ * only way to delegate these now, to either an EMPLOYEE or an "Admin"-labeled
+ * Employee Access account, which is the point of that feature.
+ */
+const SUPER_ADMIN_ONLY_KEYS = new Set<EmployeePageKey>([
+  "accounts.details",
+  "colleges.mous",
+  "colleges.approvals",
+  "colleges.sent",
+  "assessments.build",
+  "assessments.submissions",
+]);
+
 const ALL_KEYS = new Set<string>(EMPLOYEE_PAGE_CATALOG.flatMap((g) => g.items.map((i) => i.key)));
 const FLAT_ITEMS = EMPLOYEE_PAGE_CATALOG.flatMap((g) => g.items);
 
@@ -123,11 +139,13 @@ export function buildEmployeeNavLinks(keys: EmployeePageKey[]): LmsNavEntry[] {
 }
 
 /**
- * Call at the top of every grantable company page (server component). SUPER_ADMIN and
- * ADMIN2 always pass through unaffected — this never changes their existing access.
- * EMPLOYEE passes only when granted `key`; otherwise they're redirected to the first
- * page they *were* granted (never shown a bare "not authorized" dead end). Any other
- * role reaching a /lms/company/* URL is sent back to their own portal.
+ * Call at the top of every grantable company page (server component). SUPER_ADMIN
+ * always passes. ADMIN2 passes for everything it already had — except the pages in
+ * SUPER_ADMIN_ONLY_KEYS, which stay off-limits to ADMIN2 exactly as before Employee
+ * Access existed. EMPLOYEE passes only when granted `key`; otherwise they're
+ * redirected to the first page they *were* granted (never shown a bare "not
+ * authorized" dead end). Any other role reaching a /lms/company/* URL is sent back
+ * to their own portal.
  *
  * Omit `key` for pages every signed-in company-area role should reach regardless of
  * grants (currently only Profile).
@@ -137,7 +155,11 @@ export async function requireCompanyPageAccess(key?: EmployeePageKey) {
   if (!session?.user) redirect("/auth");
 
   const role = session.user.role;
-  if (role === "SUPER_ADMIN" || role === "ADMIN2") {
+  if (role === "SUPER_ADMIN") {
+    return { session, navLinks: getCompanyNavLinksForRole(role) as LmsNavEntry[] };
+  }
+  if (role === "ADMIN2") {
+    if (key && SUPER_ADMIN_ONLY_KEYS.has(key)) redirect("/lms/company");
     return { session, navLinks: getCompanyNavLinksForRole(role) as LmsNavEntry[] };
   }
   if (role === "EMPLOYEE") {
