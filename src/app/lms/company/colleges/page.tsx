@@ -35,7 +35,7 @@ export default async function CompanyCollegesPage({
   searchParams: Promise<{ contractId?: string; invoiceId?: string }>;
 }) {
   const { contractId, invoiceId } = await searchParams;
-  const { session, navLinks } = await requireCompanyPageAccess("accounts.colleges");
+  const { session, navLinks } = await requireCompanyPageAccess("colleges.view");
   const isAdmin2 = session.user.role === "ADMIN2";
 
   if (contractId) {

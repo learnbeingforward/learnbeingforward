@@ -7,6 +7,11 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { getEmployeeKeys } from "@/lib/employee-access";
+
+async function isAuthorizedEmployee(userId: string) {
+  return (await getEmployeeKeys(userId)).includes("accounts.add");
+}
 
 export type CreateAccountState = {
   ok: boolean;
@@ -25,7 +30,12 @@ export async function createStudentAccount(
   formData: FormData
 ): Promise<CreateAccountState> {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "COLLEGE_ADMIN" && !isCompanyStaff(session.user.role))) {
+  const authorized =
+    !!session?.user &&
+    (session.user.role === "COLLEGE_ADMIN" ||
+      isCompanyStaff(session.user.role) ||
+      (session.user.role === "EMPLOYEE" && (await isAuthorizedEmployee(session.user.id))));
+  if (!authorized) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -135,7 +145,12 @@ export async function bulkCreateStudents(
   formData: FormData
 ): Promise<BulkCreateStudentsState> {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "COLLEGE_ADMIN" && !isCompanyStaff(session.user.role))) {
+  const authorized =
+    !!session?.user &&
+    (session.user.role === "COLLEGE_ADMIN" ||
+      isCompanyStaff(session.user.role) ||
+      (session.user.role === "EMPLOYEE" && (await isAuthorizedEmployee(session.user.id))));
+  if (!authorized) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -306,7 +321,11 @@ export async function createCollegeAccount(
   formData: FormData
 ): Promise<CreateAccountState> {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  const authorized =
+    !!session?.user &&
+    (isCompanyStaff(session.user.role) ||
+      (session.user.role === "EMPLOYEE" && (await isAuthorizedEmployee(session.user.id))));
+  if (!authorized) {
     return { ok: false, error: "Not authorized." };
   }
 

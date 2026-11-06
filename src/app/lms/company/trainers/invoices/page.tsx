@@ -37,7 +37,7 @@ export default async function CompanyTrainerInvoicesPage({
   searchParams: Promise<{ invoiceId?: string }>;
 }) {
   const { invoiceId } = await searchParams;
-  const { session, navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const { session, navLinks } = await requireCompanyPageAccess("trainers.invoices");
   const isAdmin2 = session.user.role === "ADMIN2";
 
   if (invoiceId) {

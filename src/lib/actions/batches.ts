@@ -5,17 +5,30 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { chunkIntoBatches, AUTO_BATCH_CAP, MANUAL_BATCH_CAP } from "@/lib/batching";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { getEmployeeKeys } from "@/lib/employee-access";
+
+async function isAuthorizedEmployee(userId: string) {
+  return (await getEmployeeKeys(userId)).includes("trainers.manage");
+}
 
 async function requireCompanyOrCollege(collegeId?: string | null) {
   const session = await auth();
   if (!session?.user) throw new Error("Not authorized.");
   if (isCompanyStaff(session.user.role)) return session;
+  if (session.user.role === "EMPLOYEE" && (await isAuthorizedEmployee(session.user.id))) return session;
   if (session.user.role === "COLLEGE_ADMIN") {
     if (collegeId && session.user.collegeId !== collegeId) {
       throw new Error("You can only manage batches for your own college.");
     }
     return session;
   }
+  throw new Error("Not authorized.");
+}
+
+async function requireTrainerManagement() {
+  const session = await auth();
+  if (session?.user && isCompanyStaff(session.user.role)) return session;
+  if (session?.user?.role === "EMPLOYEE" && (await isAuthorizedEmployee(session.user.id))) return session;
   throw new Error("Not authorized.");
 }
 
@@ -93,8 +106,9 @@ export async function autoBatchCollege(collegeId: string) {
 }
 
 export async function autoBatchAll() {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireTrainerManagement();
+  } catch {
     throw new Error("Only the company admin can auto-batch everyone.");
   }
   await groupAndBatch({});
@@ -158,8 +172,9 @@ export async function createManualBatch(
 }
 
 export async function assignTrainerToBatch(batchId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireTrainerManagement();
+  } catch {
     throw new Error("Only the company admin can assign a trainer to a batch.");
   }
 
@@ -277,8 +292,9 @@ export async function moveStudentToCourse(
 }
 
 export async function markBatchCompleted(batchId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireTrainerManagement();
+  } catch {
     throw new Error("Only the company admin can mark a batch completed.");
   }
 
@@ -312,8 +328,9 @@ export async function deleteBatch(batchId: string) {
 }
 
 export async function deleteTrainingSession(sessionId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireTrainerManagement();
+  } catch {
     throw new Error("Only the company admin can delete a scheduled session.");
   }
 

@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginButton";
 import { updateTrainerRate } from "@/lib/actions/trainers";
-import { isCompanyStaff } from "@/lib/auth-helpers";
 
 export default async function CompanyTrainersPage() {
-  const { session, navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const { session, keys, navLinks } = await requireCompanyPageAccess(["trainers.manage", "trainers.invoices"]);
   const isSuperAdmin = session.user.role === "SUPER_ADMIN";
-  const isStaff = isCompanyStaff(session.user.role) || session.user.role === "EMPLOYEE";
+  const canManage = keys.includes("trainers.manage");
+  const canInvoices = keys.includes("trainers.invoices");
 
   const trainers = await prisma.trainer.findMany({
     include: { loginUser: true, batches: true },
@@ -21,21 +21,25 @@ export default async function CompanyTrainersPage() {
   return (
     <DashboardShell title="Trainers" subtitle="Manage trainers, batches & invoices" navLinks={navLinks}>
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
-        <Link
-          href="/lms/company/trainers/batches"
-          className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-        >
-          <p className="font-semibold text-indigo">Batches</p>
-          <p className="mt-1 text-sm text-muted-foreground">Group enrolled students into class batches.</p>
-        </Link>
-        <Link
-          href="/lms/company/trainers/schedule"
-          className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-        >
-          <p className="font-semibold text-indigo">Schedule Training</p>
-          <p className="mt-1 text-sm text-muted-foreground">Assign a trainer, date and session slots to a batch.</p>
-        </Link>
-        {isStaff && (
+        {canManage && (
+          <Link
+            href="/lms/company/trainers/batches"
+            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+          >
+            <p className="font-semibold text-indigo">Batches</p>
+            <p className="mt-1 text-sm text-muted-foreground">Group enrolled students into class batches.</p>
+          </Link>
+        )}
+        {canManage && (
+          <Link
+            href="/lms/company/trainers/schedule"
+            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+          >
+            <p className="font-semibold text-indigo">Schedule Training</p>
+            <p className="mt-1 text-sm text-muted-foreground">Assign a trainer, date and session slots to a batch.</p>
+          </Link>
+        )}
+        {canInvoices && (
           <Link
             href="/lms/company/trainers/invoices"
             className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
@@ -78,7 +82,7 @@ export default async function CompanyTrainersPage() {
                     hasEmail={!!trainer.email}
                     hasLogin={!!trainer.loginUser}
                   />
-                  {isStaff && (
+                  {canManage && (
                     <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">₹</span>
                       <Input

@@ -5,6 +5,17 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess, type EmployeePageKey } from "@/lib/employee-access";
+
+async function authorizedFor(session: { user: { role: string } } | null, key: EmployeePageKey): Promise<boolean> {
+  if (session?.user && isCompanyStaff(session.user.role)) return true;
+  try {
+    await requireCompanyAccess(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export type FulfillResult = { ok: boolean; error?: string } | null;
 
@@ -99,7 +110,7 @@ export async function resetAccountPassword(
   formData: FormData
 ): Promise<ResetAccountResult> {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!session?.user || !(await authorizedFor(session, "accounts.manage.admins"))) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -133,7 +144,7 @@ export async function resetStudentPassword(
   formData: FormData
 ): Promise<QuickResetState> {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!(await authorizedFor(session, "accounts.manage.students"))) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -158,7 +169,7 @@ export async function resetCollegePassword(
   formData: FormData
 ): Promise<QuickResetState> {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!(await authorizedFor(session, "accounts.manage.colleges"))) {
     return { ok: false, error: "Not authorized." };
   }
 

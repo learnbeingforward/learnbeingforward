@@ -4,11 +4,19 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess } from "@/lib/employee-access";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
-export async function approveCertificate(enrollmentId: string) {
+async function requireAttendanceAccess() {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (session?.user && isCompanyStaff(session.user.role)) return;
+  await requireCompanyAccess("overview.attendance");
+}
+
+export async function approveCertificate(enrollmentId: string) {
+  try {
+    await requireAttendanceAccess();
+  } catch {
     throw new Error("Only the company admin can approve certificates.");
   }
 
@@ -41,8 +49,9 @@ export async function approveCertificate(enrollmentId: string) {
 }
 
 export async function assignTrainer(enrollmentId: string, trainerId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireAttendanceAccess();
+  } catch {
     throw new Error("Only the company admin can assign trainers.");
   }
 

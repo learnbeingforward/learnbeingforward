@@ -6,6 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { combineDateAndTime } from "@/lib/attendance";
 import { MANUAL_BATCH_CAP } from "@/lib/batching";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess } from "@/lib/employee-access";
+
+async function requireRequestsAccess() {
+  const session = await auth();
+  if (session?.user && isCompanyStaff(session.user.role)) return;
+  await requireCompanyAccess("overview.requests");
+}
 
 export async function requestEnrollment(courseId: string) {
   const session = await auth();
@@ -40,8 +47,9 @@ export async function requestEnrollment(courseId: string) {
 }
 
 export async function approveEnrollmentRequest(requestId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireRequestsAccess();
+  } catch {
     throw new Error("Only the company admin can approve requests.");
   }
 
@@ -118,8 +126,9 @@ export async function approveEnrollmentRequest(requestId: string) {
 }
 
 export async function rejectEnrollmentRequest(requestId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireRequestsAccess();
+  } catch {
     throw new Error("Only the company admin can reject requests.");
   }
 

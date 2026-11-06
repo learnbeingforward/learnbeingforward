@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess } from "@/lib/employee-access";
 
 async function requireCompany() {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (session?.user && isCompanyStaff(session.user.role)) return;
+  try {
+    await requireCompanyAccess("course-content");
+  } catch {
     throw new Error("Only the company admin can manage course content.");
   }
 }
@@ -18,8 +22,9 @@ export async function createCourseContent(
   _prevState: CreateCourseContentState,
   formData: FormData
 ): Promise<CreateCourseContentState> {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireCompany();
+  } catch {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -62,8 +67,9 @@ export async function setModuleMainPdf(
   _prevState: SetModuleMainPdfState,
   formData: FormData
 ): Promise<SetModuleMainPdfState> {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireCompany();
+  } catch {
     return { ok: false, error: "Not authorized." };
   }
 

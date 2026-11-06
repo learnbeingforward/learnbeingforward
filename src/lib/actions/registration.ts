@@ -4,10 +4,18 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess } from "@/lib/employee-access";
+
+async function requireRegistrationsAccess() {
+  const session = await auth();
+  if (session?.user && isCompanyStaff(session.user.role)) return;
+  await requireCompanyAccess("registrations.new");
+}
 
 export async function approveRegistration(userId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireRegistrationsAccess();
+  } catch {
     throw new Error("Only the company admin can approve registrations.");
   }
 
@@ -23,8 +31,9 @@ export async function approveRegistration(userId: string) {
 }
 
 export async function rejectRegistration(userId: string) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  try {
+    await requireRegistrationsAccess();
+  } catch {
     throw new Error("Only the company admin can reject registrations.");
   }
 

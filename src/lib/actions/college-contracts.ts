@@ -6,8 +6,13 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 import { renderCollegeInvoicePdf, type CollegeInvoiceLineItem } from "@/lib/pdf/invoice-pdf";
+import { requireCompanyAccess, getEmployeeKeys } from "@/lib/employee-access";
 
 const HOURS_PER_SESSION = 2;
+
+async function requireCollegeApprovals() {
+  await requireCompanyAccess("colleges.approvals");
+}
 
 export type RequestTrainingState = { ok: boolean; error?: string } | null;
 
@@ -16,7 +21,13 @@ export async function requestTraining(
   formData: FormData
 ): Promise<RequestTrainingState> {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!session?.user) {
+    return { ok: false, error: "Not authorized." };
+  }
+  const authorized =
+    isCompanyStaff(session.user.role) ||
+    (session.user.role === "EMPLOYEE" && (await getEmployeeKeys(session.user.id)).includes("colleges.view"));
+  if (!authorized) {
     return { ok: false, error: "Not authorized." };
   }
   const isAdmin2 = session.user.role === "ADMIN2";
@@ -111,8 +122,9 @@ export async function approveContractRate(
   _prevState: ApproveRateState,
   formData: FormData
 ): Promise<ApproveRateState> {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  try {
+    await requireCollegeApprovals();
+  } catch {
     return { ok: false, error: "Only the main company admin can set the rate and send this to the college." };
   }
 
@@ -172,10 +184,7 @@ export async function decideContract(contractId: string, approve: boolean, formD
 }
 
 export async function rescheduleSession(sessionId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Only the company admin can reschedule a session.");
-  }
+  await requireCompanyAccess("colleges.sent");
 
   const newDateInput = String(formData.get("newDate") ?? "").trim();
   if (!newDateInput) throw new Error("Enter a new date.");
@@ -200,8 +209,9 @@ export async function generateCollegeInvoice(
   _prevState: GenerateInvoiceState,
   _formData: FormData
 ): Promise<GenerateInvoiceState> {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  try {
+    await requireCompanyAccess("colleges.sent");
+  } catch {
     return { ok: false, error: "Only the main company admin can generate an invoice." };
   }
 
@@ -338,8 +348,9 @@ export async function submitDraftCollegeInvoice(
   _prevState: SubmitDraftState,
   _formData: FormData
 ): Promise<SubmitDraftState> {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  try {
+    await requireCompanyAccess("colleges.sent");
+  } catch {
     return { ok: false, error: "Only the main company admin can send this invoice." };
   }
 

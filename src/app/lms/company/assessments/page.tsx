@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreateAssessmentForm } from "@/components/lms/CreateAssessmentForm";
 import { AssessmentQuestionBuilder } from "@/components/lms/AssessmentQuestionBuilder";
 import { AssignAssessmentForm } from "@/components/lms/AssignAssessmentForm";
+import { EditAssessmentSettingsForm } from "@/components/lms/EditAssessmentSettingsForm";
 import { deleteAssessment } from "@/lib/actions/assessments";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 
@@ -70,6 +71,15 @@ export default async function CompanyAssessmentsPage({
     return (
       <DashboardShell title={assessment.title} subtitle={TYPE_LABELS[assessment.type]} navLinks={navLinks}>
         <BackLink href="/lms/company/assessments" label="Back to Assessments" />
+        <EditAssessmentSettingsForm
+          assessmentId={assessmentId}
+          title={assessment.title}
+          description={assessment.description}
+          durationMinutes={assessment.durationMinutes}
+          proctoringEnabled={assessment.proctoringEnabled}
+          availableFrom={assessment.availableFrom?.toISOString() ?? null}
+          availableUntil={assessment.availableUntil?.toISOString() ?? null}
+        />
         <div className="mb-6 flex flex-wrap items-center gap-3">
           {assessment.questions.length > 0 && (
             <Link

@@ -162,7 +162,7 @@ export default async function StudentAssessmentsPage({
                   );
                 })}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Once started, the assessment opens full-screen. Switching tabs or leaving full-screen counts as a
                 violation — after 3, it is submitted automatically.
               </p>

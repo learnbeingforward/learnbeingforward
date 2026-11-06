@@ -5,7 +5,25 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess } from "@/lib/employee-access";
+
+async function authorizedForTrainerManagement(): Promise<boolean> {
+  try {
+    await requireCompanyAccess("trainers.manage");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function authorizedForTrainerPasswordReset(): Promise<boolean> {
+  try {
+    await requireCompanyAccess("accounts.manage.trainers");
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export type CreateTrainerState = {
   ok: boolean;
@@ -22,8 +40,7 @@ export async function createTrainerAccount(
   _prevState: CreateTrainerState,
   formData: FormData
 ): Promise<CreateTrainerState> {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!(await authorizedForTrainerManagement())) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -74,10 +91,7 @@ export async function createTrainerAccount(
 }
 
 export async function updateTrainerRate(trainerId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
-    throw new Error("Only company staff can update trainer rates.");
-  }
+  await requireCompanyAccess("trainers.manage");
 
   const hourlyRate = Number.parseInt(String(formData.get("hourlyRate") ?? "0"), 10);
   if (!Number.isFinite(hourlyRate) || hourlyRate < 0) {
@@ -136,8 +150,7 @@ export async function createLoginForExistingTrainer(
   _prevState: CreateLoginForTrainerState,
   formData: FormData
 ): Promise<CreateLoginForTrainerState> {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!(await authorizedForTrainerManagement())) {
     return { ok: false, error: "Not authorized." };
   }
 
@@ -183,8 +196,7 @@ export async function resetTrainerPassword(
   _prevState: ResetTrainerPasswordState,
   formData: FormData
 ): Promise<ResetTrainerPasswordState> {
-  const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (!(await authorizedForTrainerPasswordReset())) {
     return { ok: false, error: "Not authorized." };
   }
 

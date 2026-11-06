@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { renderTrainerInvoicePdf, renderTrainerApprovalPdf } from "@/lib/pdf/invoice-pdf";
+import { getEmployeeKeys } from "@/lib/employee-access";
 
 const HOURS_PER_SESSION = 2;
 
@@ -134,7 +135,10 @@ export async function decideTrainerInvoice(
   formData: FormData
 ): Promise<DecideInvoiceState> {
   const session = await auth();
-  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const isAuthorizedEmployee =
+    session?.user?.role === "EMPLOYEE" && (await getEmployeeKeys(session.user.id)).includes("trainers.invoices");
+  if (!isSuperAdmin && !isAuthorizedEmployee) {
     return { ok: false, error: "Only the company admin can decide on invoices." };
   }
 

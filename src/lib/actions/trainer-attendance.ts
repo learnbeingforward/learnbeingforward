@@ -5,12 +5,15 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { combineDateAndTime } from "@/lib/attendance";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { getEmployeeKeys } from "@/lib/employee-access";
 
 export async function submitSessionAttendance(sessionId: string, formData: FormData) {
   const session = await auth();
   const isTrainer = session?.user?.role === "TRAINER";
   const isCompany = isCompanyStaff(session?.user?.role);
-  if (!session?.user || !(isTrainer || isCompany)) {
+  const isAuthorizedEmployee =
+    session?.user?.role === "EMPLOYEE" && (await getEmployeeKeys(session.user.id)).includes("trainers.manage");
+  if (!session?.user || !(isTrainer || isCompany || isAuthorizedEmployee)) {
     throw new Error("Only trainers or the company admin can mark attendance.");
   }
 

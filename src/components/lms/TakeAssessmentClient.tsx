@@ -20,7 +20,13 @@ const RETURN_GRACE_SECONDS = 5;
 const CALIBRATION_SECONDS = 4;
 const SNAPSHOT_INTERVAL_MS = 30_000;
 const AUDIO_CHECK_INTERVAL_MS = 300;
-const AUDIO_SUSTAINED_MS = 2_000;
+// Sliding window for "sustained" noise: human speech naturally dips below the
+// threshold between words, so requiring an unbroken streak above it almost never
+// fires for real talking. Instead, look at the last WINDOW checks and flag it once
+// enough of them (not all) were loud — that catches sustained talking while still
+// ignoring a single cough or chair creak.
+const AUDIO_WINDOW_SIZE = Math.round(2_000 / AUDIO_CHECK_INTERVAL_MS);
+const AUDIO_WINDOW_FRACTION = 0.5;
 
 type Question = {
   id: string;
@@ -89,17 +95,24 @@ export function TakeAssessmentClient({
   const audioViolationHandled = useRef(false);
   const finished = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  // A second, offscreen <video> created in JS (not JSX) so it exists from the moment
+  // the camera stream is granted — the visible preview <video> only mounts once
+  // `started` is true, which is too late: snapshot capture needs a playing video
+  // element the whole time, including during calibration.
+  const captureVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioBaselineRef = useRef(0);
-  const audioAboveSinceRef = useRef<number | null>(null);
+  const audioWindowRef = useRef<boolean[]>([]);
 
   function stopMedia() {
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
     mediaStreamRef.current = null;
     audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
+    captureVideoRef.current?.pause();
+    captureVideoRef.current = null;
   }
 
   useEffect(() => stopMedia, []);
@@ -216,12 +229,24 @@ export function TakeAssessmentClient({
     }
   }
 
+  // ---------- Proctoring: attach the live stream to the visible preview once it mounts ----------
+
+  useEffect(() => {
+    if (!started || !proctoringEnabled) return;
+    const video = videoRef.current;
+    const stream = mediaStreamRef.current;
+    if (video && stream) {
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
+  }, [started, proctoringEnabled]);
+
   // ---------- Proctoring: webcam snapshots ----------
 
   useEffect(() => {
     if (!started || !proctoringEnabled) return;
     const id = setInterval(() => {
-      const video = videoRef.current;
+      const video = captureVideoRef.current;
       if (!video || video.readyState < 2) return;
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth || 320;
@@ -261,15 +286,15 @@ export function TakeAssessmentClient({
       const rms = Math.sqrt(sumSquares / data.length);
       const threshold = audioBaselineRef.current * 3 + 10;
 
-      if (rms > threshold) {
-        if (audioAboveSinceRef.current === null) audioAboveSinceRef.current = Date.now();
-        else if (Date.now() - audioAboveSinceRef.current >= AUDIO_SUSTAINED_MS && !audioViolationHandled.current) {
-          audioViolationHandled.current = true;
-          audioAboveSinceRef.current = null;
-          void handleAudioViolation();
-        }
-      } else {
-        audioAboveSinceRef.current = null;
+      const window = audioWindowRef.current;
+      window.push(rms > threshold);
+      if (window.length > AUDIO_WINDOW_SIZE) window.shift();
+
+      const loudFraction = window.filter(Boolean).length / window.length;
+      if (window.length >= AUDIO_WINDOW_SIZE && loudFraction >= AUDIO_WINDOW_FRACTION && !audioViolationHandled.current) {
+        audioViolationHandled.current = true;
+        audioWindowRef.current = [];
+        void handleAudioViolation();
       }
     }, AUDIO_CHECK_INTERVAL_MS);
     return () => clearInterval(id);
@@ -292,6 +317,7 @@ export function TakeAssessmentClient({
       setAudioWarning(
         `Audio warning ${result.audioViolationCount}/${AUDIO_VIOLATION_LIMIT}: noise detected. After ${AUDIO_VIOLATION_LIMIT} warnings the assessment is submitted automatically.`
       );
+      audioWindowRef.current = [];
       audioViolationHandled.current = false;
     }
   }
@@ -310,13 +336,13 @@ export function TakeAssessmentClient({
   async function handleStart() {
     setStarting(true);
     setMediaError(null);
-    try {
-      await document.documentElement.requestFullscreen();
-    } catch {
-      // Fullscreen can be denied by the browser — the leave-detection checks still apply either way.
-    }
 
     if (!proctoringEnabled) {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Fullscreen can be denied by the browser — the leave-detection checks still apply either way.
+      }
       try {
         await beginExam();
       } catch (err) {
@@ -327,11 +353,24 @@ export function TakeAssessmentClient({
     }
 
     try {
+      // Ask for the camera/mic BEFORE entering full-screen — the permission prompt
+      // itself knocks the page straight back out of full-screen in most browsers, so
+      // requesting full-screen first just gets silently cancelled. Asking first and
+      // entering full-screen once the prompt is already closed avoids that entirely.
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
+
+      const captureVideo = document.createElement("video");
+      captureVideo.muted = true;
+      captureVideo.playsInline = true;
+      captureVideo.srcObject = stream;
+      await captureVideo.play().catch(() => {});
+      captureVideoRef.current = captureVideo;
+
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Denied by the browser — the leave-detection checks still apply either way.
       }
 
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -455,8 +494,9 @@ export function TakeAssessmentClient({
           </p>
           {proctoringEnabled && (
             <p className="mt-2 text-sm text-white/70">
-              This assessment also requires webcam and microphone access for proctoring — periodic snapshots are
-              taken, and unexpected noise is flagged, up to {AUDIO_VIOLATION_LIMIT} warnings.
+              This assessment is proctored — you will be watched on camera and your audio will be monitored for
+              the entire duration. Unexpected noise is flagged as a violation, up to {AUDIO_VIOLATION_LIMIT}{" "}
+              warnings.
             </p>
           )}
           <p className="mt-2 text-sm text-white/70">{questions.length} questions &middot; {questions.reduce((s, q) => s + q.marks, 0)} marks total.</p>

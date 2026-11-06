@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
+import { requireCompanyAccess } from "@/lib/employee-access";
 
 async function requireCompany() {
   const session = await auth();
-  if (!session?.user || !isCompanyStaff(session.user.role)) {
+  if (session?.user && isCompanyStaff(session.user.role)) return;
+  try {
+    await requireCompanyAccess("overview.edit-site");
+  } catch {
     throw new Error("Only the company admin can edit site content.");
   }
 }

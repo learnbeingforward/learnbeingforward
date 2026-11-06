@@ -25,7 +25,7 @@ export default async function CompanyBatchesPage({
   searchParams: Promise<{ collegeId?: string; batchId?: string }>;
 }) {
   const { collegeId, batchId } = await searchParams;
-  const { session, navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const { session, navLinks } = await requireCompanyPageAccess("trainers.manage");
   const isSuperAdmin = session.user.role === "SUPER_ADMIN";
 
   // Level 2: a single batch's roster

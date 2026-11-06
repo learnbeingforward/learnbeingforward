@@ -84,6 +84,57 @@ export async function deleteAssessment(assessmentId: string) {
   revalidatePath("/lms/company/assessments");
 }
 
+export type UpdateAssessmentSettingsState = { ok: boolean; error?: string } | null;
+
+/**
+ * Lets an already-created assessment's settings be changed later — title,
+ * duration, the open/close window, and critically the proctoring toggle —
+ * without having to recreate the assessment (and its questions) from scratch
+ * just to turn camera/mic proctoring on or off.
+ */
+export async function updateAssessmentSettings(
+  assessmentId: string,
+  _prevState: UpdateAssessmentSettingsState,
+  formData: FormData
+): Promise<UpdateAssessmentSettingsState> {
+  await requireSuperAdmin("assessments.build");
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const durationMinutes = Math.max(1, Number.parseInt(String(formData.get("durationMinutes") ?? "30"), 10) || 30);
+  const proctoringEnabled = formData.get("proctoringEnabled") === "on";
+  const availableFromRaw = String(formData.get("availableFrom") ?? "");
+  const availableUntilRaw = String(formData.get("availableUntil") ?? "");
+
+  if (!title) return { ok: false, error: "Title is required." };
+  if (!availableFromRaw || !availableUntilRaw) {
+    return { ok: false, error: "Set both the start and end date/time the assessment is open." };
+  }
+  const availableFrom = new Date(availableFromRaw);
+  const availableUntil = new Date(availableUntilRaw);
+  if (Number.isNaN(availableFrom.getTime()) || Number.isNaN(availableUntil.getTime())) {
+    return { ok: false, error: "Enter valid dates." };
+  }
+  if (availableUntil <= availableFrom) {
+    return { ok: false, error: "The closing date/time must be after the opening date/time." };
+  }
+
+  await prisma.assessment.update({
+    where: { id: assessmentId },
+    data: {
+      title,
+      description: description || null,
+      durationMinutes,
+      proctoringEnabled,
+      availableFrom,
+      availableUntil,
+    },
+  });
+
+  revalidatePath("/lms/company/assessments");
+  return { ok: true };
+}
+
 export type AddQuestionState = { ok: boolean; error?: string } | null;
 
 export async function addAssessmentQuestion(

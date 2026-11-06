@@ -16,7 +16,7 @@ export default async function CompanyScheduleTrainingPage({
   searchParams: Promise<{ trainerId?: string; sessionId?: string }>;
 }) {
   const { trainerId, sessionId } = await searchParams;
-  const { navLinks } = await requireCompanyPageAccess("accounts.trainers");
+  const { navLinks } = await requireCompanyPageAccess("trainers.manage");
 
   // Level 2: mark attendance for a specific pending session
   if (trainerId && sessionId) {

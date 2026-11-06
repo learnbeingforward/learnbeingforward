@@ -98,12 +98,19 @@ export function EmployeeAccessForm() {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {group.group}
               </p>
-              <div className="space-y-2">
-                {group.items.map((item) => (
-                  <label key={item.key} className="flex items-center gap-2 text-sm text-indigo">
-                    <input type="checkbox" name="pageKeys" value={item.key} className="accent-indigo" />
-                    {item.label}
-                  </label>
+              <div className="space-y-3">
+                {group.pages.map((page) => (
+                  <div key={page.href}>
+                    <p className="text-xs font-semibold text-indigo">{page.cluster ?? page.navLabel}</p>
+                    <div className="mt-1 space-y-1.5 pl-2">
+                      {page.permissions.map((perm) => (
+                        <label key={perm.key} className="flex items-center gap-2 text-sm text-indigo">
+                          <input type="checkbox" name="pageKeys" value={perm.key} className="accent-indigo" />
+                          {page.permissions.length > 1 ? perm.label : page.navLabel}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
