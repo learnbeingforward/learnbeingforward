@@ -2,6 +2,17 @@ import { prisma } from "@/lib/prisma";
 
 export type NotificationCategory = "STUDENT" | "COLLEGE" | "TRAINER" | "ADMIN";
 
+export const NOTIFICATION_SECTIONS: { category: NotificationCategory; slug: string; label: string }[] = [
+  { category: "STUDENT", slug: "students", label: "Students" },
+  { category: "COLLEGE", slug: "colleges", label: "Colleges" },
+  { category: "TRAINER", slug: "trainers", label: "Trainers" },
+  { category: "ADMIN", slug: "admin", label: "Admin / System" },
+];
+
+export function categoryFromSlug(slug: string): NotificationCategory | null {
+  return NOTIFICATION_SECTIONS.find((s) => s.slug === slug)?.category ?? null;
+}
+
 /**
  * Drops one row into the site-wide activity feed shown on the company side's
  * Notifications page. Called from inside other server actions right after the
