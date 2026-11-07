@@ -497,54 +497,84 @@ export async function gradeWrittenAnswer(answerId: string, marksAwarded: number)
   revalidatePath("/lms/company/assessments/submissions");
 }
 
-export async function sendResultToCollege(assignmentId: string, formData: FormData) {
+export type SendResultState = {
+  ok: boolean;
+  error?: string;
+  newlyShared?: number;
+  alreadyShared?: number;
+} | null;
+
+export async function sendResultToCollege(assignmentId: string, formData: FormData): Promise<SendResultState> {
   await requireSuperAdmin("assessments.submissions");
   const snapshotIds = formData.getAll("snapshotIds").map(String);
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: { student: { include: { college: true } }, assessment: true },
   });
-  if (!assignment) return;
+  if (!assignment) return { ok: false, error: "This submission no longer exists." };
+
+  let newlyShared = 0;
+  let alreadyShared = 0;
+  if (snapshotIds.length > 0) {
+    // Read the current sharing state first so we can tell the admin exactly what
+    // this click did — "N shared" vs "N were already shared" — since otherwise a
+    // re-send of already-shared photos looks like it silently did nothing.
+    const existing = await prisma.assessmentSnapshot.findMany({
+      where: { id: { in: snapshotIds }, assignmentId },
+      select: { sharedWithCollege: true },
+    });
+    newlyShared = existing.filter((s) => !s.sharedWithCollege).length;
+    alreadyShared = existing.filter((s) => s.sharedWithCollege).length;
+    await prisma.assessmentSnapshot.updateMany({
+      where: { id: { in: snapshotIds }, assignmentId },
+      data: { sharedWithCollege: true },
+    });
+  }
 
   const photoNote = snapshotIds.length > 0 ? ` with ${snapshotIds.length} selected proctoring photo(s) attached` : "";
   console.log(
     `[dummy email] Assessment result for ${assignment.student.name} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks} sent to ${assignment.student.college?.contactEmail ?? "the college"}${photoNote}`
   );
 
-  if (snapshotIds.length > 0) {
-    await prisma.assessmentSnapshot.updateMany({
-      where: { id: { in: snapshotIds }, assignmentId },
-      data: { sharedWithCollege: true },
-    });
-  }
   await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { sentToCollegeAt: new Date() } });
   revalidatePath("/lms/company/assessments/submissions");
   revalidatePath("/lms/college/assessment-data");
+  return { ok: true, newlyShared, alreadyShared };
 }
 
-export async function sendResultToStudent(assignmentId: string, formData: FormData) {
+export async function sendResultToStudent(assignmentId: string, formData: FormData): Promise<SendResultState> {
   await requireSuperAdmin("assessments.submissions");
   const snapshotIds = formData.getAll("snapshotIds").map(String);
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: { student: true, assessment: true },
   });
-  if (!assignment) return;
+  if (!assignment) return { ok: false, error: "This submission no longer exists." };
+
+  let newlyShared = 0;
+  let alreadyShared = 0;
+  if (snapshotIds.length > 0) {
+    const existing = await prisma.assessmentSnapshot.findMany({
+      where: { id: { in: snapshotIds }, assignmentId },
+      select: { sharedWithStudent: true },
+    });
+    newlyShared = existing.filter((s) => !s.sharedWithStudent).length;
+    alreadyShared = existing.filter((s) => s.sharedWithStudent).length;
+    await prisma.assessmentSnapshot.updateMany({
+      where: { id: { in: snapshotIds }, assignmentId },
+      data: { sharedWithStudent: true },
+    });
+  }
 
   const photoNote = snapshotIds.length > 0 ? ` with ${snapshotIds.length} selected proctoring photo(s) attached` : "";
   console.log(
     `[dummy email] Assessment result for ${assignment.student.email} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks}${photoNote}`
   );
 
-  if (snapshotIds.length > 0) {
-    await prisma.assessmentSnapshot.updateMany({
-      where: { id: { in: snapshotIds }, assignmentId },
-      data: { sharedWithStudent: true },
-    });
-  }
   await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { sentToStudentAt: new Date() } });
   revalidatePath("/lms/company/assessments/submissions");
   revalidatePath("/lms/student/assessments");
+  return { ok: true, newlyShared, alreadyShared };
 }
 
 // ---------- Admin: proctoring snapshots ----------

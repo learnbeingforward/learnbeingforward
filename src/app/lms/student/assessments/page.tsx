@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
 import { SharedSnapshotGallery } from "@/components/lms/SharedSnapshotGallery";
+import { writtenAnswerBadge } from "@/lib/assessment-ui";
 import { format } from "date-fns";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -84,8 +85,8 @@ export default async function StudentAssessmentsPage({
                     {ans.isCorrect ? "Correct" : "Wrong"} &middot; {ans.marksAwarded ?? 0}/{ans.question.marks}
                   </Badge>
                 ) : (
-                  <Badge className="bg-cream text-indigo hover:bg-cream">
-                    {ans.marksAwarded ?? 0}/{ans.question.marks}
+                  <Badge className={writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className}>
+                    {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
                   </Badge>
                 )}
               </div>

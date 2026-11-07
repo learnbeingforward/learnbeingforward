@@ -6,6 +6,7 @@ import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import { BackLink } from "@/components/lms/BackLink";
 import { SharedSnapshotGallery } from "@/components/lms/SharedSnapshotGallery";
+import { writtenAnswerBadge } from "@/lib/assessment-ui";
 
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude",
@@ -87,8 +88,8 @@ export default async function CollegeAssessmentDataPage({
                     {ans.isCorrect ? "Correct" : "Wrong"} &middot; {ans.marksAwarded ?? 0}/{ans.question.marks}
                   </Badge>
                 ) : (
-                  <Badge className="bg-cream text-indigo hover:bg-cream">
-                    {ans.marksAwarded ?? 0}/{ans.question.marks}
+                  <Badge className={writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className}>
+                    {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
                   </Badge>
                 )}
               </div>

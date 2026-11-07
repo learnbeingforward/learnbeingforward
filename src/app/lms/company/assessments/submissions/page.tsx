@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { GradeWrittenAnswerForm } from "@/components/lms/GradeWrittenAnswerForm";
 import { AssessmentSnapshotGallery } from "@/components/lms/AssessmentSnapshotGallery";
 import { sendResultToCollege, sendResultToStudent } from "@/lib/actions/assessments";
+import { writtenAnswerBadge } from "@/lib/assessment-ui";
 
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude",
@@ -76,12 +77,22 @@ export default async function AssessmentSubmissionsPage({
           )}
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <form action={sendResultToCollege.bind(null, assignmentId)}>
+            <form
+              action={async (formData: FormData) => {
+                "use server";
+                await sendResultToCollege(assignmentId, formData);
+              }}
+            >
               <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
                 {assignment.sentToCollegeAt ? "Re-send to College" : "Send to College"}
               </Button>
             </form>
-            <form action={sendResultToStudent.bind(null, assignmentId)}>
+            <form
+              action={async (formData: FormData) => {
+                "use server";
+                await sendResultToStudent(assignmentId, formData);
+              }}
+            >
               <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
                 {assignment.sentToStudentAt ? "Re-send to Student" : "Send to Student"}
               </Button>
@@ -122,7 +133,9 @@ export default async function AssessmentSubmissionsPage({
                     {ans.isCorrect ? "Correct" : "Wrong"} &middot; {ans.marksAwarded ?? 0}/{ans.question.marks}
                   </Badge>
                 ) : (
-                  <Badge className="bg-cream text-indigo hover:bg-cream">{ans.question.marks} max</Badge>
+                  <Badge className={writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className}>
+                    {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
+                  </Badge>
                 )}
               </div>
               {ans.question.questionType === "MCQ" ? (
