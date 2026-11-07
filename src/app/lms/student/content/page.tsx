@@ -6,7 +6,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
-import { getUnlockedContentForStudent, getCourseBooksForStudent } from "@/lib/content-access";
+import { getUnlockedContentForStudent, getCourseBooksForStudent, getSharedTrainerContentForStudent } from "@/lib/content-access";
 import { requestContentAccess, requestModulePdfAccess } from "@/lib/actions/content-access";
 
 export default async function StudentContentPage({
@@ -18,16 +18,17 @@ export default async function StudentContentPage({
   const session = await auth();
   const studentId = session!.user.id;
 
-  const [unlocked, courseBooks, myRequests] = await Promise.all([
+  const [unlocked, courseBooks, myRequests, trainerContent] = await Promise.all([
     getUnlockedContentForStudent(studentId),
     getCourseBooksForStudent(studentId),
     prisma.contentAccessRequest.findMany({ where: { studentId } }),
+    courseId || moduleId ? Promise.resolve([]) : getSharedTrainerContentForStudent(studentId),
   ]);
 
   const requestByContentId = new Map(myRequests.map((r) => [r.courseContentId, r]));
   const requestByModuleId = new Map(myRequests.map((r) => [r.courseModuleId, r]));
 
-  if (unlocked.length === 0 && courseBooks.length === 0) {
+  if (unlocked.length === 0 && courseBooks.length === 0 && trainerContent.length === 0) {
     return (
       <DashboardShell title="Content" subtitle="Course materials" navLinks={navLinks}>
         <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
@@ -202,20 +203,44 @@ export default async function StudentContentPage({
 
   return (
     <DashboardShell title="Content" subtitle="Course materials" navLinks={navLinks}>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from(byCourse.entries()).map(([cId, course]) => (
-          <Link
-            key={cId}
-            href={`/lms/student/content?courseId=${cId}`}
-            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-          >
-            <p className="font-semibold text-indigo">{course.name}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {course.count > 0 ? `${course.count} item${course.count !== 1 ? "s" : ""} unlocked` : "Course book available"}
-            </p>
-          </Link>
-        ))}
-      </div>
+      {trainerContent.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+            From Your Trainers ({trainerContent.length})
+          </h2>
+          <div className="space-y-3">
+            {trainerContent.map((c) => (
+              <div key={c.id} className="rounded-xl border border-border bg-white p-4">
+                <a href={c.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-indigo underline">
+                  {c.title}
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  {c.trainer.name} &middot; {c.course?.name} — {c.courseModule?.title}
+                  {c.courseSubModule && ` — ${c.courseSubModule.title}`}
+                </p>
+                {c.description && <p className="mt-1 text-xs text-muted-foreground">{c.description}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {byCourse.size > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from(byCourse.entries()).map(([cId, course]) => (
+            <Link
+              key={cId}
+              href={`/lms/student/content?courseId=${cId}`}
+              className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
+            >
+              <p className="font-semibold text-indigo">{course.name}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {course.count > 0 ? `${course.count} item${course.count !== 1 ? "s" : ""} unlocked` : "Course book available"}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
     </DashboardShell>
   );
 }

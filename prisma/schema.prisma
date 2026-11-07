@@ -184,7 +184,8 @@ model CourseSubModule {
   title          String
   order          Int          @default(0)
 
-  courseContents CourseContent[]
+  courseContents  CourseContent[]
+  sessionContents SessionContent[]
 
   @@index([courseModuleId])
 }
@@ -320,20 +321,30 @@ model TrainingSession {
 }
 
 model SessionContent {
-  id             String        @id @default(cuid())
-  trainerId      String
-  trainer        Trainer       @relation(fields: [trainerId], references: [id], onDelete: Cascade)
-  courseId       String?
-  course         Course?       @relation(fields: [courseId], references: [id])
-  courseModuleId String?
-  courseModule   CourseModule? @relation(fields: [courseModuleId], references: [id])
-  title          String
-  description    String?       @db.Text
-  fileUrl        String
-  fileType       String
-  uploadedAt     DateTime      @default(now())
+  id                String            @id @default(cuid())
+  trainerId         String
+  trainer           Trainer           @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  courseId          String?
+  course            Course?           @relation(fields: [courseId], references: [id])
+  courseModuleId    String?
+  courseModule      CourseModule?     @relation(fields: [courseModuleId], references: [id])
+  courseSubModuleId String?
+  courseSubModule   CourseSubModule?  @relation(fields: [courseSubModuleId], references: [id])
+  title             String
+  description       String?           @db.Text
+  fileUrl           String
+  fileType          String
+  uploadedAt        DateTime          @default(now())
+  // Only visible to students once the admin reviews it here and sends it — and
+  // even then, only to students who actually attended a session this trainer
+  // taught for this module (computed at read time from attendance, not a stored
+  // per-student grant).
+  sharedWithStudents Boolean          @default(false)
+  sharedAt           DateTime?
 
   @@index([trainerId])
+  @@index([courseId])
+  @@index([courseModuleId])
 }
 
 model TrainerInvoice {

@@ -12,14 +12,15 @@ export default async function TrainerContentPage() {
   const session = await auth();
   const trainerId = session!.user.trainerId!;
 
-  const [content, courses, modules, batches] = await Promise.all([
+  const [content, courses, modules, subModules, batches] = await Promise.all([
     prisma.sessionContent.findMany({
       where: { trainerId },
-      include: { course: true, courseModule: true },
+      include: { course: true, courseModule: true, courseSubModule: true },
       orderBy: { uploadedAt: "desc" },
     }),
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
+    prisma.courseSubModule.findMany({ orderBy: { order: "asc" } }),
     prisma.batch.findMany({ where: { trainerId }, include: { course: true }, orderBy: { name: "asc" } }),
   ]);
 
@@ -41,7 +42,11 @@ export default async function TrainerContentPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
             Upload New Content
           </h2>
-          <UploadContentForm courses={courses} modules={modules} />
+          <UploadContentForm
+            courses={courses}
+            modules={modules}
+            subModules={subModules.map((sm) => ({ id: sm.id, title: sm.title, courseModuleId: sm.courseModuleId }))}
+          />
         </div>
 
         <div>
@@ -64,12 +69,16 @@ export default async function TrainerContentPage() {
                       {item.title}
                     </a>
                     <p className="text-xs text-muted-foreground">
-                      {item.course?.name} — {item.courseModule?.title} &middot;{" "}
+                      {item.course?.name} — {item.courseModule?.title}
+                      {item.courseSubModule && ` — ${item.courseSubModule.title}`} &middot;{" "}
                       {format(item.uploadedAt, "MMM d, yyyy")}
                     </p>
                     {item.description && (
                       <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
                     )}
+                    <p className={`mt-1 text-xs font-medium ${item.sharedWithStudents ? "text-green-700" : "text-muted-foreground"}`}>
+                      {item.sharedWithStudents ? "Sent to students who attended" : "Awaiting admin review"}
+                    </p>
                   </div>
                   <DeleteButton action={deleteSessionContent.bind(null, item.id)} />
                 </div>

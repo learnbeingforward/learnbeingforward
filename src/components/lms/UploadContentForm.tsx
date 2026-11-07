@@ -19,15 +19,29 @@ import { createSessionContent, type CreateSessionContentState } from "@/lib/acti
 
 type Course = { id: string; name: string };
 type Module = { id: string; title: string; courseId: string };
+type SubModule = { id: string; title: string; courseModuleId: string };
 
-export function UploadContentForm({ courses, modules }: { courses: Course[]; modules: Module[] }) {
+export function UploadContentForm({
+  courses,
+  modules,
+  subModules = [],
+}: {
+  courses: Course[];
+  modules: Module[];
+  subModules?: SubModule[];
+}) {
   const [state, formAction, isPending] = useActionState<CreateSessionContentState, FormData>(
     createSessionContent,
     null
   );
   const [courseId, setCourseId] = useState("");
+  const [courseModuleId, setCourseModuleId] = useState("");
 
   const courseModules = useMemo(() => modules.filter((m) => m.courseId === courseId), [modules, courseId]);
+  const subModuleOptions = useMemo(
+    () => subModules.filter((sm) => sm.courseModuleId === courseModuleId),
+    [subModules, courseModuleId]
+  );
 
   return (
     <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
@@ -70,7 +84,7 @@ export function UploadContentForm({ courses, modules }: { courses: Course[]; mod
           Module
           <RequiredMark />
         </Label>
-        <Select name="courseModuleId" required disabled={!courseId}>
+        <Select name="courseModuleId" required disabled={!courseId} value={courseModuleId} onValueChange={(v) => setCourseModuleId(v ?? "")}>
           <SelectTrigger className="mt-1.5 w-full">
             <SelectValue placeholder={courseId ? "Select module" : "Select a course first"}>
               {(value: string | null) => courseModules.find((m) => m.id === value)?.title ?? "Select module"}
@@ -85,6 +99,25 @@ export function UploadContentForm({ courses, modules }: { courses: Course[]; mod
           </SelectContent>
         </Select>
       </div>
+      {subModuleOptions.length > 0 && (
+        <div>
+          <Label htmlFor="courseSubModuleId">Sub-Module (optional)</Label>
+          <Select name="courseSubModuleId">
+            <SelectTrigger className="mt-1.5 w-full">
+              <SelectValue placeholder="Select sub-module (if any)">
+                {(value: string | null) => subModuleOptions.find((sm) => sm.id === value)?.title ?? "Select sub-module (if any)"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {subModuleOptions.map((sm) => (
+                <SelectItem key={sm.id} value={sm.id}>
+                  {sm.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <FileUploadField name="fileUrl" typeFieldName="fileType" label="File (PDF, PPT, or Word)" category="content" />
 
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}

@@ -34,6 +34,7 @@ export const companyNavLinks: LmsNavEntry[] = [
       { href: "/lms/company", label: "Requests" },
       { href: "/lms/company/attendance", label: "Attendance" },
       { href: "/lms/company/edit-site", label: "Edit Site" },
+      { href: "/lms/company/trainer-content", label: "Trainer-Submitted Content" },
     ],
   },
   {
@@ -86,6 +87,7 @@ export function getCompanyNavLinksForRole(role?: string): LmsNavEntry[] {
 
 export const trainerNavLinks: LmsNavEntry[] = [
   { href: "/lms/trainer", label: "Personal Details" },
+  { href: "/lms/trainer/batches", label: "My Batches" },
   { href: "/lms/trainer/schedule", label: "Schedule" },
   { href: "/lms/trainer/attendance", label: "Attendance" },
   { href: "/lms/trainer/content", label: "Content" },

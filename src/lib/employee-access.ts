@@ -29,6 +29,7 @@ export type EmployeePageKey =
   | "overview.requests"
   | "overview.attendance"
   | "overview.edit-site"
+  | "overview.trainer-content"
   | "assessments.build"
   | "assessments.submissions"
   | "course-content";
@@ -77,6 +78,11 @@ export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
       { navLabel: "Requests", href: "/lms/company", permissions: [{ key: "overview.requests", label: "Requests" }] },
       { navLabel: "Attendance", href: "/lms/company/attendance", permissions: [{ key: "overview.attendance", label: "Attendance" }] },
       { navLabel: "Edit Site", href: "/lms/company/edit-site", permissions: [{ key: "overview.edit-site", label: "Edit Site" }] },
+      {
+        navLabel: "Trainer-Submitted Content",
+        href: "/lms/company/trainer-content",
+        permissions: [{ key: "overview.trainer-content", label: "Trainer-Submitted Content" }],
+      },
     ],
   },
   {
