@@ -181,12 +181,15 @@ export default async function CompanyBatchesPage({
                     {batch.trainer && ` · Trainer: ${batch.trainer.name}`}
                   </p>
                 </Link>
-                <AssignTrainerSelect
-                  batchId={batch.id}
-                  trainers={trainers}
-                  currentTrainerId={batch.trainerId}
-                  action={assignTrainerToBatch}
-                />
+                <div className="flex shrink-0 items-center gap-2">
+                  <AssignTrainerSelect
+                    batchId={batch.id}
+                    trainers={trainers}
+                    currentTrainerId={batch.trainerId}
+                    action={assignTrainerToBatch}
+                  />
+                  {isSuperAdmin && <DeleteButton action={deleteBatch.bind(null, batch.id)} />}
+                </div>
               </div>
             ))}
             {collegeBatches.length === 0 && (
