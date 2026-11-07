@@ -51,7 +51,11 @@ export default async function CollegeStudentsPage({
         {!detail || detail.collegeId !== collegeId ? (
           <p className="text-sm text-muted-foreground">This student doesn&apos;t belong to your college.</p>
         ) : (
-          <StudentDetailView student={detail} basePath={BASE_PATH} />
+          <StudentDetailView
+            student={detail}
+            basePath={BASE_PATH}
+            batchLinkBase={(batchId) => `/lms/college/batches?batchId=${batchId}`}
+          />
         )}
       </DashboardShell>
     );

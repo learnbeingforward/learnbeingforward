@@ -72,24 +72,27 @@ async function createBatchesFromEnrollments(
 }
 
 async function groupAndBatch(where: { collegeId?: string }) {
+  // Grouped by the STUDENT's own collegeId, not the enrollment row's — the
+  // enrollment's collegeId can drift stale (e.g. after a student is moved between
+  // colleges) and has previously caused batches to get filed under the wrong
+  // college, where nobody thinks to look for them.
   const unbatched = await prisma.enrollment.findMany({
-    where: { ...where, batchId: null, collegeId: { not: null } },
+    where: { batchId: null, student: where.collegeId ? { collegeId: where.collegeId } : { collegeId: { not: null } } },
     select: {
       id: true,
       enrolledAt: true,
-      collegeId: true,
       courseId: true,
-      student: { select: { semester: true } },
+      student: { select: { semester: true, collegeId: true } },
     },
   });
 
   const groups = new Map<string, { collegeId: string; courseId: string; semester: number | null; items: UnbatchedEnrollment[] }>();
   for (const e of unbatched) {
-    if (!e.collegeId) continue;
+    if (!e.student.collegeId) continue;
     const semester = e.student.semester ?? null;
-    const key = `${e.collegeId}::${e.courseId}::${semester ?? "none"}`;
+    const key = `${e.student.collegeId}::${e.courseId}::${semester ?? "none"}`;
     if (!groups.has(key)) {
-      groups.set(key, { collegeId: e.collegeId, courseId: e.courseId, semester, items: [] });
+      groups.set(key, { collegeId: e.student.collegeId, courseId: e.courseId, semester, items: [] });
     }
     groups.get(key)!.items.push({ id: e.id, enrolledAt: e.enrolledAt });
   }
@@ -185,6 +188,30 @@ export async function assignTrainerToBatch(batchId: string, formData: FormData) 
   await prisma.enrollment.updateMany({ where: { batchId }, data: { trainerId } });
 
   revalidateBatchPaths();
+}
+
+/**
+ * Retroactively set (or clear/change) which course module a session covered —
+ * module selection at scheduling time is optional, so plenty of already-taught,
+ * attendance-taken sessions can end up with none set, and since student content
+ * only unlocks per module once a session for it has attendance taken, those
+ * sessions never unlock anything. This lets the admin patch the module in after
+ * the fact without touching attendance (sessions and attendance records are linked
+ * but independent — this never deletes or recreates either).
+ */
+export async function updateSessionModule(sessionId: string, formData: FormData) {
+  try {
+    await requireTrainerManagement();
+  } catch {
+    throw new Error("Only the company admin can edit a session's module.");
+  }
+
+  const courseModuleId = String(formData.get("courseModuleId") ?? "").trim() || null;
+  await prisma.trainingSession.update({ where: { id: sessionId }, data: { courseModuleId } });
+
+  revalidateBatchPaths();
+  revalidatePath("/lms/company/trainers/schedule");
+  revalidatePath("/lms/student/content");
 }
 
 export type AddToBatchState = { ok: boolean; error?: string } | null;

@@ -144,7 +144,7 @@ export function ScheduleSessionForm({
                   </Select>
                 </div>
                 <div>
-                  <Label>Module / Subject (optional)</Label>
+                  <Label>Module / Subject</Label>
                   <Select name={`slot${n}_moduleId`}>
                     <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder="Select module">
@@ -161,6 +161,10 @@ export function ScheduleSessionForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Leaving this blank means students won&apos;t get that module&apos;s content unlocked from this
+                    session — it can be set later from the Schedule page if skipped now.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor={`slot${n}_topic`}>Topic (if no module fits)</Label>

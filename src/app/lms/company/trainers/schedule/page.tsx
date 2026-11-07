@@ -8,6 +8,7 @@ import { DeleteButton } from "@/components/lms/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { submitSessionAttendance } from "@/lib/actions/trainer-attendance";
 import { deleteTrainingSession } from "@/lib/actions/batches";
+import { SessionModuleSelect } from "@/components/lms/SessionModuleSelect";
 import { format } from "date-fns";
 
 export default async function CompanyScheduleTrainingPage({
@@ -136,8 +137,15 @@ export default async function CompanyScheduleTrainingPage({
                   </p>
                   <p className="text-muted-foreground">
                     {format(s.sessionDate, "MMM d, yyyy")} &middot; Slot {s.slotNumber} ({s.startTime}–{s.endTime})
-                    &middot; {s.courseModule?.title ?? s.topic ?? "—"}
                   </p>
+                  <div className="mt-1">
+                    <SessionModuleSelect
+                      sessionId={s.id}
+                      currentModuleId={s.courseModuleId}
+                      topic={s.topic}
+                      modules={moduleOptions.filter((m) => m.courseId === s.batch.courseId)}
+                    />
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   {s.attendanceTaken ? (

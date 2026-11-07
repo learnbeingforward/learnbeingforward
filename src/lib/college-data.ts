@@ -71,6 +71,7 @@ export async function getStudentDetail(studentId: string) {
           trainer: true,
           attendanceRecords: true,
           certification: true,
+          batch: true,
         },
       },
     },
@@ -100,6 +101,14 @@ export async function getStudentDetail(studentId: string) {
         total,
         pct,
         eligible: pct >= ATTENDANCE_THRESHOLD || overrideApproved,
+        // The enrollment's own collegeId can drift from the student's actual college
+        // (e.g. if the student was later moved), which silently files their batch
+        // under the wrong college card on the Batches page. Carrying the batch's own
+        // collegeId here — not the enrollment's — lets the UI link straight to it
+        // regardless of any such mismatch.
+        batchId: enrollment.batchId,
+        batchCollegeId: enrollment.batch?.collegeId ?? null,
+        batchName: enrollment.batch?.name ?? null,
       };
     }),
   };

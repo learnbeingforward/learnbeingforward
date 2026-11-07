@@ -41,7 +41,11 @@ export default async function CompanyAllStudentsPage({
         {!detail ? (
           <p className="text-sm text-muted-foreground">This student no longer exists.</p>
         ) : (
-          <StudentDetailView student={detail} basePath={BASE_PATH} />
+          <StudentDetailView
+            student={detail}
+            basePath={BASE_PATH}
+            batchLinkBase={(batchId, batchCollegeId) => `/lms/company/trainers/batches?collegeId=${batchCollegeId}&batchId=${batchId}`}
+          />
         )}
       </DashboardShell>
     );
