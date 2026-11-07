@@ -79,6 +79,7 @@ export default async function CompanyAllStudentsPage({
             courseName: enrollment.course.name,
             pct,
             eligible: Boolean(eligible),
+            certificationStatus: enrollment.certification?.status ?? "NOT_ELIGIBLE",
             cvUrl: student.cvUrl,
           };
         })

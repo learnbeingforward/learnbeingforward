@@ -26,6 +26,7 @@ export type SearchableStudent = {
   courseName: string;
   pct: number;
   eligible: boolean;
+  certificationStatus?: string;
   cvUrl: string | null;
 };
 
@@ -86,12 +87,14 @@ export function StudentSearchTable({
                 <TableCell>
                   <Badge
                     className={
-                      r.eligible
+                      r.certificationStatus === "ISSUED"
                         ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                        : r.eligible
+                          ? "bg-gold/20 text-indigo hover:bg-gold/20"
+                          : "bg-amber-100 text-amber-700 hover:bg-amber-100"
                     }
                   >
-                    {r.pct}%
+                    {r.pct}%{r.certificationStatus === "ISSUED" ? " · Issued" : r.eligible ? " · Eligible" : ""}
                   </Badge>
                 </TableCell>
                 <TableCell>

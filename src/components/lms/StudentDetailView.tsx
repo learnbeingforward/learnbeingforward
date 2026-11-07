@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EditStudentDialog } from "@/components/lms/EditStudentDialog";
 import { deleteStudentAccount } from "@/lib/actions/accounts";
+import { certificationBadge } from "@/lib/college-data";
 
 export type StudentDetailEnrollment = {
   id: string;
@@ -12,6 +13,7 @@ export type StudentDetailEnrollment = {
   total: number;
   pct: number;
   eligible: boolean;
+  certificationStatus: string;
   batchId: string | null;
   batchCollegeId: string | null;
   batchName: string | null;
@@ -143,14 +145,8 @@ export function StudentDetailView({
                     <p className="mt-1 text-xs font-medium text-amber-700">Not placed in a training batch yet</p>
                   )}
                 </div>
-                <Badge
-                  className={
-                    e.eligible
-                      ? "bg-green-100 text-green-700 hover:bg-green-100"
-                      : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                  }
-                >
-                  {e.pct}% {e.eligible ? "· Eligible" : "· Not Yet Eligible"}
+                <Badge className={certificationBadge(e.certificationStatus, e.eligible).className}>
+                  {e.pct}% · {certificationBadge(e.certificationStatus, e.eligible).label}
                 </Badge>
               </div>
             ))}

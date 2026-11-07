@@ -1,6 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
+/** certificationStatus only ever becomes "ISSUED" once the admin explicitly
+ * approves it — attendance alone (even past the threshold) never sets it, so
+ * "eligible" and "issued" are genuinely different states and must be shown as
+ * such. Showing only "Eligible"/"Not Yet Eligible" (ignoring certificationStatus)
+ * makes an already-issued certificate look permanently unapproved to the college. */
+export function certificationBadge(certificationStatus: string, eligible: boolean) {
+  if (certificationStatus === "ISSUED") {
+    return { label: "Certificate Issued", className: "bg-green-100 text-green-700 hover:bg-green-100" };
+  }
+  if (eligible) {
+    return { label: "Eligible — Awaiting Admin Approval", className: "bg-gold/20 text-indigo hover:bg-gold/20" };
+  }
+  return { label: "Not Yet Eligible", className: "bg-amber-100 text-amber-700 hover:bg-amber-100" };
+}
+
 export type StudentRow = {
   enrollmentId: string;
   batchId: string | null;
@@ -101,6 +116,7 @@ export async function getStudentDetail(studentId: string) {
         total,
         pct,
         eligible: pct >= ATTENDANCE_THRESHOLD || overrideApproved,
+        certificationStatus: enrollment.certification?.status ?? "NOT_ELIGIBLE",
         // The enrollment's own collegeId can drift from the student's actual college
         // (e.g. if the student was later moved), which silently files their batch
         // under the wrong college card on the Batches page. Carrying the batch's own

@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCollegeStudentRows, getStudentDetail } from "@/lib/college-data";
+import { getCollegeStudentRows, getStudentDetail, certificationBadge } from "@/lib/college-data";
 import { getEnrollmentProgress } from "@/lib/enrollment-progress";
 import { BackLink } from "@/components/lms/BackLink";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
@@ -88,6 +88,7 @@ export default async function CollegeStudentsPage({
             courseName: r.courseName,
             pct: r.pct,
             eligible: r.eligible,
+            certificationStatus: r.certificationStatus,
             cvUrl: r.cvUrl,
           }))}
         />
@@ -127,14 +128,8 @@ export default async function CollegeStudentsPage({
                     {row.present}/{row.total} ({row.pct}%)
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      className={
-                        row.eligible
-                          ? "bg-green-100 text-green-700 hover:bg-green-100"
-                          : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                      }
-                    >
-                      {row.eligible ? "Eligible" : "Not Yet Eligible"}
+                    <Badge className={certificationBadge(row.certificationStatus, row.eligible).className}>
+                      {certificationBadge(row.certificationStatus, row.eligible).label}
                     </Badge>
                   </TableCell>
                   <TableCell>
