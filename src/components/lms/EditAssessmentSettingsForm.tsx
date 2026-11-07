@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,18 @@ export function EditAssessmentSettingsForm({
 }) {
   const action = updateAssessmentSettings.bind(null, assessmentId);
   const [state, formAction, isPending] = useActionState<UpdateAssessmentSettingsState, FormData>(action, null);
+  const availableFromIsoRef = useRef<HTMLInputElement>(null);
+  const availableUntilIsoRef = useRef<HTMLInputElement>(null);
+
+  // See CreateAssessmentForm — a bare datetime-local string has no timezone, so the
+  // server re-parsing it with new Date(...) would use the server's own local
+  // timezone instead of the admin's, silently shifting the window. Convert to an
+  // absolute ISO timestamp here, in the admin's browser, before it's submitted.
+  function toIso(value: string) {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  }
 
   return (
     <details className="mb-6 rounded-xl border border-dashed border-border bg-white">
@@ -74,11 +86,19 @@ export function EditAssessmentSettingsForm({
             </Label>
             <Input
               id="edit-available-from"
-              name="availableFrom"
               type="datetime-local"
               required
               defaultValue={availableFrom ? toLocalInputValue(new Date(availableFrom)) : ""}
               className="mt-1.5"
+              onChange={(e) => {
+                if (availableFromIsoRef.current) availableFromIsoRef.current.value = toIso(e.target.value);
+              }}
+            />
+            <input
+              type="hidden"
+              name="availableFrom"
+              ref={availableFromIsoRef}
+              defaultValue={availableFrom ? new Date(availableFrom).toISOString() : ""}
             />
           </div>
           <div>
@@ -88,11 +108,19 @@ export function EditAssessmentSettingsForm({
             </Label>
             <Input
               id="edit-available-until"
-              name="availableUntil"
               type="datetime-local"
               required
               defaultValue={availableUntil ? toLocalInputValue(new Date(availableUntil)) : ""}
               className="mt-1.5"
+              onChange={(e) => {
+                if (availableUntilIsoRef.current) availableUntilIsoRef.current.value = toIso(e.target.value);
+              }}
+            />
+            <input
+              type="hidden"
+              name="availableUntil"
+              ref={availableUntilIsoRef}
+              defaultValue={availableUntil ? new Date(availableUntil).toISOString() : ""}
             />
           </div>
         </div>

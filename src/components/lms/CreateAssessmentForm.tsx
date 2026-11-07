@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,21 @@ import { createAssessment, type CreateAssessmentState } from "@/lib/actions/asse
 export function CreateAssessmentForm({ type }: { type: "APTITUDE" | "TECHNICAL_APTITUDE" | "CODING" }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<CreateAssessmentState, FormData>(createAssessment, null);
+  const availableFromIsoRef = useRef<HTMLInputElement>(null);
+  const availableUntilIsoRef = useRef<HTMLInputElement>(null);
+
+  // A bare datetime-local value like "2026-11-07T14:30" has no timezone attached,
+  // so parsing it again on the server (new Date(...)) uses the SERVER's local
+  // timezone, not the admin's — on a server that isn't in the same timezone as the
+  // admin, the scheduling window silently shifts by the difference, which can leave
+  // the assessment looking "not open yet" when the admin expects it to be live.
+  // Converting to an absolute ISO timestamp right here, in the admin's own browser,
+  // removes the ambiguity before it's ever sent.
+  function toIso(value: string) {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  }
 
   useEffect(() => {
     if (state?.ok && state.assessmentId) {
@@ -59,14 +74,32 @@ export function CreateAssessmentForm({ type }: { type: "APTITUDE" | "TECHNICAL_A
             Opens
             <RequiredMark />
           </Label>
-          <Input id={`available-from-${type}`} name="availableFrom" type="datetime-local" required className="mt-1.5" />
+          <Input
+            id={`available-from-${type}`}
+            type="datetime-local"
+            required
+            className="mt-1.5"
+            onChange={(e) => {
+              if (availableFromIsoRef.current) availableFromIsoRef.current.value = toIso(e.target.value);
+            }}
+          />
+          <input type="hidden" name="availableFrom" ref={availableFromIsoRef} />
         </div>
         <div>
           <Label htmlFor={`available-until-${type}`}>
             Closes
             <RequiredMark />
           </Label>
-          <Input id={`available-until-${type}`} name="availableUntil" type="datetime-local" required className="mt-1.5" />
+          <Input
+            id={`available-until-${type}`}
+            type="datetime-local"
+            required
+            className="mt-1.5"
+            onChange={(e) => {
+              if (availableUntilIsoRef.current) availableUntilIsoRef.current.value = toIso(e.target.value);
+            }}
+          />
+          <input type="hidden" name="availableUntil" ref={availableUntilIsoRef} />
         </div>
       </div>
       <p className="-mt-1 text-xs text-muted-foreground">
