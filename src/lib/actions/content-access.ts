@@ -188,3 +188,23 @@ export async function decideBulkContentRequest(groupId: string, approve: boolean
   revalidatePath("/lms/company/course-content");
   revalidatePath("/lms/student/content");
 }
+
+/**
+ * Approves/rejects an explicit set of individual (student-initiated, non-bulk)
+ * requests in one go — used on the "all of this student's pending requests" page
+ * so several items for the same student can be select-all'd and decided at once
+ * instead of one row at a time.
+ */
+export async function decideContentAccessRequests(requestIds: string[], approve: boolean) {
+  await requireCourseContentAccess();
+  if (requestIds.length === 0) return;
+
+  await prisma.contentAccessRequest.updateMany({
+    where: { id: { in: requestIds }, status: "PENDING" },
+    data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date() },
+  });
+
+  revalidatePath("/lms/company/course-content");
+  revalidatePath("/lms/company/course-content/requests");
+  revalidatePath("/lms/student/content");
+}

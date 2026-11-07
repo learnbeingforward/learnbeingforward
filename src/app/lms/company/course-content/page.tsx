@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
@@ -7,7 +8,7 @@ import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
 import { SetModuleMainPdfForm } from "@/components/lms/SetModuleMainPdfForm";
 import { BackLink } from "@/components/lms/BackLink";
-import { deleteCourseContent, decideContentAccessRequest } from "@/lib/actions/course-content";
+import { deleteCourseContent } from "@/lib/actions/course-content";
 import { decideBulkContentRequest } from "@/lib/actions/content-access";
 import { format } from "date-fns";
 
@@ -18,7 +19,7 @@ export default async function CompanyCourseContentPage({
 }) {
   const { courseId, moduleId, bulkGroupId } = await searchParams;
   const { navLinks } = await requireCompanyPageAccess("course-content");
-  const [courses, modules, subModules, content, pendingContentRequests, pendingPdfRequests, pendingBulkRows] = await Promise.all([
+  const [courses, modules, subModules, content, pendingCount, pendingBulkRows] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
     prisma.courseSubModule.findMany({ orderBy: { order: "asc" } }),
@@ -26,23 +27,12 @@ export default async function CompanyCourseContentPage({
       include: { course: true, courseModule: true, courseSubModule: true, links: true },
       orderBy: [{ course: { name: "asc" } }, { title: "asc" }],
     }),
-    prisma.contentAccessRequest.findMany({
-      where: { status: "PENDING", courseContentId: { not: null }, groupId: null },
-      include: { student: true, courseContent: { include: { course: true, courseModule: true } } },
-      orderBy: { requestedAt: "asc" },
-    }),
-    prisma.contentAccessRequest.findMany({
-      where: { status: "PENDING", courseModuleId: { not: null }, groupId: null },
-      include: { student: true, courseModule: { include: { course: true } } },
-      orderBy: { requestedAt: "asc" },
-    }),
+    prisma.contentAccessRequest.count({ where: { status: "PENDING", groupId: null } }),
     prisma.contentAccessRequest.findMany({
       where: { status: "PENDING", groupId: { not: null } },
       orderBy: { requestedAt: "asc" },
     }),
   ]);
-
-  const pendingCount = pendingContentRequests.length + pendingPdfRequests.length;
 
   const bulkGroupIds = Array.from(new Set(pendingBulkRows.map((r) => r.groupId!)));
   const bulkTrainerIds = Array.from(new Set(pendingBulkRows.map((r) => r.bulkTrainerId!).filter(Boolean)));
@@ -124,63 +114,18 @@ export default async function CompanyCourseContentPage({
       )}
 
       {pendingCount > 0 && (
-        <div className="mb-8 rounded-xl border border-border bg-white">
-          <div className="border-b border-border p-6">
+        <Link
+          href="/lms/company/course-content/requests"
+          className="mb-8 flex items-center justify-between gap-3 rounded-xl border border-border bg-white p-6 transition-colors hover:border-indigo/40"
+        >
+          <div>
             <p className="text-sm font-semibold text-indigo">Pending Access Requests ({pendingCount})</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              A student can ask for a specific content item and its course book separately — approve or reject
-              each independently; only what you approve becomes downloadable.
+              Students waiting on content or a course book — click to review and approve.
             </p>
           </div>
-          <div className="divide-y divide-border">
-            {pendingContentRequests.map((req) => (
-              <div key={req.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="text-sm font-medium text-indigo">{req.student.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Course content &middot; {req.courseContent!.course.name} — {req.courseContent!.courseModule?.title}{" "}
-                    &middot; {format(req.requestedAt, "MMM d, yyyy")}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <form action={decideContentAccessRequest.bind(null, req.id, true)}>
-                    <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                      Approve
-                    </Button>
-                  </form>
-                  <form action={decideContentAccessRequest.bind(null, req.id, false)}>
-                    <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                      Reject
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            ))}
-            {pendingPdfRequests.map((req) => (
-              <div key={req.id} className="flex flex-wrap items-center justify-between gap-3 bg-indigo/5 p-4">
-                <div>
-                  <p className="text-sm font-medium text-indigo">{req.student.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Course book PDF &middot; {req.courseModule!.course.name} — {req.courseModule!.title} &middot;{" "}
-                    {format(req.requestedAt, "MMM d, yyyy")}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <form action={decideContentAccessRequest.bind(null, req.id, true)}>
-                    <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                      Approve
-                    </Button>
-                  </form>
-                  <form action={decideContentAccessRequest.bind(null, req.id, false)}>
-                    <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                      Reject
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+        </Link>
       )}
 
       <div className="grid gap-8 lg:grid-cols-2">
