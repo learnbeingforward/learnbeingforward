@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { EmployeePageKey } from "@/lib/employee-access";
 
 export type NotificationCategory = "STUDENT" | "COLLEGE" | "TRAINER" | "ADMIN";
 
@@ -22,20 +23,46 @@ export function categoryFromSlug(slug: string): NotificationCategory | null {
 export async function notify(
   category: NotificationCategory,
   title: string,
-  opts?: { message?: string; href?: string }
+  opts?: { message?: string; href?: string; requiredKey?: string }
 ) {
   try {
     await prisma.notification.create({
-      data: { category, title, message: opts?.message, href: opts?.href },
+      data: { category, title, message: opts?.message, href: opts?.href, requiredKey: opts?.requiredKey },
     });
   } catch (err) {
     console.error("[notifications] Failed to record notification:", err);
   }
 }
 
-export async function getUnreadNotificationCount(): Promise<number> {
+/** Maps a notification's category to the Employee Access key that gates seeing
+ * that category's notifications at all — separate from any extra requiredKey a
+ * specific notification might also carry. */
+export const NOTIFICATION_CATEGORY_KEY: Record<NotificationCategory, EmployeePageKey> = {
+  STUDENT: "overview.notifications.student",
+  COLLEGE: "overview.notifications.college",
+  TRAINER: "overview.notifications.trainer",
+  ADMIN: "overview.notifications.admin",
+};
+
+/** A notification is visible to a viewer who has the category key for its
+ * category, and — if the notification also carries a requiredKey — that key too. */
+export function notificationVisibleTo(n: { category: NotificationCategory; requiredKey: string | null }, keys: string[]) {
+  if (!keys.includes(NOTIFICATION_CATEGORY_KEY[n.category])) return false;
+  if (n.requiredKey && !keys.includes(n.requiredKey)) return false;
+  return true;
+}
+
+export async function getUnreadNotificationCount(keys: string[]): Promise<number> {
   try {
-    return await prisma.notification.count({ where: { read: false } });
+    const categories = NOTIFICATION_SECTIONS.filter((s) => keys.includes(NOTIFICATION_CATEGORY_KEY[s.category])).map(
+      (s) => s.category
+    );
+    if (categories.length === 0) return 0;
+    const unread = await prisma.notification.findMany({
+      where: { read: false, category: { in: categories } },
+      select: { category: true, requiredKey: true },
+    });
+    return unread.filter((n) => notificationVisibleTo(n, keys)).length;
   } catch {
     return 0;
   }

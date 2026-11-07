@@ -6,24 +6,28 @@ import { BackLink } from "@/components/lms/BackLink";
 import { Button } from "@/components/ui/button";
 import { NotificationRow } from "@/components/lms/NotificationRow";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
-import { categoryFromSlug, NOTIFICATION_SECTIONS } from "@/lib/notifications";
+import { categoryFromSlug, NOTIFICATION_SECTIONS, NOTIFICATION_CATEGORY_KEY, notificationVisibleTo } from "@/lib/notifications";
 
 export default async function NotificationCategoryPage({
   params,
 }: {
   params: Promise<{ category: string }>;
 }) {
-  const { navLinks } = await requireCompanyPageAccess("overview.notifications");
   const { category: slug } = await params;
   const category = categoryFromSlug(slug);
   if (!category) notFound();
 
+  const { navLinks, keys } = await requireCompanyPageAccess(NOTIFICATION_CATEGORY_KEY[category]);
   const section = NOTIFICATION_SECTIONS.find((s) => s.category === category)!;
 
-  const [notifications, unreadCount] = await Promise.all([
-    prisma.notification.findMany({ where: { category }, orderBy: { createdAt: "desc" }, take: 300 }),
-    prisma.notification.count({ where: { category, read: false } }),
-  ]);
+  const all = await prisma.notification.findMany({
+    where: { category },
+    orderBy: { createdAt: "desc" },
+    take: 300,
+    select: { id: true, title: true, message: true, href: true, read: true, createdAt: true, category: true, requiredKey: true },
+  });
+  const notifications = all.filter((n) => notificationVisibleTo(n, keys));
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <DashboardShell title={section.label} subtitle="Notifications" navLinks={navLinks}>

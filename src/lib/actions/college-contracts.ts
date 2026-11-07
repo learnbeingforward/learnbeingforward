@@ -182,6 +182,7 @@ export async function decideContract(contractId: string, approve: boolean, formD
 
   await notify("COLLEGE", `${contract.college.name} ${approve ? "approved" : "rejected"} the training request for ${contract.course.name}`, {
     href: "/lms/company/colleges",
+    requiredKey: "colleges.view",
   });
 
   revalidatePath("/lms/college/contracts");
@@ -402,7 +403,7 @@ export async function decideCollegeInvoice(invoiceId: string, approve: boolean, 
   await notify(
     "COLLEGE",
     `${invoice.contract.college.name} ${approve ? "accepted" : "rejected"} the invoice for ₹${invoice.totalAmount}`,
-    { href: "/lms/company/colleges" }
+    { href: "/lms/company/colleges", requiredKey: "colleges.sent" }
   );
 
   revalidatePath("/lms/college/contracts");
@@ -461,6 +462,7 @@ export async function collegeMarkInvoicePaid(invoiceId: string) {
   await notify("COLLEGE", `${invoice.contract.college.name} marked an invoice as paid — needs confirmation`, {
     message: `₹${invoice.totalAmount} — confirm once you've verified payment was received.`,
     href: "/lms/company/colleges/sent",
+    requiredKey: "colleges.sent",
   });
 
   revalidatePath("/lms/college/contracts");

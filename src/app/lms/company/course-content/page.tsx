@@ -8,16 +8,17 @@ import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
 import { SetModuleMainPdfForm } from "@/components/lms/SetModuleMainPdfForm";
 import { BackLink } from "@/components/lms/BackLink";
 import { deleteCourseContent, decideContentAccessRequest } from "@/lib/actions/course-content";
+import { decideBulkContentRequest } from "@/lib/actions/content-access";
 import { format } from "date-fns";
 
 export default async function CompanyCourseContentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string; moduleId?: string }>;
+  searchParams: Promise<{ courseId?: string; moduleId?: string; bulkGroupId?: string }>;
 }) {
-  const { courseId, moduleId } = await searchParams;
+  const { courseId, moduleId, bulkGroupId } = await searchParams;
   const { navLinks } = await requireCompanyPageAccess("course-content");
-  const [courses, modules, subModules, content, pendingContentRequests, pendingPdfRequests] = await Promise.all([
+  const [courses, modules, subModules, content, pendingContentRequests, pendingPdfRequests, pendingBulkRows] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
     prisma.courseSubModule.findMany({ orderBy: { order: "asc" } }),
@@ -26,18 +27,51 @@ export default async function CompanyCourseContentPage({
       orderBy: [{ course: { name: "asc" } }, { title: "asc" }],
     }),
     prisma.contentAccessRequest.findMany({
-      where: { status: "PENDING", courseContentId: { not: null } },
+      where: { status: "PENDING", courseContentId: { not: null }, groupId: null },
       include: { student: true, courseContent: { include: { course: true, courseModule: true } } },
       orderBy: { requestedAt: "asc" },
     }),
     prisma.contentAccessRequest.findMany({
-      where: { status: "PENDING", courseModuleId: { not: null } },
+      where: { status: "PENDING", courseModuleId: { not: null }, groupId: null },
       include: { student: true, courseModule: { include: { course: true } } },
+      orderBy: { requestedAt: "asc" },
+    }),
+    prisma.contentAccessRequest.findMany({
+      where: { status: "PENDING", groupId: { not: null } },
       orderBy: { requestedAt: "asc" },
     }),
   ]);
 
   const pendingCount = pendingContentRequests.length + pendingPdfRequests.length;
+
+  const bulkGroupIds = Array.from(new Set(pendingBulkRows.map((r) => r.groupId!)));
+  const bulkTrainerIds = Array.from(new Set(pendingBulkRows.map((r) => r.bulkTrainerId!).filter(Boolean)));
+  const bulkBatchIds = Array.from(new Set(pendingBulkRows.map((r) => r.bulkBatchId!).filter(Boolean)));
+  const [bulkTrainers, bulkBatches] = await Promise.all([
+    prisma.trainer.findMany({ where: { id: { in: bulkTrainerIds } } }),
+    prisma.batch.findMany({ where: { id: { in: bulkBatchIds } }, include: { course: true } }),
+  ]);
+  const trainerById = new Map(bulkTrainers.map((t) => [t.id, t]));
+  const batchById = new Map(bulkBatches.map((b) => [b.id, b]));
+
+  const bulkGroups = bulkGroupIds.map((gid) => {
+    const rows = pendingBulkRows.filter((r) => r.groupId === gid);
+    const studentCount = new Set(rows.map((r) => r.studentId)).size;
+    const moduleRows = rows.filter((r) => r.courseContentId !== null);
+    const bookRows = rows.filter((r) => r.courseModuleId !== null);
+    const trainer = rows[0].bulkTrainerId ? trainerById.get(rows[0].bulkTrainerId) : null;
+    const batch = rows[0].bulkBatchId ? batchById.get(rows[0].bulkBatchId) : null;
+    return {
+      groupId: gid,
+      trainerName: trainer?.name ?? "—",
+      batchName: batch?.name ?? "—",
+      courseName: batch?.course.name ?? "—",
+      studentCount,
+      contentItemCount: moduleRows.length,
+      includesBook: bookRows.length > 0,
+      requestedAt: rows.reduce((min, r) => (r.requestedAt < min ? r.requestedAt : min), rows[0].requestedAt),
+    };
+  });
 
   return (
     <DashboardShell title="Course Content" subtitle="Internal only — not on the public site" navLinks={navLinks}>
@@ -45,6 +79,49 @@ export default async function CompanyCourseContentPage({
         This content is only visible inside the LMS. Students can request access to a module&apos;s
         content once their batch has had a class on it, and can download it once you approve.
       </p>
+
+      {bulkGroups.length > 0 && (
+        <div className="mb-8 rounded-xl border border-border bg-white">
+          <div className="border-b border-border p-6">
+            <p className="text-sm font-semibold text-indigo">Trainer Bulk Content Requests ({bulkGroups.length})</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              A trainer requested to send content to a group of eligible students at once — approve or reject the
+              whole request in one go.
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            {bulkGroups.map((g) => (
+              <div
+                key={g.groupId}
+                className={`flex flex-wrap items-center justify-between gap-3 p-4 ${g.groupId === bulkGroupId ? "bg-gold/10" : ""}`}
+              >
+                <div>
+                  <p className="text-sm font-medium text-indigo">
+                    {g.trainerName} — {g.courseName} — {g.batchName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {g.studentCount} student{g.studentCount !== 1 ? "s" : ""} &middot; {g.contentItemCount} content
+                    item{g.contentItemCount !== 1 ? "s" : ""}
+                    {g.includesBook && " · includes course book"} &middot; {format(g.requestedAt, "MMM d, yyyy")}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <form action={decideBulkContentRequest.bind(null, g.groupId, true)}>
+                    <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                      Approve All
+                    </Button>
+                  </form>
+                  <form action={decideBulkContentRequest.bind(null, g.groupId, false)}>
+                    <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
+                      Reject All
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {pendingCount > 0 && (
         <div className="mb-8 rounded-xl border border-border bg-white">

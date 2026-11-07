@@ -230,10 +230,20 @@ model ContentAccessRequest {
   status          RequestStatus  @default(PENDING)
   requestedAt     DateTime       @default(now())
   decidedAt       DateTime?
+  // Set only for a trainer's bulk "send content to eligible students" request —
+  // every row created by one bulk send shares this id, so the admin can approve or
+  // reject the whole batch in a single action instead of one row at a time.
+  // bulkTrainerId/bulkBatchId are redundant with what's reachable via the student's
+  // enrollment, but keeping them directly on the row avoids rebuilding that chain
+  // just to show the admin "who sent this, for which batch" on the review screen.
+  groupId         String?
+  bulkTrainerId   String?
+  bulkBatchId     String?
 
   @@unique([studentId, courseContentId])
   @@unique([studentId, courseModuleId])
   @@index([status])
+  @@index([groupId])
 }
 
 model Enrollment {
@@ -681,13 +691,19 @@ enum NotificationCategory {
  * submitting an invoice, and so on. Read state is shared across every company-side
  * viewer (super admin, ADMIN2, employees) rather than tracked per-viewer. */
 model Notification {
-  id        String               @id @default(cuid())
-  category  NotificationCategory
-  title     String
-  message   String?              @db.Text
-  href      String?
-  read      Boolean              @default(false)
-  createdAt DateTime             @default(now())
+  id          String               @id @default(cuid())
+  category    NotificationCategory
+  title       String
+  message     String?              @db.Text
+  href        String?
+  read        Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+  // Beyond the broad category grant, some notifications touch something more
+  // sensitive than "any request from a college" — e.g. a college claiming an
+  // invoice is paid. When set, a viewer also needs this specific Employee Access
+  // key (same ones gating the pages/actions themselves) to see the notification at
+  // all, not just to act on it.
+  requiredKey String?
 
   @@index([category])
   @@index([read])

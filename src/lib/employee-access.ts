@@ -22,7 +22,10 @@ export type EmployeePageKey =
   | "registrations.new"
   | "registrations.approvals"
   | "registrations.password-resets"
-  | "overview.notifications"
+  | "overview.notifications.student"
+  | "overview.notifications.college"
+  | "overview.notifications.trainer"
+  | "overview.notifications.admin"
   | "overview.requests"
   | "overview.attendance"
   | "overview.edit-site"
@@ -61,7 +64,16 @@ export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
   {
     group: "Overview",
     pages: [
-      { navLabel: "Notifications", href: "/lms/company/notifications", permissions: [{ key: "overview.notifications", label: "Notifications" }] },
+      {
+        navLabel: "Notifications",
+        href: "/lms/company/notifications",
+        permissions: [
+          { key: "overview.notifications.student", label: "Student notifications" },
+          { key: "overview.notifications.college", label: "College notifications" },
+          { key: "overview.notifications.trainer", label: "Trainer notifications" },
+          { key: "overview.notifications.admin", label: "Admin/system notifications" },
+        ],
+      },
       { navLabel: "Requests", href: "/lms/company", permissions: [{ key: "overview.requests", label: "Requests" }] },
       { navLabel: "Attendance", href: "/lms/company/attendance", permissions: [{ key: "overview.attendance", label: "Attendance" }] },
       { navLabel: "Edit Site", href: "/lms/company/edit-site", permissions: [{ key: "overview.edit-site", label: "Edit Site" }] },
@@ -169,6 +181,12 @@ const LEGACY_KEY_EXPANSIONS: Record<string, EmployeePageKey[]> = {
   "accounts.manage": ["accounts.manage.students", "accounts.manage.colleges", "accounts.manage.trainers", "accounts.manage.admins"],
   "accounts.colleges": ["colleges.view"],
   "accounts.trainers": ["trainers.manage", "trainers.invoices"],
+  "overview.notifications": [
+    "overview.notifications.student",
+    "overview.notifications.college",
+    "overview.notifications.trainer",
+    "overview.notifications.admin",
+  ],
 };
 
 export function parseEmployeeKeys(value: unknown): EmployeePageKey[] {
@@ -219,6 +237,19 @@ function keysForRole(role: "SUPER_ADMIN" | "ADMIN2"): EmployeePageKey[] {
   return ALL_KEYS_LIST.filter((k) => !SUPER_ADMIN_ONLY_KEYS.has(k));
 }
 
+/** The current session's full effective permission set — for call sites (like
+ * notification visibility) that need to check more than one key at once, which
+ * requireCompanyAccess's any-of matching can't express on its own. Empty array for
+ * anyone outside the company-staff/employee roles. */
+export async function getViewerKeys(): Promise<EmployeePageKey[]> {
+  const session = await auth();
+  if (!session?.user) return [];
+  const role = session.user.role;
+  if (role === "SUPER_ADMIN" || role === "ADMIN2") return keysForRole(role);
+  if (role === "EMPLOYEE") return getEmployeeKeys(session.user.id);
+  return [];
+}
+
 /**
  * Call at the top of every grantable company page (server component). Pass one key
  * for a simple page, an array for a page with sub-permissions (access granted if
@@ -259,13 +290,13 @@ export async function requireCompanyPageAccess(anyOfKeys?: EmployeePageKey | Emp
   if (role === "SUPER_ADMIN" || role === "ADMIN2") {
     const keys = keysForRole(role);
     if (needed && !needed.some((k) => keys.includes(k))) redirect("/lms/company");
-    const hasUnread = (await getUnreadNotificationCount()) > 0;
+    const hasUnread = (await getUnreadNotificationCount(keys)) > 0;
     return { session, navLinks: withNotificationBadge(getCompanyNavLinksForRole(role) as LmsNavEntry[], hasUnread), keys };
   }
   if (role === "EMPLOYEE") {
     const keys = await getEmployeeKeys(session.user.id);
     if (needed && !needed.some((k) => keys.includes(k))) redirect(employeeFirstHref(keys));
-    const hasUnread = keys.includes("overview.notifications") && (await getUnreadNotificationCount()) > 0;
+    const hasUnread = (await getUnreadNotificationCount(keys)) > 0;
     return { session, navLinks: withNotificationBadge(buildEmployeeNavLinks(keys), hasUnread), keys };
   }
 

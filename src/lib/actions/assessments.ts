@@ -368,6 +368,7 @@ async function finalizeSubmission(assignmentId: string, auto: boolean) {
   await notify("STUDENT", `${assignment.student.name} submitted "${assignment.assessment.title}"`, {
     message: auto ? "Auto-submitted (proctoring violations or time up)." : undefined,
     href: `/lms/company/assessments/submissions?assignmentId=${assignmentId}`,
+    requiredKey: "assessments.submissions",
   });
 
   revalidatePath("/lms/student/assessments");

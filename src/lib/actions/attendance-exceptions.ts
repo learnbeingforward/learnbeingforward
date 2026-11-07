@@ -46,6 +46,7 @@ export async function requestAttendanceException(enrollmentId: string, formData:
   await notify("COLLEGE", `${college?.name ?? "A college"} requested an attendance exception`, {
     message: reason,
     href: "/lms/company/approvals",
+    requiredKey: "registrations.approvals",
   });
 
   revalidatePath("/lms/college/queries");

@@ -7,25 +7,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NotificationRow } from "@/components/lms/NotificationRow";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
-import { NOTIFICATION_SECTIONS } from "@/lib/notifications";
+import { NOTIFICATION_SECTIONS, NOTIFICATION_CATEGORY_KEY, notificationVisibleTo } from "@/lib/notifications";
 
 const PREVIEW_COUNT = 2;
 
 export default async function NotificationsPage() {
-  const { navLinks } = await requireCompanyPageAccess("overview.notifications");
+  const { navLinks, keys } = await requireCompanyPageAccess([
+    "overview.notifications.student",
+    "overview.notifications.college",
+    "overview.notifications.trainer",
+    "overview.notifications.admin",
+  ]);
+
+  const visibleSections = NOTIFICATION_SECTIONS.filter((s) => keys.includes(NOTIFICATION_CATEGORY_KEY[s.category]));
 
   const sections = await Promise.all(
-    NOTIFICATION_SECTIONS.map(async (section) => {
-      const [total, unread, recent] = await Promise.all([
-        prisma.notification.count({ where: { category: section.category } }),
-        prisma.notification.count({ where: { category: section.category, read: false } }),
-        prisma.notification.findMany({
-          where: { category: section.category },
-          orderBy: { createdAt: "desc" },
-          take: PREVIEW_COUNT,
-        }),
-      ]);
-      return { ...section, total, unread, recent };
+    visibleSections.map(async (section) => {
+      const all = await prisma.notification.findMany({
+        where: { category: section.category },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, title: true, message: true, href: true, read: true, createdAt: true, category: true, requiredKey: true },
+      });
+      const visible = all.filter((n) => notificationVisibleTo(n, keys));
+      return {
+        ...section,
+        total: visible.length,
+        unread: visible.filter((n) => !n.read).length,
+        recent: visible.slice(0, PREVIEW_COUNT),
+      };
     })
   );
 
@@ -94,6 +103,11 @@ export default async function NotificationsPage() {
             )}
           </div>
         ))}
+        {sections.length === 0 && (
+          <p className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
+            You haven&apos;t been granted any notification categories yet.
+          </p>
+        )}
       </div>
     </DashboardShell>
   );

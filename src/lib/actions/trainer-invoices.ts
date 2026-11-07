@@ -127,6 +127,7 @@ export async function submitDraftTrainerInvoice(
 
   await notify("TRAINER", `${invoice.trainer.name} submitted an invoice for ₹${invoice.totalAmount}`, {
     href: "/lms/company/trainers/invoices",
+    requiredKey: "trainers.invoices",
   });
 
   revalidatePath("/lms/trainer/invoice");
