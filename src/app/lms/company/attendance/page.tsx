@@ -201,6 +201,15 @@ export default async function CompanyAttendancePage({
     colleges.set(r.enrollment.collegeId, entry);
   }
 
+  // Eligible-but-not-yet-issued students, across every college/batch — otherwise an
+  // admin has to drill into each batch individually to ever find these, and a
+  // student can sit "Eligible" indefinitely with nobody noticing.
+  const awaitingCertificates = rows.filter(({ enrollment, pct }) => {
+    const status = enrollment.certification?.status ?? "NOT_ELIGIBLE";
+    const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
+    return status !== "ISSUED" && eligible;
+  });
+
   return (
     <DashboardShell title="Attendance" subtitle="Platform-wide progress" navLinks={navLinks}>
       {rows.length === 0 ? (
@@ -209,6 +218,33 @@ export default async function CompanyAttendancePage({
         </div>
       ) : (
         <>
+          {awaitingCertificates.length > 0 && (
+            <div className="mb-8 rounded-xl border border-gold/40 bg-gold/10">
+              <div className="border-b border-gold/40 p-4">
+                <p className="text-sm font-semibold text-indigo">
+                  Eligible for Certificate, Not Yet Issued ({awaitingCertificates.length})
+                </p>
+              </div>
+              <div className="divide-y divide-gold/30">
+                {awaitingCertificates.map(({ enrollment, pct }) => (
+                  <div key={enrollment.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div>
+                      <p className="text-sm font-medium text-indigo">{enrollment.student.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {enrollment.course.name} &middot; {enrollment.college?.name ?? "—"} &middot; {pct}% attendance
+                      </p>
+                    </div>
+                    <form action={approveCertificate.bind(null, enrollment.id)}>
+                      <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                        Approve Certificate
+                      </Button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mb-8 rounded-xl border border-border bg-white p-6">
             <p className="mb-2 text-sm font-semibold text-indigo">Average Attendance by Course</p>
             <AttendanceBarChart data={chartFor(rows)} />

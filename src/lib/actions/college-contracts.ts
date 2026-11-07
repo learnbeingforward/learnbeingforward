@@ -417,6 +417,25 @@ export async function decideCollegeInvoice(invoiceId: string, approve: boolean, 
  * the same way colleges.sent (the page this button lives on) already is — ADMIN2
  * excluded, matching this feature's existing super-admin-only scope.
  */
+/**
+ * Only a draft (not yet sent to the college) can be deleted — once it's submitted,
+ * the college has seen it and may have already decided on it, so deleting it would
+ * erase a financial record rather than just tidy up a mistake. The admin can
+ * reject-and-regenerate for anything past that point instead.
+ */
+export async function deleteCollegeInvoice(invoiceId: string) {
+  await requireCompanyAccess("colleges.sent");
+
+  const invoice = await prisma.collegeInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice) return;
+  if (invoice.submitted) throw new Error("This invoice has already been sent to the college and can't be deleted.");
+
+  await prisma.collegeInvoice.delete({ where: { id: invoiceId } });
+
+  revalidatePath("/lms/company/colleges/sent");
+  revalidatePath("/lms/company/colleges");
+}
+
 export async function markInvoicePaid(invoiceId: string) {
   await requireCompanyAccess("colleges.sent");
 

@@ -102,6 +102,23 @@ export async function submitTrainerInvoice(
   return { ok: true, invoiceId: invoice.id, pdfUrl };
 }
 
+/** Lets a trainer discard their own not-yet-submitted invoice draft — the linked
+ * sessions become billable again automatically once the draft (and its
+ * TrainerInvoiceSession links) is gone. */
+export async function deleteTrainerInvoiceDraft(invoiceId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "TRAINER" || !session.user.trainerId) {
+    throw new Error("Not authorized.");
+  }
+
+  const invoice = await prisma.trainerInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice || invoice.trainerId !== session.user.trainerId) throw new Error("Invoice not found.");
+  if (invoice.submitted) throw new Error("This invoice has already been sent and can't be deleted.");
+
+  await prisma.trainerInvoice.delete({ where: { id: invoiceId } });
+  revalidatePath("/lms/trainer/invoice");
+}
+
 export type SubmitDraftInvoiceState = { ok: boolean; error?: string } | null;
 
 export async function submitDraftTrainerInvoice(

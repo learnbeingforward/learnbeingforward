@@ -45,6 +45,7 @@ export default async function CompanyAllStudentsPage({
             student={detail}
             basePath={BASE_PATH}
             batchLinkBase={(batchId, batchCollegeId) => `/lms/company/trainers/batches?collegeId=${batchCollegeId}&batchId=${batchId}`}
+            canDelete
           />
         )}
       </DashboardShell>

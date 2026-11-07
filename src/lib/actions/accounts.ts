@@ -7,10 +7,39 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
-import { getEmployeeKeys } from "@/lib/employee-access";
+import { getEmployeeKeys, requireCompanyAccess } from "@/lib/employee-access";
 
 async function isAuthorizedEmployee(userId: string) {
   return (await getEmployeeKeys(userId)).includes("accounts.add");
+}
+
+/**
+ * Permanently deletes a student account and everything tied to it — enrollments,
+ * attendance, certification, content requests, assessment attempts. The schema
+ * cascades all of that from the User row, so this is the one call that needs to
+ * happen; nothing is left orphaned. Irreversible, so gated the same as resetting a
+ * student's password (accounts.manage.students) since that's the closest existing
+ * "can touch a student account directly" permission.
+ */
+export async function deleteStudentAccount(studentId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Not authorized.");
+  if (!isCompanyStaff(session.user.role)) {
+    try {
+      await requireCompanyAccess("accounts.manage.students");
+    } catch {
+      throw new Error("Only the company admin can delete a student account.");
+    }
+  }
+
+  const student = await prisma.user.findUnique({ where: { id: studentId } });
+  if (!student || student.role !== "STUDENT") throw new Error("Student not found.");
+
+  await prisma.user.delete({ where: { id: studentId } });
+
+  revalidatePath("/lms/company/students");
+  revalidatePath("/lms/company/manage-accounts");
+  revalidatePath("/lms/college/students");
 }
 
 export type CreateAccountState = {

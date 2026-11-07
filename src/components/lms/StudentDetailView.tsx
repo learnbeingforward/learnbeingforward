@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EditStudentDialog } from "@/components/lms/EditStudentDialog";
+import { deleteStudentAccount } from "@/lib/actions/accounts";
 
 export type StudentDetailEnrollment = {
   id: string;
@@ -31,6 +33,7 @@ export function StudentDetailView({
   student,
   basePath,
   batchLinkBase,
+  canDelete = false,
 }: {
   student: StudentDetail;
   basePath: string;
@@ -39,22 +42,34 @@ export function StudentDetailView({
    * than guessed from basePath. Omit to hide the link entirely (e.g. for a viewer
    * with no batches page of their own). */
   batchLinkBase?: (batchId: string, batchCollegeId: string | null) => string;
+  /** Shows the permanent "Delete Student Account" action — only the company admin
+   * side is authorized to call it, so college callers must leave this off. */
+  canDelete?: boolean;
 }) {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="rounded-xl border border-border bg-white p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-indigo">{student.name}</h2>
-          <EditStudentDialog
-            student={{
-              id: student.id,
-              name: student.name,
-              fatherName: student.fatherName,
-              branch: student.branch,
-              semester: student.semester,
-              usn: student.usn,
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <EditStudentDialog
+              student={{
+                id: student.id,
+                name: student.name,
+                fatherName: student.fatherName,
+                branch: student.branch,
+                semester: student.semester,
+                usn: student.usn,
+              }}
+            />
+            {canDelete && (
+              <form action={deleteStudentAccount.bind(null, student.id)}>
+                <Button type="submit" size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+                  Delete Student Account
+                </Button>
+              </form>
+            )}
+          </div>
         </div>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>

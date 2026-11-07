@@ -7,6 +7,7 @@ import {
   generateCollegeInvoice,
   markInvoicePaid,
   submitDraftCollegeInvoice,
+  deleteCollegeInvoice,
   type GenerateInvoiceState,
   type SubmitDraftState,
 } from "@/lib/actions/college-contracts";
@@ -39,6 +40,7 @@ export function GenerateCollegeInvoiceButton({
   const paidClaimed = isApproved && !isPaid && !!latestInvoice?.paidRequestedAt;
   const isRejected = latestInvoice?.status === "REJECTED";
   const [isMarkingPaid, startMarkPaid] = useTransition();
+  const [isDeletingDraft, startDeleteDraft] = useTransition();
 
   const [state, formAction, isPending] = useActionState<GenerateInvoiceState, FormData>(
     generateCollegeInvoice.bind(null, contractId),
@@ -126,12 +128,25 @@ export function GenerateCollegeInvoiceButton({
           </a>
         )}
         {submitState?.error && <p className="max-w-56 text-right text-xs text-destructive">{submitState.error}</p>}
-        <form action={submitFormAction}>
-          <Button type="submit" size="sm" disabled={isSubmitting} className="bg-indigo text-white hover:bg-indigo/90">
-            {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
-            Submit Invoice
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isDeletingDraft}
+            onClick={() => startDeleteDraft(() => deleteCollegeInvoice(state.invoiceId!))}
+            className="border-red-300 text-red-600"
+          >
+            {isDeletingDraft && <Loader2 className="size-3.5 animate-spin" />}
+            Delete Draft
           </Button>
-        </form>
+          <form action={submitFormAction}>
+            <Button type="submit" size="sm" disabled={isSubmitting} className="bg-indigo text-white hover:bg-indigo/90">
+              {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
+              Submit Invoice
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }

@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { combineDateAndTime } from "@/lib/attendance";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 import { getEmployeeKeys } from "@/lib/employee-access";
+import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
+import { notify } from "@/lib/notifications";
 
 export async function submitSessionAttendance(sessionId: string, formData: FormData) {
   const session = await auth();
@@ -47,6 +49,28 @@ export async function submitSessionAttendance(sessionId: string, formData: FormD
       data: { attendanceTaken: true },
     }),
   ]);
+
+  // Eligibility can otherwise go unnoticed indefinitely — a student sits
+  // "Eligible" with nobody ever prompted to issue the certificate. Flag it the
+  // moment attendance crosses the threshold, once, for whoever hasn't already got
+  // a certification row started.
+  const freshEnrollments = await prisma.enrollment.findMany({
+    where: { id: { in: trainingSession.batch.enrollments.map((e) => e.id) } },
+    include: { student: true, course: true, attendanceRecords: true, certification: true },
+  });
+  for (const e of freshEnrollments) {
+    if (e.certification) continue;
+    const total = e.attendanceRecords.length || e.totalClasses;
+    const present = e.attendanceRecords.filter((r) => r.present).length;
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    if (pct >= ATTENDANCE_THRESHOLD) {
+      await notify("ADMIN", `${e.student.name} is now eligible for a certificate`, {
+        message: `${e.course.name} — ${pct}% attendance`,
+        href: "/lms/company/attendance",
+        requiredKey: "overview.attendance",
+      });
+    }
+  }
 
   revalidatePath("/lms/trainer/schedule");
   revalidatePath("/lms/trainer/attendance");
