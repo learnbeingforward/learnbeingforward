@@ -17,6 +17,7 @@ import {
 import { AttendanceBarChart } from "@/components/charts/AttendanceCharts";
 import { approveCertificate } from "@/lib/actions/certifications";
 import { BackLink } from "@/components/lms/BackLink";
+import { CollapsibleSection } from "@/components/lms/CollapsibleSection";
 
 export default async function CompanyAttendancePage({
   searchParams,
@@ -219,12 +220,11 @@ export default async function CompanyAttendancePage({
       ) : (
         <>
           {awaitingCertificates.length > 0 && (
-            <div className="mb-8 rounded-xl border border-gold/40 bg-gold/10">
-              <div className="border-b border-gold/40 p-4">
-                <p className="text-sm font-semibold text-indigo">
-                  Eligible for Certificate, Not Yet Issued ({awaitingCertificates.length})
-                </p>
-              </div>
+            <CollapsibleSection
+              title="Eligible for Certificate, Not Yet Issued"
+              count={awaitingCertificates.length}
+              accentClassName="border-gold/40 bg-gold/10"
+            >
               <div className="divide-y divide-gold/30">
                 {awaitingCertificates.map(({ enrollment, pct }) => (
                   <div key={enrollment.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
@@ -242,7 +242,7 @@ export default async function CompanyAttendancePage({
                   </div>
                 ))}
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           <div className="mb-8 rounded-xl border border-border bg-white p-6">
