@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Badge } from "@/components/ui/badge";
 import { getCollegeStudentRows, summarizeByCourse } from "@/lib/college-data";
 import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { BulkEnrollStudentsForm } from "@/components/lms/BulkEnrollStudentsForm";
 
 export default async function CollegeCoursesPage() {
   const session = await auth();
@@ -14,13 +15,48 @@ export default async function CollegeCoursesPage() {
   const { rows } = await getCollegeStudentRows(collegeId);
   const byCourse = summarizeByCourse(rows);
 
-  const pendingRequests = collegeId
-    ? await prisma.enrollmentRequest.findMany({
-        where: { collegeId, status: "PENDING" },
-        include: { student: true, course: true },
-        orderBy: { requestedAt: "asc" },
-      })
-    : [];
+  const [pendingRequests, allCourses, activeStudents] = await Promise.all([
+    collegeId
+      ? prisma.enrollmentRequest.findMany({
+          where: { collegeId, status: "PENDING" },
+          include: { student: true, course: true },
+          orderBy: { requestedAt: "asc" },
+        })
+      : Promise.resolve([]),
+    prisma.course.findMany({ orderBy: { name: "asc" } }),
+    collegeId
+      ? prisma.user.findMany({
+          where: { role: "STUDENT", collegeId, studentStatus: "ACTIVE" },
+          select: { id: true, name: true, usn: true, branch: true },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  // Filtered by studentId rather than the enrollment/request's own collegeId field —
+  // some older rows have that field unset or stale, which would otherwise make an
+  // already-enrolled student wrongly show up as a bulk-enroll candidate again.
+  const studentIds = activeStudents.map((s) => s.id);
+  const [existingEnrollments, pendingByCourse] = await Promise.all([
+    studentIds.length > 0
+      ? prisma.enrollment.findMany({ where: { studentId: { in: studentIds } }, select: { studentId: true, courseId: true } })
+      : Promise.resolve([]),
+    studentIds.length > 0
+      ? prisma.enrollmentRequest.findMany({
+          where: { studentId: { in: studentIds }, status: "PENDING" },
+          select: { studentId: true, courseId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const enrolledSet = new Set(existingEnrollments.map((e) => `${e.studentId}::${e.courseId}`));
+  const pendingSet = new Set(pendingByCourse.map((e) => `${e.studentId}::${e.courseId}`));
+  const candidatesByCourse: Record<string, { id: string; name: string; usn: string | null; branch: string | null }[]> = {};
+  for (const course of allCourses) {
+    candidatesByCourse[course.id] = activeStudents.filter(
+      (s) => !enrolledSet.has(`${s.id}::${course.id}`) && !pendingSet.has(`${s.id}::${course.id}`)
+    );
+  }
 
   const studentsByCourse = new Map<string, { name: string; studentId: string }[]>();
   for (const row of rows) {
@@ -31,6 +67,18 @@ export default async function CollegeCoursesPage() {
 
   return (
     <DashboardShell title="Courses" subtitle="Course activity" navLinks={navLinks}>
+      <div className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
+          Enroll Students in a Course
+        </h2>
+        <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
+          Pick a course, then select students — grouped by branch, with a select-all per branch — to request
+          enrollment for all of them at once instead of one by one. The company still needs to approve each
+          request before it becomes active.
+        </p>
+        <BulkEnrollStudentsForm courses={allCourses.map((c) => ({ id: c.id, name: c.name }))} candidatesByCourse={candidatesByCourse} />
+      </div>
+
       {pendingRequests.length > 0 && (
         <div className="mb-8 rounded-xl border border-gold/40 bg-gold/10 p-6">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-indigo">

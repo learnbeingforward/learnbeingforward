@@ -559,6 +559,10 @@ model CollegeInvoice {
   pdfUrl        String?
   submitted     Boolean         @default(false)
   rejectReason  String?         @db.Text
+  // The college approving an invoice only means they accepted the amount — it does
+  // NOT mean the money has actually been paid. paidAt is set separately, by an
+  // explicit "Mark as Paid" action on the company side, once payment is confirmed.
+  paidAt        DateTime?
 
   @@index([contractId])
   @@index([status])
@@ -650,11 +654,13 @@ model AssessmentAssignment {
 }
 
 model AssessmentSnapshot {
-  id           String               @id @default(cuid())
-  assignmentId String
-  assignment   AssessmentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  imageUrl     String
-  capturedAt   DateTime             @default(now())
+  id                String               @id @default(cuid())
+  assignmentId      String
+  assignment        AssessmentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  imageUrl          String
+  capturedAt        DateTime             @default(now())
+  sharedWithStudent Boolean              @default(false)
+  sharedWithCollege Boolean              @default(false)
 
   @@index([assignmentId])
 }

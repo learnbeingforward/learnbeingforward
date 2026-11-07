@@ -91,13 +91,14 @@ export default async function AssessmentSubmissionsPage({
 
         {assignment.assessment.proctoringEnabled && (
           <div className="mb-6">
-            <p className="mb-3 text-sm font-semibold text-indigo">Proctoring Snapshots</p>
             <AssessmentSnapshotGallery
               assignmentId={assignmentId}
               snapshots={assignment.snapshots.map((s) => ({
                 id: s.id,
                 imageUrl: s.imageUrl,
                 capturedAt: s.capturedAt.toISOString(),
+                sharedWithStudent: s.sharedWithStudent,
+                sharedWithCollege: s.sharedWithCollege,
               }))}
             />
           </div>

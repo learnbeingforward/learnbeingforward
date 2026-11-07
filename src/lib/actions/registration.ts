@@ -30,6 +30,27 @@ export async function approveRegistration(userId: string) {
   revalidatePath("/lms/company/registrations");
 }
 
+export async function approveAllRegistrations() {
+  try {
+    await requireRegistrationsAccess();
+  } catch {
+    throw new Error("Only the company admin can approve registrations.");
+  }
+
+  const pending = await prisma.user.findMany({
+    where: { role: "STUDENT", studentStatus: "PENDING_APPROVAL" },
+    select: { id: true },
+  });
+  if (pending.length === 0) return;
+
+  await prisma.user.updateMany({
+    where: { id: { in: pending.map((u) => u.id) } },
+    data: { studentStatus: "ACTIVE" },
+  });
+
+  revalidatePath("/lms/company/registrations");
+}
+
 export async function rejectRegistration(userId: string) {
   try {
     await requireRegistrationsAccess();

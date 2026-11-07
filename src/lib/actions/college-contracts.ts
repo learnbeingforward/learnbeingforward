@@ -397,3 +397,25 @@ export async function decideCollegeInvoice(invoiceId: string, approve: boolean, 
   revalidatePath("/lms/college/contracts");
   revalidatePath("/lms/company/colleges");
 }
+
+/**
+ * The college approving an invoice (status -> APPROVED) only means they accepted
+ * the amount — not that the money has actually changed hands. "Paid" is a distinct,
+ * later event the company side marks explicitly, once payment is confirmed. Gated
+ * the same way colleges.sent (the page this button lives on) already is — ADMIN2
+ * excluded, matching this feature's existing super-admin-only scope.
+ */
+export async function markInvoicePaid(invoiceId: string) {
+  await requireCompanyAccess("colleges.sent");
+
+  const invoice = await prisma.collegeInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice || invoice.status !== "APPROVED") return;
+
+  await prisma.collegeInvoice.update({
+    where: { id: invoiceId },
+    data: { paidAt: new Date() },
+  });
+
+  revalidatePath("/lms/company/colleges");
+  revalidatePath("/lms/company/colleges/sent");
+}

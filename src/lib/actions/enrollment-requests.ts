@@ -46,13 +46,50 @@ export async function requestEnrollment(courseId: string) {
   revalidatePath("/lms/company");
 }
 
-export async function approveEnrollmentRequest(requestId: string) {
-  try {
-    await requireRequestsAccess();
-  } catch {
-    throw new Error("Only the company admin can approve requests.");
+/**
+ * College-side bulk version of requestEnrollment — a college admin picks a course
+ * and any number of their own students (e.g. a whole branch at once) in one submit,
+ * instead of each student requesting individually. Still lands in the same PENDING
+ * queue the company approves from; this only creates the requests, same as a
+ * student requesting for themselves.
+ */
+export async function requestBulkEnrollment(courseId: string, studentIds: string[]) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "COLLEGE_ADMIN" || !session.user.collegeId) {
+    throw new Error("Only a college admin can request enrollment for students.");
+  }
+  if (studentIds.length === 0) return { requested: 0 };
+
+  const collegeId = session.user.collegeId;
+  const students = await prisma.user.findMany({
+    where: { id: { in: studentIds }, role: "STUDENT", collegeId, studentStatus: "ACTIVE" },
+  });
+
+  const [existingRequests, existingEnrollments] = await Promise.all([
+    prisma.enrollmentRequest.findMany({
+      where: { studentId: { in: students.map((s) => s.id) }, courseId, status: "PENDING" },
+      select: { studentId: true },
+    }),
+    prisma.enrollment.findMany({
+      where: { studentId: { in: students.map((s) => s.id) }, courseId },
+      select: { studentId: true },
+    }),
+  ]);
+  const skip = new Set([...existingRequests.map((r) => r.studentId), ...existingEnrollments.map((e) => e.studentId)]);
+  const toRequest = students.filter((s) => !skip.has(s.id));
+
+  if (toRequest.length > 0) {
+    await prisma.enrollmentRequest.createMany({
+      data: toRequest.map((s) => ({ studentId: s.id, courseId, collegeId, status: "PENDING" as const })),
+    });
   }
 
+  revalidatePath("/lms/college/courses");
+  revalidatePath("/lms/company");
+  return { requested: toRequest.length };
+}
+
+async function approveOneRequest(requestId: string) {
   const request = await prisma.enrollmentRequest.findUnique({ where: { id: requestId } });
   if (!request || request.status !== "PENDING") return;
 
@@ -115,7 +152,9 @@ export async function approveEnrollmentRequest(requestId: string) {
       });
     }
   }
+}
 
+function revalidateRequestPaths() {
   revalidatePath("/lms/company");
   revalidatePath("/lms/company/attendance");
   revalidatePath("/lms/student");
@@ -123,6 +162,47 @@ export async function approveEnrollmentRequest(requestId: string) {
   revalidatePath("/lms/college");
   revalidatePath("/lms/college/students");
   revalidatePath("/lms/college/courses");
+}
+
+export async function approveEnrollmentRequest(requestId: string) {
+  try {
+    await requireRequestsAccess();
+  } catch {
+    throw new Error("Only the company admin can approve requests.");
+  }
+  await approveOneRequest(requestId);
+  revalidateRequestPaths();
+}
+
+/** Approve a specific set of requests at once — used for "Approve All" scoped to
+ * one college, or a hand-picked selection. */
+export async function approveEnrollmentRequests(requestIds: string[]) {
+  try {
+    await requireRequestsAccess();
+  } catch {
+    throw new Error("Only the company admin can approve requests.");
+  }
+  for (const id of requestIds) {
+    await approveOneRequest(id);
+  }
+  revalidateRequestPaths();
+}
+
+/** Approve every pending enrollment request across every college in one click. */
+export async function approveAllEnrollmentRequests() {
+  try {
+    await requireRequestsAccess();
+  } catch {
+    throw new Error("Only the company admin can approve requests.");
+  }
+  const pending = await prisma.enrollmentRequest.findMany({
+    where: { status: "PENDING" },
+    select: { id: true },
+  });
+  for (const r of pending) {
+    await approveOneRequest(r.id);
+  }
+  revalidateRequestPaths();
 }
 
 export async function rejectEnrollmentRequest(requestId: string) {

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { Button } from "@/components/ui/button";
-import { approveRegistration, rejectRegistration } from "@/lib/actions/registration";
+import { approveRegistration, rejectRegistration, approveAllRegistrations } from "@/lib/actions/registration";
 import { format } from "date-fns";
 
 export default async function CompanyRegistrationsPage() {
@@ -22,8 +22,15 @@ export default async function CompanyRegistrationsPage() {
       </p>
 
       <div className="rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-6">
           <p className="text-sm font-semibold text-indigo">Pending ({pending.length})</p>
+          {pending.length > 1 && (
+            <form action={approveAllRegistrations}>
+              <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                Approve All ({pending.length})
+              </Button>
+            </form>
+          )}
         </div>
         {pending.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">No pending registrations.</p>

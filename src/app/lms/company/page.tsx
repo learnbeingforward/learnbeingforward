@@ -14,15 +14,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BackLink } from "@/components/lms/BackLink";
-import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/lib/actions/enrollment-requests";
+import {
+  approveEnrollmentRequest,
+  rejectEnrollmentRequest,
+  approveEnrollmentRequests,
+  approveAllEnrollmentRequests,
+} from "@/lib/actions/enrollment-requests";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 
 export default async function CompanyDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ requestId?: string }>;
+  searchParams: Promise<{ requestId?: string; collegeId?: string }>;
 }) {
-  const { requestId } = await searchParams;
+  const { requestId, collegeId } = await searchParams;
   const { navLinks } = await requireCompanyPageAccess("overview.requests");
 
   if (requestId) {
@@ -82,6 +87,76 @@ export default async function CompanyDashboardPage({
     );
   }
 
+  // Drill-down: one college's full pending list, with individual actions plus its
+  // own "Approve All" — the detail view reached by clicking into a college below.
+  if (collegeId) {
+    const [college, pendingForCollege] = await Promise.all([
+      prisma.college.findUnique({ where: { id: collegeId } }),
+      prisma.enrollmentRequest.findMany({
+        where: { status: "PENDING", collegeId },
+        include: { student: true, course: true },
+        orderBy: { requestedAt: "asc" },
+      }),
+    ]);
+
+    return (
+      <DashboardShell title={college?.name ?? "College"} subtitle="Pending enrollment requests" navLinks={navLinks}>
+        <BackLink href="/lms/company" label="Back to Requests" />
+        <div className="rounded-xl border border-border bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-6">
+            <p className="text-sm font-semibold text-indigo">Pending ({pendingForCollege.length})</p>
+            {pendingForCollege.length > 1 && (
+              <form action={approveEnrollmentRequests.bind(null, pendingForCollege.map((r) => r.id))}>
+                <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                  Approve All ({pendingForCollege.length})
+                </Button>
+              </form>
+            )}
+          </div>
+          {pendingForCollege.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">No pending requests for this college.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Requested</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingForCollege.map((req) => (
+                  <TableRow key={req.id}>
+                    <TableCell className="font-medium text-indigo">{req.student.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{req.course.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(req.requestedAt, "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <form action={approveEnrollmentRequest.bind(null, req.id)}>
+                          <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                            Approve
+                          </Button>
+                        </form>
+                        <form action={rejectEnrollmentRequest.bind(null, req.id)}>
+                          <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
+                            Reject
+                          </Button>
+                        </form>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </DashboardShell>
+    );
+  }
+
   const [pending, recentDecided] = await Promise.all([
     prisma.enrollmentRequest.findMany({
       where: { status: "PENDING" },
@@ -96,8 +171,14 @@ export default async function CompanyDashboardPage({
     }),
   ]);
 
-  const collegesRepresented = new Set(pending.map((r) => r.collegeId).filter(Boolean)).size;
-  const coursesRequested = new Set(pending.map((r) => r.courseId)).size;
+  const collegeGroups = new Map<string, { collegeId: string | null; collegeName: string; count: number }>();
+  for (const req of pending) {
+    const key = req.collegeId ?? "none";
+    const existing = collegeGroups.get(key);
+    if (existing) existing.count++;
+    else collegeGroups.set(key, { collegeId: req.collegeId, collegeName: req.college?.name ?? "No College", count: 1 });
+  }
+  const groups = Array.from(collegeGroups.values()).sort((a, b) => b.count - a.count);
 
   return (
     <DashboardShell title="Company Dashboard" subtitle="Enrollment requests" navLinks={navLinks}>
@@ -117,7 +198,7 @@ export default async function CompanyDashboardPage({
             <Building2 className="size-5.5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-indigo">{collegesRepresented}</p>
+            <p className="text-2xl font-bold text-indigo">{groups.length}</p>
             <p className="text-xs text-muted-foreground">Colleges Represented</p>
           </div>
         </div>
@@ -127,61 +208,58 @@ export default async function CompanyDashboardPage({
             <BookOpenCheck className="size-5.5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-indigo">{coursesRequested}</p>
+            <p className="text-2xl font-bold text-indigo">{new Set(pending.map((r) => r.courseId)).size}</p>
             <p className="text-xs text-muted-foreground">Courses Requested</p>
           </div>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Pending Approval</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-6">
+          <p className="text-sm font-semibold text-indigo">Pending Approval, by College</p>
+          {pending.length > 1 && (
+            <form action={approveAllEnrollmentRequests}>
+              <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
+                Approve All Colleges ({pending.length})
+              </Button>
+            </form>
+          )}
         </div>
 
-        {pending.length === 0 ? (
+        {groups.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">
             No pending enrollment requests right now.
           </p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>College</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Requested</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pending.map((req) => (
-                <TableRow key={req.id}>
-                  <TableCell className="font-medium text-indigo">{req.student.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {req.college?.name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{req.course.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(req.requestedAt, "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <form action={approveEnrollmentRequest.bind(null, req.id)}>
-                        <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                          Approve
-                        </Button>
-                      </form>
-                      <form action={rejectEnrollmentRequest.bind(null, req.id)}>
-                        <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                          Reject
-                        </Button>
-                      </form>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="divide-y divide-border">
+            {groups.map((g) => (
+              <div key={g.collegeId ?? "none"} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <Link
+                  href={g.collegeId ? `/lms/company?collegeId=${g.collegeId}` : "/lms/company"}
+                  className="text-sm font-medium text-indigo underline underline-offset-2"
+                >
+                  {g.collegeName}
+                </Link>
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-gold/20 text-indigo hover:bg-gold/20">
+                    {g.count} pending
+                  </Badge>
+                  {g.count > 1 && (
+                    <form
+                      action={approveEnrollmentRequests.bind(
+                        null,
+                        pending.filter((r) => (r.collegeId ?? "none") === (g.collegeId ?? "none")).map((r) => r.id)
+                      )}
+                    >
+                      <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+                        Approve All
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

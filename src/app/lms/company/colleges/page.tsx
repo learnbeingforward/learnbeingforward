@@ -29,6 +29,13 @@ function statusBadgeClass(status: string) {
       : "bg-gold/20 text-indigo hover:bg-gold/20";
 }
 
+/** An invoice the college approved shows as "Accepted" until it's explicitly marked
+ * paid — approval and payment are different events. */
+function invoiceLabel(invoice: { status: string; paidAt: Date | null }) {
+  if (invoice.status === "APPROVED") return invoice.paidAt ? "Paid" : "Accepted";
+  return STATUS_LABELS[invoice.status] ?? invoice.status;
+}
+
 export default async function CompanyCollegesPage({
   searchParams,
 }: {
@@ -128,7 +135,7 @@ export default async function CompanyCollegesPage({
                       className="flex items-center justify-between rounded-lg border border-border p-3 text-sm transition-colors hover:border-indigo/40"
                     >
                       <span className="font-medium text-indigo">₹{inv.totalAmount}</span>
-                      <Badge className={statusBadgeClass(inv.status)}>{inv.status}</Badge>
+                      <Badge className={statusBadgeClass(inv.status)}>{invoiceLabel(inv)}</Badge>
                     </Link>
                   ))}
               </div>
@@ -162,7 +169,7 @@ export default async function CompanyCollegesPage({
               <h2 className="text-lg font-semibold text-indigo">{invoice.contract.course.name}</h2>
               <p className="text-sm text-muted-foreground">{invoice.contract.college.name}</p>
             </div>
-            <Badge className={statusBadgeClass(invoice.status)}>{invoice.status}</Badge>
+            <Badge className={statusBadgeClass(invoice.status)}>{invoiceLabel(invoice)}</Badge>
           </div>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4">

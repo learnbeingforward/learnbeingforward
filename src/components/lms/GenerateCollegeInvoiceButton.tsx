@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { CheckCircle2, Clock, FileText, Loader2, XCircle } from "lucide-react";
+import { useActionState, useEffect, useTransition } from "react";
+import { Banknote, CheckCircle2, Clock, FileText, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   generateCollegeInvoice,
+  markInvoicePaid,
   submitDraftCollegeInvoice,
   type GenerateInvoiceState,
   type SubmitDraftState,
@@ -16,19 +17,26 @@ export type LatestCollegeInvoice = {
   submitted: boolean;
   pdfUrl: string | null;
   rejectReason: string | null;
+  paidAt?: Date | string | null;
 };
 
 export function GenerateCollegeInvoiceButton({
   contractId,
   latestInvoice,
+  canMarkPaid = true,
 }: {
   contractId: string;
   latestInvoice?: LatestCollegeInvoice | null;
+  /** Whether this viewer is allowed to mark an approved invoice as paid — gated the
+   * same way the colleges.sent page itself is (super-admin / granted employees only). */
+  canMarkPaid?: boolean;
 }) {
   const isDraft = latestInvoice && latestInvoice.status === "PENDING" && !latestInvoice.submitted;
   const isAwaitingDecision = latestInvoice && latestInvoice.status === "PENDING" && latestInvoice.submitted;
   const isApproved = latestInvoice?.status === "APPROVED";
+  const isPaid = isApproved && !!latestInvoice?.paidAt;
   const isRejected = latestInvoice?.status === "REJECTED";
+  const [isMarkingPaid, startMarkPaid] = useTransition();
 
   const [state, formAction, isPending] = useActionState<GenerateInvoiceState, FormData>(
     generateCollegeInvoice.bind(null, contractId),
@@ -74,14 +82,27 @@ export function GenerateCollegeInvoiceButton({
 
   if (!state?.ok && isApproved) {
     return (
-      <div className="flex flex-col items-end gap-1 rounded-lg bg-green-50 p-3">
-        <p className="flex items-center gap-1 text-xs font-medium text-green-700">
-          <CheckCircle2 className="size-3.5" /> Invoice approved
+      <div className={`flex flex-col items-end gap-1 rounded-lg p-3 ${isPaid ? "bg-green-50" : "bg-cream"}`}>
+        <p className={`flex items-center gap-1 text-xs font-medium ${isPaid ? "text-green-700" : "text-indigo"}`}>
+          {isPaid ? <Banknote className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
+          {isPaid ? "Paid" : "Accepted by college — not yet paid"}
         </p>
         {latestInvoice?.pdfUrl && (
           <a href={latestInvoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-indigo underline">
             View Invoice PDF
           </a>
+        )}
+        {!isPaid && canMarkPaid && latestInvoice && (
+          <Button
+            type="button"
+            size="sm"
+            disabled={isMarkingPaid}
+            onClick={() => startMarkPaid(() => markInvoicePaid(latestInvoice.invoiceId))}
+            className="bg-indigo text-white hover:bg-indigo/90"
+          >
+            {isMarkingPaid && <Loader2 className="size-3.5 animate-spin" />}
+            Mark as Paid
+          </Button>
         )}
       </div>
     );

@@ -89,6 +89,10 @@ export function TakeAssessmentClient({
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [leaveDeadline, setLeaveDeadline] = useState<number | null>(null);
   const [leaveSecondsLeft, setLeaveSecondsLeft] = useState(RETURN_GRACE_SECONDS);
+  // null = default bottom-right corner (via CSS classes); once dragged, pinned to
+  // an explicit pixel position anywhere on screen instead.
+  const [pipPos, setPipPos] = useState<{ top: number; left: number } | null>(null);
+  const pipDragRef = useRef<{ startX: number; startY: number; startTop: number; startLeft: number } | null>(null);
 
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const leaveHandled = useRef(false);
@@ -322,6 +326,28 @@ export function TakeAssessmentClient({
     }
   }
 
+  // ---------- Draggable camera preview ----------
+
+  function handlePipPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    pipDragRef.current = { startX: e.clientX, startY: e.clientY, startTop: rect.top, startLeft: rect.left };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function handlePipPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = pipDragRef.current;
+    if (!drag) return;
+    const el = e.currentTarget;
+    const top = Math.min(Math.max(0, drag.startTop + (e.clientY - drag.startY)), window.innerHeight - el.offsetHeight);
+    const left = Math.min(Math.max(0, drag.startLeft + (e.clientX - drag.startX)), window.innerWidth - el.offsetWidth);
+    setPipPos({ top, left });
+  }
+
+  function handlePipPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    pipDragRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  }
+
   // ---------- Start flow (with optional camera/mic calibration) ----------
 
   async function beginExam() {
@@ -357,7 +383,16 @@ export function TakeAssessmentClient({
       // itself knocks the page straight back out of full-screen in most browsers, so
       // requesting full-screen first just gets silently cancelled. Asking first and
       // entering full-screen once the prompt is already closed avoids that entirely.
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // autoGainControl/noiseSuppression/echoCancellation are all enabled by default
+      // and actively fight this detector: AGC in particular renormalizes the input
+      // level within a second or two of a loud burst, so sustained shouting reads as
+      // loud only briefly before the browser quietly turns it back down — producing
+      // just one violation instead of one per sustained window. Disabling them keeps
+      // the raw mic level the RMS check actually relies on.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: { autoGainControl: false, noiseSuppression: false, echoCancellation: false },
+      });
       mediaStreamRef.current = stream;
 
       const captureVideo = document.createElement("video");
@@ -621,12 +656,17 @@ export function TakeAssessmentClient({
       </div>
 
       {proctoringEnabled && (
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          className="fixed bottom-4 right-4 z-20 h-24 w-32 rounded-lg border-2 border-white object-cover shadow-lg"
-        />
+        <div
+          onPointerDown={handlePipPointerDown}
+          onPointerMove={handlePipPointerMove}
+          onPointerUp={handlePipPointerUp}
+          style={pipPos ? { top: pipPos.top, left: pipPos.left } : undefined}
+          className={`fixed z-20 h-24 w-32 cursor-move touch-none select-none overflow-hidden rounded-lg border-2 border-white shadow-lg ${
+            pipPos ? "" : "bottom-4 right-4"
+          }`}
+        >
+          <video ref={videoRef} muted playsInline className="size-full object-cover" />
+        </div>
       )}
 
       {leaveDeadline !== null && (

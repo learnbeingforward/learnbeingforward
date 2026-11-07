@@ -511,6 +511,12 @@ export async function sendResultToCollege(assignmentId: string, formData: FormDa
     `[dummy email] Assessment result for ${assignment.student.name} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks} sent to ${assignment.student.college?.contactEmail ?? "the college"}${photoNote}`
   );
 
+  if (snapshotIds.length > 0) {
+    await prisma.assessmentSnapshot.updateMany({
+      where: { id: { in: snapshotIds }, assignmentId },
+      data: { sharedWithCollege: true },
+    });
+  }
   await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { sentToCollegeAt: new Date() } });
   revalidatePath("/lms/company/assessments/submissions");
   revalidatePath("/lms/college/assessment-data");
@@ -530,6 +536,12 @@ export async function sendResultToStudent(assignmentId: string, formData: FormDa
     `[dummy email] Assessment result for ${assignment.student.email} — "${assignment.assessment.title}": ${assignment.totalMarks}/${assignment.maxMarks}${photoNote}`
   );
 
+  if (snapshotIds.length > 0) {
+    await prisma.assessmentSnapshot.updateMany({
+      where: { id: { in: snapshotIds }, assignmentId },
+      data: { sharedWithStudent: true },
+    });
+  }
   await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { sentToStudentAt: new Date() } });
   revalidatePath("/lms/company/assessments/submissions");
   revalidatePath("/lms/student/assessments");

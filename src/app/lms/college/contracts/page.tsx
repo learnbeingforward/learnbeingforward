@@ -144,7 +144,7 @@ export default async function CollegeContractsPage({
                     : "bg-gold/20 text-indigo hover:bg-gold/20"
               }
             >
-              {invoice.status}
+              {invoice.status === "APPROVED" ? (invoice.paidAt ? "Paid" : "Accepted") : invoice.status}
             </Badge>
           </div>
           <dl className="space-y-3 text-sm">
@@ -440,7 +440,7 @@ export default async function CollegeContractsPage({
                         : "bg-red-100 text-red-700 hover:bg-red-100"
                     }
                   >
-                    {inv.status}
+                    {inv.status === "APPROVED" ? (inv.paidAt ? "Paid" : "Accepted") : inv.status}
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">Invoice ₹{inv.totalAmount}</p>

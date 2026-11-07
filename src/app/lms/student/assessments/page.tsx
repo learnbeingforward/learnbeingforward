@@ -6,6 +6,7 @@ import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
+import { SharedSnapshotGallery } from "@/components/lms/SharedSnapshotGallery";
 import { format } from "date-fns";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -26,7 +27,11 @@ export default async function StudentAssessmentsPage({
   if (assignmentId) {
     const assignment = await prisma.assessmentAssignment.findUnique({
       where: { id: assignmentId },
-      include: { assessment: true, answers: { include: { question: true } } },
+      include: {
+        assessment: true,
+        answers: { include: { question: true } },
+        snapshots: { where: { sharedWithStudent: true }, orderBy: { capturedAt: "asc" } },
+      },
     });
 
     if (!assignment || assignment.studentId !== studentId || !assignment.sentToStudentAt) {
@@ -49,6 +54,18 @@ export default async function StudentAssessmentsPage({
             {assignment.totalMarks ?? 0} / {assignment.maxMarks ?? 0}
           </p>
         </div>
+        {assignment.snapshots.length > 0 && (
+          <div className="mb-6">
+            <SharedSnapshotGallery
+              snapshots={assignment.snapshots.map((s) => ({
+                id: s.id,
+                imageUrl: s.imageUrl,
+                capturedAt: s.capturedAt.toISOString(),
+              }))}
+            />
+          </div>
+        )}
+
         <div className="space-y-3">
           {sortedAnswers.map((ans, i) => (
             <div key={ans.id} className="rounded-xl border border-border bg-white p-4">
