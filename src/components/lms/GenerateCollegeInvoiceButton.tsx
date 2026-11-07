@@ -18,6 +18,7 @@ export type LatestCollegeInvoice = {
   pdfUrl: string | null;
   rejectReason: string | null;
   paidAt?: Date | string | null;
+  paidRequestedAt?: Date | string | null;
 };
 
 export function GenerateCollegeInvoiceButton({
@@ -35,6 +36,7 @@ export function GenerateCollegeInvoiceButton({
   const isAwaitingDecision = latestInvoice && latestInvoice.status === "PENDING" && latestInvoice.submitted;
   const isApproved = latestInvoice?.status === "APPROVED";
   const isPaid = isApproved && !!latestInvoice?.paidAt;
+  const paidClaimed = isApproved && !isPaid && !!latestInvoice?.paidRequestedAt;
   const isRejected = latestInvoice?.status === "REJECTED";
   const [isMarkingPaid, startMarkPaid] = useTransition();
 
@@ -82,10 +84,14 @@ export function GenerateCollegeInvoiceButton({
 
   if (!state?.ok && isApproved) {
     return (
-      <div className={`flex flex-col items-end gap-1 rounded-lg p-3 ${isPaid ? "bg-green-50" : "bg-cream"}`}>
-        <p className={`flex items-center gap-1 text-xs font-medium ${isPaid ? "text-green-700" : "text-indigo"}`}>
+      <div className={`flex flex-col items-end gap-1 rounded-lg p-3 ${isPaid ? "bg-green-50" : paidClaimed ? "bg-amber-50" : "bg-cream"}`}>
+        <p
+          className={`flex items-center gap-1 text-xs font-medium ${
+            isPaid ? "text-green-700" : paidClaimed ? "text-amber-700" : "text-indigo"
+          }`}
+        >
           {isPaid ? <Banknote className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
-          {isPaid ? "Paid" : "Accepted by college — not yet paid"}
+          {isPaid ? "Paid" : paidClaimed ? "College says this is paid — needs confirmation" : "Accepted by college — not yet paid"}
         </p>
         {latestInvoice?.pdfUrl && (
           <a href={latestInvoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-indigo underline">
@@ -101,7 +107,7 @@ export function GenerateCollegeInvoiceButton({
             className="bg-indigo text-white hover:bg-indigo/90"
           >
             {isMarkingPaid && <Loader2 className="size-3.5 animate-spin" />}
-            Mark as Paid
+            {paidClaimed ? "Confirm Paid" : "Mark as Paid"}
           </Button>
         )}
       </div>

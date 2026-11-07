@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { renderTrainerInvoicePdf, renderTrainerApprovalPdf } from "@/lib/pdf/invoice-pdf";
 import { getEmployeeKeys } from "@/lib/employee-access";
+import { notify } from "@/lib/notifications";
 
 const HOURS_PER_SESSION = 2;
 
@@ -113,13 +114,20 @@ export async function submitDraftTrainerInvoice(
     return { ok: false, error: "Not authorized." };
   }
 
-  const invoice = await prisma.trainerInvoice.findUnique({ where: { id: invoiceId } });
+  const invoice = await prisma.trainerInvoice.findUnique({
+    where: { id: invoiceId },
+    include: { trainer: true },
+  });
   if (!invoice || invoice.trainerId !== session.user.trainerId) {
     return { ok: false, error: "Invoice not found." };
   }
   if (invoice.submitted) return { ok: false, error: "This invoice has already been sent." };
 
   await prisma.trainerInvoice.update({ where: { id: invoiceId }, data: { submitted: true } });
+
+  await notify("TRAINER", `${invoice.trainer.name} submitted an invoice for ₹${invoice.totalAmount}`, {
+    href: "/lms/company/trainers/invoices",
+  });
 
   revalidatePath("/lms/trainer/invoice");
   revalidatePath("/lms/company/trainers/invoices");

@@ -98,7 +98,15 @@ export default async function CompanyCollegeSentPage() {
                               href={`/lms/company/colleges?invoiceId=${inv.id}`}
                               className="underline underline-offset-2 hover:text-indigo/70"
                             >
-                              ₹{inv.totalAmount} ({inv.status === "APPROVED" && inv.paidAt ? "paid" : inv.status.toLowerCase()})
+                              ₹{inv.totalAmount} (
+                              {inv.status === "APPROVED"
+                                ? inv.paidAt
+                                  ? "paid"
+                                  : inv.paidRequestedAt
+                                    ? "awaiting confirmation"
+                                    : "accepted"
+                                : inv.status.toLowerCase()}
+                              )
                             </Link>
                             {i < arr.length - 1 ? "," : ""}
                           </span>
@@ -121,6 +129,7 @@ export default async function CompanyCollegeSentPage() {
                               pdfUrl: latest.pdfUrl,
                               rejectReason: latest.rejectReason,
                               paidAt: latest.paidAt,
+                              paidRequestedAt: latest.paidRequestedAt,
                             }
                           : null;
                       })()}

@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 export type LmsNavLink = {
   href: string;
   label: string;
+  /** Shows a small red dot next to this link (and on its parent group's toggle,
+   * if nested) — used for unread notifications. */
+  badge?: boolean;
 };
 
 export type LmsNavEntry = LmsNavLink | { label: string; children: LmsNavLink[] };
@@ -18,7 +21,17 @@ function isGroup(entry: LmsNavEntry): entry is { label: string; children: LmsNav
   return "children" in entry;
 }
 
-function NavGroup({ label, items, active }: { label: string; items: LmsNavLink[]; active: boolean }) {
+function NavGroup({
+  label,
+  items,
+  active,
+  badge,
+}: {
+  label: string;
+  items: LmsNavLink[];
+  active: boolean;
+  badge?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -55,12 +68,13 @@ function NavGroup({ label, items, active }: { label: string; items: LmsNavLink[]
         type="button"
         onClick={toggleOpen}
         className={cn(
-          "flex items-center gap-1 border-b-2 border-transparent px-3.5 py-3 text-sm font-medium text-indigo/70 transition-colors hover:text-indigo",
+          "relative flex items-center gap-1 border-b-2 border-transparent px-3.5 py-3 text-sm font-medium text-indigo/70 transition-colors hover:text-indigo",
           active && "border-gold font-semibold text-indigo"
         )}
       >
         {label}
         <ChevronDown className="size-3.5" />
+        {badge && <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500" />}
       </button>
       {open &&
         coords &&
@@ -75,9 +89,10 @@ function NavGroup({ label, items, active }: { label: string; items: LmsNavLink[]
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-2 text-sm text-indigo/80 hover:bg-cream hover:text-indigo"
+                className="relative flex items-center gap-1.5 px-4 py-2 text-sm text-indigo/80 hover:bg-cream hover:text-indigo"
               >
                 {link.label}
+                {link.badge && <span className="size-1.5 rounded-full bg-red-500" />}
               </Link>
             ))}
           </div>,
@@ -140,7 +155,8 @@ export function LmsNav({ links }: { links: LmsNavEntry[] }) {
           {links.map((entry) => {
             if (isGroup(entry)) {
               const active = entry.children.some((c) => c.href === pathname);
-              return <NavGroup key={entry.label} label={entry.label} items={entry.children} active={active} />;
+              const badge = entry.children.some((c) => c.badge);
+              return <NavGroup key={entry.label} label={entry.label} items={entry.children} active={active} badge={badge} />;
             }
             const active = pathname === entry.href;
             return (
@@ -148,11 +164,12 @@ export function LmsNav({ links }: { links: LmsNavEntry[] }) {
                 key={entry.href}
                 href={entry.href}
                 className={cn(
-                  "shrink-0 border-b-2 border-transparent px-3.5 py-3 text-sm font-medium text-indigo/70 transition-colors hover:text-indigo",
+                  "relative shrink-0 border-b-2 border-transparent px-3.5 py-3 text-sm font-medium text-indigo/70 transition-colors hover:text-indigo",
                   active && "border-gold font-semibold text-indigo"
                 )}
               >
                 {entry.label}
+                {entry.badge && <span className="absolute right-1 top-1.5 size-2 rounded-full bg-red-500" />}
               </Link>
             );
           })}

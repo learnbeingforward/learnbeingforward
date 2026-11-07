@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getEmployeeKeys, type EmployeePageKey } from "@/lib/employee-access";
 import { deleteUploadFromGitHub } from "@/lib/github-upload";
+import { notify } from "@/lib/notifications";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 
@@ -345,7 +346,7 @@ export async function saveAssessmentAnswer(
 async function finalizeSubmission(assignmentId: string, auto: boolean) {
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
-    include: { answers: true, assessment: { include: { questions: true } } },
+    include: { answers: true, assessment: { include: { questions: true } }, student: true },
   });
   if (!assignment) return;
   if (assignment.status === "SUBMITTED" || assignment.status === "AUTO_SUBMITTED") return;
@@ -362,6 +363,11 @@ async function finalizeSubmission(assignmentId: string, auto: boolean) {
       totalMarks: autoGradedTotal,
       needsGrading: hasWritten,
     },
+  });
+
+  await notify("STUDENT", `${assignment.student.name} submitted "${assignment.assessment.title}"`, {
+    message: auto ? "Auto-submitted (proctoring violations or time up)." : undefined,
+    href: `/lms/company/assessments/submissions?assignmentId=${assignmentId}`,
   });
 
   revalidatePath("/lms/student/assessments");

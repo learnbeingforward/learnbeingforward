@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 import { renderCollegeInvoicePdf, type CollegeInvoiceLineItem } from "@/lib/pdf/invoice-pdf";
 import { requireCompanyAccess, getEmployeeKeys } from "@/lib/employee-access";
+import { notify } from "@/lib/notifications";
 
 const HOURS_PER_SESSION = 2;
 
@@ -164,7 +165,7 @@ export async function decideContract(contractId: string, approve: boolean, formD
     throw new Error("Only a college admin can decide on a training request.");
   }
 
-  const contract = await prisma.collegeContract.findUnique({ where: { id: contractId } });
+  const contract = await prisma.collegeContract.findUnique({ where: { id: contractId }, include: { college: true, course: true } });
   if (!contract || contract.status !== "PENDING" || contract.collegeId !== session.user.collegeId) {
     return;
   }
@@ -177,6 +178,10 @@ export async function decideContract(contractId: string, approve: boolean, formD
   await prisma.collegeContract.update({
     where: { id: contractId },
     data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date(), rejectReason: reason || null },
+  });
+
+  await notify("COLLEGE", `${contract.college.name} ${approve ? "approved" : "rejected"} the training request for ${contract.course.name}`, {
+    href: "/lms/company/colleges",
   });
 
   revalidatePath("/lms/college/contracts");
@@ -373,7 +378,7 @@ export async function decideCollegeInvoice(invoiceId: string, approve: boolean, 
 
   const invoice = await prisma.collegeInvoice.findUnique({
     where: { id: invoiceId },
-    include: { contract: true },
+    include: { contract: { include: { college: true } } },
   });
   if (
     !invoice ||
@@ -393,6 +398,12 @@ export async function decideCollegeInvoice(invoiceId: string, approve: boolean, 
     where: { id: invoiceId },
     data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date(), rejectReason: reason || null },
   });
+
+  await notify(
+    "COLLEGE",
+    `${invoice.contract.college.name} ${approve ? "accepted" : "rejected"} the invoice for ₹${invoice.totalAmount}`,
+    { href: "/lms/company/colleges" }
+  );
 
   revalidatePath("/lms/college/contracts");
   revalidatePath("/lms/company/colleges");
@@ -416,6 +427,43 @@ export async function markInvoicePaid(invoiceId: string) {
     data: { paidAt: new Date() },
   });
 
+  revalidatePath("/lms/company/colleges");
+  revalidatePath("/lms/company/colleges/sent");
+  revalidatePath("/lms/college/contracts");
+}
+
+/**
+ * The college's own claim that they've paid an approved invoice — this does NOT
+ * mark it paid by itself. It only records the claim and notifies the company side;
+ * the invoice stays "Accepted" until an admin reviews the claim and clicks
+ * "Confirm Paid" (markInvoicePaid above), which is the only thing that actually
+ * sets paidAt.
+ */
+export async function collegeMarkInvoicePaid(invoiceId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "COLLEGE_ADMIN") {
+    throw new Error("Only a college admin can do this.");
+  }
+
+  const invoice = await prisma.collegeInvoice.findUnique({
+    where: { id: invoiceId },
+    include: { contract: { include: { college: true } } },
+  });
+  if (!invoice || invoice.status !== "APPROVED" || invoice.contract.collegeId !== session.user.collegeId || invoice.paidAt) {
+    return;
+  }
+
+  await prisma.collegeInvoice.update({
+    where: { id: invoiceId },
+    data: { paidRequestedAt: new Date() },
+  });
+
+  await notify("COLLEGE", `${invoice.contract.college.name} marked an invoice as paid — needs confirmation`, {
+    message: `₹${invoice.totalAmount} — confirm once you've verified payment was received.`,
+    href: "/lms/company/colleges/sent",
+  });
+
+  revalidatePath("/lms/college/contracts");
   revalidatePath("/lms/company/colleges");
   revalidatePath("/lms/company/colleges/sent");
 }

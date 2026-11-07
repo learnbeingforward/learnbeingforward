@@ -28,6 +28,15 @@ export const collegeNavLinks: LmsNavEntry[] = [
 
 export const companyNavLinks: LmsNavEntry[] = [
   {
+    label: "Overview",
+    children: [
+      { href: "/lms/company/notifications", label: "Notifications" },
+      { href: "/lms/company", label: "Requests" },
+      { href: "/lms/company/attendance", label: "Attendance" },
+      { href: "/lms/company/edit-site", label: "Edit Site" },
+    ],
+  },
+  {
     label: "Accounts",
     children: [
       { href: "/lms/company/accounts", label: "Add Account" },
@@ -45,14 +54,6 @@ export const companyNavLinks: LmsNavEntry[] = [
       { href: "/lms/company/registrations", label: "New Registrations" },
       { href: "/lms/company/approvals", label: "Approvals from College" },
       { href: "/lms/company/password-resets", label: "Password Reset Requests" },
-    ],
-  },
-  {
-    label: "Overview",
-    children: [
-      { href: "/lms/company", label: "Requests" },
-      { href: "/lms/company/attendance", label: "Attendance" },
-      { href: "/lms/company/edit-site", label: "Edit Site" },
     ],
   },
   {

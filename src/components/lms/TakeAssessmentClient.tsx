@@ -26,7 +26,7 @@ const AUDIO_CHECK_INTERVAL_MS = 300;
 // enough of them (not all) were loud — that catches sustained talking while still
 // ignoring a single cough or chair creak.
 const AUDIO_WINDOW_SIZE = Math.round(2_000 / AUDIO_CHECK_INTERVAL_MS);
-const AUDIO_WINDOW_FRACTION = 0.5;
+const AUDIO_WINDOW_FRACTION = 0.4;
 
 type Question = {
   id: string;
@@ -71,6 +71,12 @@ export function TakeAssessmentClient({
   const [started, setStarted] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState(CALIBRATION_SECONDS);
+  // Browsers only grant fullscreen from a fresh click — the automatic attempt right
+  // after the camera/mic prompt usually works, but if the browser consumed the user
+  // gesture while that permission UI was open, it silently fails. Rather than
+  // starting the exam outside full-screen with no explanation, this forces one more
+  // unmissable click to actually enter it before any question is shown.
+  const [needsFullscreenClick, setNeedsFullscreenClick] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>(() =>
@@ -163,6 +169,10 @@ export function TakeAssessmentClient({
 
   useEffect(() => {
     if (!started) return;
+    // Fullscreen may already have been entered before this listener was attached
+    // (during calibration) — sync the real current state instead of assuming false,
+    // otherwise the header wrongly claims "Not in full-screen" the whole exam.
+    setIsFullscreen(!!document.fullscreenElement);
 
     function handleVisibilityChange() {
       if (document.hidden) triggerLeave();
@@ -288,7 +298,10 @@ export function TakeAssessmentClient({
         sumSquares += centered * centered;
       }
       const rms = Math.sqrt(sumSquares / data.length);
-      const threshold = audioBaselineRef.current * 3 + 10;
+      // Was baseline*3+10 — too high a bar, so only shouting (not normal talking)
+      // ever crossed it. Lowered so a student simply speaking during the exam
+      // reliably registers as "loud" for this check, not just raised voices.
+      const threshold = audioBaselineRef.current * 1.6 + 6;
 
       const window = audioWindowRef.current;
       window.push(rms > threshold);
@@ -446,7 +459,13 @@ export function TakeAssessmentClient({
       audioBaselineRef.current = samples.length > 0 ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
       setCalibrating(false);
 
-      await beginExam();
+      if (document.fullscreenElement) {
+        await beginExam();
+      } else {
+        // The earlier automatic request didn't take — ask for one explicit click
+        // instead of silently starting the exam in a normal browser tab.
+        setNeedsFullscreenClick(true);
+      }
     } catch (err) {
       stopMedia();
       setMediaError(
@@ -493,6 +512,34 @@ export function TakeAssessmentClient({
               : "You left the assessment screen and didn't return in time, so it was submitted automatically with whatever answers were saved."}{" "}
             Redirecting you back...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  async function handleEnterFullscreenAndBegin() {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // Still denied — the leave-detection checks apply regardless once the exam starts.
+    }
+    setNeedsFullscreenClick(false);
+    await beginExam();
+  }
+
+  if (needsFullscreenClick) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6 text-center text-white">
+        <div className="max-w-md">
+          <Maximize className="mx-auto mb-4 size-10 text-gold" />
+          <h1 className="text-xl font-bold">Enter Full-Screen to Begin</h1>
+          <p className="mt-3 text-sm text-white/70">
+            Your camera and microphone are ready. One last step — click below to enter full-screen, which starts
+            the assessment immediately.
+          </p>
+          <Button onClick={handleEnterFullscreenAndBegin} className="mt-6 bg-gold text-indigo hover:bg-gold-light">
+            <Maximize className="size-4" /> Enter Full-Screen & Start
+          </Button>
         </div>
       </div>
     );

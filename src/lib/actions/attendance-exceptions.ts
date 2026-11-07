@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 import { requireCompanyAccess } from "@/lib/employee-access";
+import { notify } from "@/lib/notifications";
 
 async function requireApprovalsAccess() {
   const session = await auth();
@@ -14,7 +15,7 @@ async function requireApprovalsAccess() {
 
 export async function requestAttendanceException(enrollmentId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "COLLEGE_ADMIN") {
+  if (!session?.user || session.user.role !== "COLLEGE_ADMIN" || !session.user.collegeId) {
     throw new Error("Only a college admin can submit this request.");
   }
   const reason = String(formData.get("reason") ?? "").trim();
@@ -39,6 +40,12 @@ export async function requestAttendanceException(enrollmentId: string, formData:
       reason: reason.trim(),
       status: "PENDING",
     },
+  });
+
+  const college = await prisma.college.findUnique({ where: { id: session.user.collegeId } });
+  await notify("COLLEGE", `${college?.name ?? "A college"} requested an attendance exception`, {
+    message: reason,
+    href: "/lms/company/approvals",
   });
 
   revalidatePath("/lms/college/queries");

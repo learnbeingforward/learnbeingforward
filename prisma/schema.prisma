@@ -562,6 +562,10 @@ model CollegeInvoice {
   // The college approving an invoice only means they accepted the amount — it does
   // NOT mean the money has actually been paid. paidAt is set separately, by an
   // explicit "Mark as Paid" action on the company side, once payment is confirmed.
+  // paidRequestedAt is the college's own claim ("we've paid this") — a notification
+  // goes to the company side, and only once THEY confirm (setting paidAt) does the
+  // invoice actually show as Paid anywhere.
+  paidRequestedAt DateTime?
   paidAt        DateTime?
 
   @@index([contractId])
@@ -663,6 +667,31 @@ model AssessmentSnapshot {
   sharedWithCollege Boolean              @default(false)
 
   @@index([assignmentId])
+}
+
+enum NotificationCategory {
+  STUDENT
+  COLLEGE
+  TRAINER
+  ADMIN
+}
+
+/** Site-wide activity feed for the company side — a student submitting an
+ * assessment, a college requesting training or claiming an invoice paid, a trainer
+ * submitting an invoice, and so on. Read state is shared across every company-side
+ * viewer (super admin, ADMIN2, employees) rather than tracked per-viewer. */
+model Notification {
+  id        String               @id @default(cuid())
+  category  NotificationCategory
+  title     String
+  message   String?              @db.Text
+  href      String?
+  read      Boolean              @default(false)
+  createdAt DateTime             @default(now())
+
+  @@index([category])
+  @@index([read])
+  @@index([createdAt])
 }
 
 model AssessmentAnswer {

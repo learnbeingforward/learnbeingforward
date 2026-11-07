@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validation";
+import { notify, type NotificationCategory } from "@/lib/notifications";
+
+const CATEGORY_BY_ROLE: Record<string, NotificationCategory> = {
+  STUDENT: "STUDENT",
+  COLLEGE_ADMIN: "COLLEGE",
+  TRAINER: "TRAINER",
+  ADMIN2: "ADMIN",
+};
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -17,6 +25,10 @@ export async function POST(request: Request) {
       collegeName: parsed.data.collegeName || null,
       role: parsed.data.role,
     },
+  });
+
+  await notify(CATEGORY_BY_ROLE[parsed.data.role] ?? "ADMIN", `Password reset requested — ${parsed.data.name}`, {
+    href: "/lms/company/password-resets",
   });
 
   return NextResponse.json({ ok: true });

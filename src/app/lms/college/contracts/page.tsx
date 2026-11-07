@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BackLink } from "@/components/lms/BackLink";
 import { decideContract, decideCollegeInvoice } from "@/lib/actions/college-contracts";
+import { MarkInvoicePaidButton } from "@/components/lms/MarkInvoicePaidButton";
 import { format } from "date-fns";
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
@@ -144,7 +145,13 @@ export default async function CollegeContractsPage({
                     : "bg-gold/20 text-indigo hover:bg-gold/20"
               }
             >
-              {invoice.status === "APPROVED" ? (invoice.paidAt ? "Paid" : "Accepted") : invoice.status}
+              {invoice.status === "APPROVED"
+                ? invoice.paidAt
+                  ? "Paid"
+                  : invoice.paidRequestedAt
+                    ? "Awaiting Confirmation"
+                    : "Accepted"
+                : invoice.status}
             </Badge>
           </div>
           <dl className="space-y-3 text-sm">
@@ -191,6 +198,18 @@ export default async function CollegeContractsPage({
             >
               <FileText className="size-4" /> View Invoice PDF
             </Link>
+          )}
+          {invoice.status === "APPROVED" && !invoice.paidAt && (
+            <div className="mt-4 border-t border-border pt-4">
+              {invoice.paidRequestedAt ? (
+                <p className="text-sm text-muted-foreground">
+                  You marked this as paid on {format(invoice.paidRequestedAt, "MMM d, yyyy")} — waiting for Learn
+                  Being Forward to confirm.
+                </p>
+              ) : (
+                <MarkInvoicePaidButton invoiceId={invoice.id} />
+              )}
+            </div>
           )}
         </div>
       </DashboardShell>
@@ -440,7 +459,13 @@ export default async function CollegeContractsPage({
                         : "bg-red-100 text-red-700 hover:bg-red-100"
                     }
                   >
-                    {inv.status === "APPROVED" ? (inv.paidAt ? "Paid" : "Accepted") : inv.status}
+                    {inv.status === "APPROVED"
+                      ? inv.paidAt
+                        ? "Paid"
+                        : inv.paidRequestedAt
+                          ? "Awaiting Confirmation"
+                          : "Accepted"
+                      : inv.status}
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">Invoice ₹{inv.totalAmount}</p>

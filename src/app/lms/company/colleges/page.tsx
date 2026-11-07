@@ -31,8 +31,10 @@ function statusBadgeClass(status: string) {
 
 /** An invoice the college approved shows as "Accepted" until it's explicitly marked
  * paid — approval and payment are different events. */
-function invoiceLabel(invoice: { status: string; paidAt: Date | null }) {
-  if (invoice.status === "APPROVED") return invoice.paidAt ? "Paid" : "Accepted";
+function invoiceLabel(invoice: { status: string; paidAt: Date | null; paidRequestedAt?: Date | null }) {
+  if (invoice.status === "APPROVED") {
+    return invoice.paidAt ? "Paid" : invoice.paidRequestedAt ? "Awaiting Confirmation" : "Accepted";
+  }
   return STATUS_LABELS[invoice.status] ?? invoice.status;
 }
 

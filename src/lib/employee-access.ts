@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getCompanyNavLinksForRole } from "@/lib/lms-nav-links";
+import { getUnreadNotificationCount } from "@/lib/notifications";
 import type { LmsNavEntry } from "@/components/layout/LmsNav";
 
 export type EmployeePageKey =
@@ -21,6 +22,7 @@ export type EmployeePageKey =
   | "registrations.new"
   | "registrations.approvals"
   | "registrations.password-resets"
+  | "overview.notifications"
   | "overview.requests"
   | "overview.attendance"
   | "overview.edit-site"
@@ -56,6 +58,15 @@ type CatalogGroup = { group: string; pages: CatalogPage[] };
  * rather than handing over the whole thing.
  */
 export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
+  {
+    group: "Overview",
+    pages: [
+      { navLabel: "Notifications", href: "/lms/company/notifications", permissions: [{ key: "overview.notifications", label: "Notifications" }] },
+      { navLabel: "Requests", href: "/lms/company", permissions: [{ key: "overview.requests", label: "Requests" }] },
+      { navLabel: "Attendance", href: "/lms/company/attendance", permissions: [{ key: "overview.attendance", label: "Attendance" }] },
+      { navLabel: "Edit Site", href: "/lms/company/edit-site", permissions: [{ key: "overview.edit-site", label: "Edit Site" }] },
+    ],
+  },
   {
     group: "Accounts",
     pages: [
@@ -112,14 +123,6 @@ export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
       { navLabel: "New Registrations", href: "/lms/company/registrations", permissions: [{ key: "registrations.new", label: "New Registrations" }] },
       { navLabel: "Approvals from College", href: "/lms/company/approvals", permissions: [{ key: "registrations.approvals", label: "Approvals from College" }] },
       { navLabel: "Password Reset Requests", href: "/lms/company/password-resets", permissions: [{ key: "registrations.password-resets", label: "Password Reset Requests" }] },
-    ],
-  },
-  {
-    group: "Overview",
-    pages: [
-      { navLabel: "Requests", href: "/lms/company", permissions: [{ key: "overview.requests", label: "Requests" }] },
-      { navLabel: "Attendance", href: "/lms/company/attendance", permissions: [{ key: "overview.attendance", label: "Attendance" }] },
-      { navLabel: "Edit Site", href: "/lms/company/edit-site", permissions: [{ key: "overview.edit-site", label: "Edit Site" }] },
     ],
   },
   {
@@ -233,6 +236,20 @@ function keysForRole(role: "SUPER_ADMIN" | "ADMIN2"): EmployeePageKey[] {
  * sub-permissions (e.g. Manage Accounts) can conditionally render just the parts
  * it granted, the same way for every role.
  */
+/** Puts a red-dot `badge` on the Notifications nav entry (and its parent group)
+ * when there's unread activity — the single place every company page's nav passes
+ * through, so this alone keeps the whole admin area's nav in sync. */
+function withNotificationBadge(navLinks: LmsNavEntry[], hasUnread: boolean): LmsNavEntry[] {
+  if (!hasUnread) return navLinks;
+  return navLinks.map((entry) =>
+    "children" in entry
+      ? { ...entry, children: entry.children.map((c) => (c.href === "/lms/company/notifications" ? { ...c, badge: true } : c)) }
+      : entry.href === "/lms/company/notifications"
+        ? { ...entry, badge: true }
+        : entry
+  );
+}
+
 export async function requireCompanyPageAccess(anyOfKeys?: EmployeePageKey | EmployeePageKey[]) {
   const needed = anyOfKeys ? (Array.isArray(anyOfKeys) ? anyOfKeys : [anyOfKeys]) : undefined;
   const session = await auth();
@@ -242,12 +259,14 @@ export async function requireCompanyPageAccess(anyOfKeys?: EmployeePageKey | Emp
   if (role === "SUPER_ADMIN" || role === "ADMIN2") {
     const keys = keysForRole(role);
     if (needed && !needed.some((k) => keys.includes(k))) redirect("/lms/company");
-    return { session, navLinks: getCompanyNavLinksForRole(role) as LmsNavEntry[], keys };
+    const hasUnread = (await getUnreadNotificationCount()) > 0;
+    return { session, navLinks: withNotificationBadge(getCompanyNavLinksForRole(role) as LmsNavEntry[], hasUnread), keys };
   }
   if (role === "EMPLOYEE") {
     const keys = await getEmployeeKeys(session.user.id);
     if (needed && !needed.some((k) => keys.includes(k))) redirect(employeeFirstHref(keys));
-    return { session, navLinks: buildEmployeeNavLinks(keys), keys };
+    const hasUnread = keys.includes("overview.notifications") && (await getUnreadNotificationCount()) > 0;
+    return { session, navLinks: withNotificationBadge(buildEmployeeNavLinks(keys), hasUnread), keys };
   }
 
   if (role === "COLLEGE_ADMIN") redirect("/lms/college");

@@ -7,6 +7,7 @@ import { combineDateAndTime } from "@/lib/attendance";
 import { MANUAL_BATCH_CAP } from "@/lib/batching";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 import { requireCompanyAccess } from "@/lib/employee-access";
+import { notify } from "@/lib/notifications";
 
 async function requireRequestsAccess() {
   const session = await auth();
@@ -41,6 +42,8 @@ export async function requestEnrollment(courseId: string) {
       status: "PENDING",
     },
   });
+
+  await notify("STUDENT", `${student.name} requested course enrollment`, { href: "/lms/company" });
 
   revalidatePath("/lms/student/courses");
   revalidatePath("/lms/company");
@@ -81,6 +84,10 @@ export async function requestBulkEnrollment(courseId: string, studentIds: string
   if (toRequest.length > 0) {
     await prisma.enrollmentRequest.createMany({
       data: toRequest.map((s) => ({ studentId: s.id, courseId, collegeId, status: "PENDING" as const })),
+    });
+    const college = await prisma.college.findUnique({ where: { id: collegeId } });
+    await notify("COLLEGE", `${college?.name ?? "A college"} requested enrollment for ${toRequest.length} student(s)`, {
+      href: "/lms/company",
     });
   }
 

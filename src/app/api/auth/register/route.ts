@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signUpSchema } from "@/lib/validation";
+import { notify } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -53,6 +54,11 @@ export async function POST(request: Request) {
       passwordHash: await bcrypt.hash(password, 10),
       studentStatus: "PENDING_APPROVAL",
     },
+  });
+
+  await notify("STUDENT", `${name} registered — ${college.name}`, {
+    message: "New student registration awaiting approval.",
+    href: "/lms/company/registrations",
   });
 
   return NextResponse.json({ ok: true });
