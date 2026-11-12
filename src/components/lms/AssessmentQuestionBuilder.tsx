@@ -151,10 +151,25 @@ export function AssessmentQuestionBuilder({
         {questionType === "CODING" ? (
           <div className="space-y-4">
             <div>
-              <Label>Starter Code (optional, per language)</Label>
+              <Label>Starter Code — this is your &quot;main method&quot; hook</Label>
               <p className="mt-1 text-xs text-muted-foreground">
-                Pre-filled in the student&apos;s editor when they pick that language. Leave blank for an empty editor.
+                This is what makes it feel like LeetCode/HackerRank instead of a blank editor. A student never has
+                to figure out how to read your test case input themselves — you write that part here (reading
+                stdin, calling a function, printing the result), and leave a clear spot for them to fill in just the
+                logic. Without this, a student has to write the whole program from scratch including input parsing,
+                and will likely fail every test case through no fault of their own — like{" "}
+                <code className="rounded bg-cream px-1 text-indigo">print(a + b)</code> with <code className="rounded bg-cream px-1 text-indigo">a</code>/
+                <code className="rounded bg-cream px-1 text-indigo">b</code> never defined. Example for Python, test
+                case input &quot;4 7&quot;:
               </p>
+              <pre className="mt-1.5 rounded-lg bg-indigo-dark p-2 font-mono text-[11px] text-white">
+{`a, b = map(int, input().split())
+
+# TODO: write your solution below
+result = 0
+
+print(result)`}
+              </pre>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 {[
                   { name: "starterPython", label: "Python" },

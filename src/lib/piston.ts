@@ -1,18 +1,18 @@
-// Runs student-submitted code on Piston (https://github.com/engineer-man/piston), a
-// free public code-execution API — never on this app's own server, since running
-// arbitrary student-submitted code locally would be a real security risk (the
-// student is the untrusted party; this server also runs the production app).
+// Runs student-submitted code on a hosted, Piston-compatible execution API — never
+// on this app's own server, since running arbitrary student-submitted code locally
+// would be a real security risk (the student is the untrusted party; this server
+// also runs the production app).
 //
-// Piston requires an exact runtime name + version per language, and the versions
-// it has installed can change over time, so rather than hardcoding a version that
-// could go stale, this fetches the current runtime list once per process and
-// picks the latest version for each language we support.
+// The original free public Piston instance (emkc.org) closed to anonymous use in
+// Feb 2026 — it's now whitelist-only. This now points at onlinecompiler.io, a
+// hosted Piston-compatible replacement with a free tier (100,000 runs/month, no
+// card required). It needs an API key — see CODE_EXEC_API_KEY below.
 
-const PISTON_API = "https://emkc.org/api/v2/piston";
+const EXEC_API = "https://api.onlinecompiler.io/api/v2/piston";
 
 export type SupportedLanguage = "python" | "java" | "c" | "cpp";
 
-const PISTON_LANGUAGE_NAME: Record<SupportedLanguage, string> = {
+const LANGUAGE_NAME: Record<SupportedLanguage, string> = {
   python: "python",
   java: "java",
   c: "c",
@@ -25,26 +25,6 @@ const FILE_NAME: Record<SupportedLanguage, string> = {
   c: "main.c",
   cpp: "main.cpp",
 };
-
-type PistonRuntime = { language: string; version: string; aliases: string[] };
-
-let cachedRuntimes: PistonRuntime[] | null = null;
-let cachedAt = 0;
-const RUNTIME_CACHE_MS = 60 * 60 * 1000;
-
-async function getRuntimeVersion(language: SupportedLanguage): Promise<string> {
-  const now = Date.now();
-  if (!cachedRuntimes || now - cachedAt > RUNTIME_CACHE_MS) {
-    const res = await fetch(`${PISTON_API}/runtimes`);
-    if (!res.ok) throw new Error("Couldn't reach the code execution service — try again in a moment.");
-    cachedRuntimes = (await res.json()) as PistonRuntime[];
-    cachedAt = now;
-  }
-  const name = PISTON_LANGUAGE_NAME[language];
-  const match = cachedRuntimes.find((r) => r.language === name || r.aliases.includes(name));
-  if (!match) throw new Error(`${language} isn't available on the code execution service right now.`);
-  return match.version;
-}
 
 export type RunResult = {
   stdout: string;
@@ -59,14 +39,19 @@ const EXECUTION_TIMEOUT_MS = 8000;
  * compare against an expected output — callers do that themselves (trimmed
  * comparison), since what counts as a "match" can vary by question. */
 export async function runCode(language: SupportedLanguage, code: string, stdin: string): Promise<RunResult> {
-  const version = await getRuntimeVersion(language);
+  const apiKey = process.env.CODE_EXEC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "Code execution isn't configured yet — set CODE_EXEC_API_KEY (see your onlinecompiler.io account) in the environment."
+    );
+  }
 
-  const res = await fetch(`${PISTON_API}/execute`, {
+  const res = await fetch(`${EXEC_API}/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: apiKey },
     body: JSON.stringify({
-      language: PISTON_LANGUAGE_NAME[language],
-      version,
+      language: LANGUAGE_NAME[language],
+      version: "*",
       files: [{ name: FILE_NAME[language], content: code }],
       stdin,
       run_timeout: EXECUTION_TIMEOUT_MS,
@@ -75,7 +60,18 @@ export async function runCode(language: SupportedLanguage, code: string, stdin: 
   });
 
   if (!res.ok) {
-    throw new Error("The code execution service rejected the request — try again in a moment.");
+    let detail = "";
+    try {
+      const body = (await res.json()) as { message?: string };
+      detail = body.message ?? "";
+    } catch {
+      // ignore — fall back to the generic message below
+    }
+    throw new Error(
+      detail
+        ? `The code execution service rejected the request: ${detail}`
+        : `The code execution service rejected the request (HTTP ${res.status}) — try again in a moment.`
+    );
   }
 
   const data = (await res.json()) as {
