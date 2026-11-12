@@ -147,13 +147,13 @@ export default async function AssessmentSubmissionsPage({
                     return (
                       <p
                         key={letter}
-                        className={
+                        className={`whitespace-pre-wrap ${
                           isCorrectOption
                             ? "font-medium text-green-700"
                             : isSelected
                               ? "font-medium text-red-700"
                               : ""
-                        }
+                        }`}
                       >
                         {letter}. {text} {isSelected && "(selected)"} {isCorrectOption && "(correct)"}
                       </p>

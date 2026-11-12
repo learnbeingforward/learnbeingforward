@@ -86,7 +86,7 @@ export function CodingQuestionPanel({ assignmentId, question }: { assignmentId: 
 
   return (
     <div className="rounded-xl border border-border bg-white p-5">
-      <p className="mb-1 text-sm font-medium text-indigo">
+      <p className="mb-1 whitespace-pre-wrap text-base font-medium leading-relaxed text-indigo">
         {question.questionText}{" "}
         <span className="text-xs font-normal text-muted-foreground">
           ({question.marks} mark{question.marks !== 1 ? "s" : ""})

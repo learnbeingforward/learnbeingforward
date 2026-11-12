@@ -680,7 +680,7 @@ export function TakeAssessmentClient({
           <CodingQuestionPanel key={q.id} assignmentId={assignmentId} question={q} />
         ) : (
           <div className="rounded-xl border border-border bg-white p-5">
-            <p className="mb-3 text-sm font-medium text-indigo">
+            <p className="mb-3 whitespace-pre-wrap text-base font-medium leading-relaxed text-indigo">
               Q{currentIndex + 1}. {q.questionText}{" "}
               <span className="text-xs font-normal text-muted-foreground">
                 ({q.marks} mark{q.marks !== 1 ? "s" : ""})
@@ -693,7 +693,7 @@ export function TakeAssessmentClient({
                   return (
                     <label
                       key={letter}
-                      className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm has-[:checked]:border-indigo has-[:checked]:bg-indigo/5"
+                      className="flex items-start gap-2 rounded-lg border border-border px-3 py-2.5 text-base has-[:checked]:border-indigo has-[:checked]:bg-indigo/5"
                     >
                       <input
                         type="radio"
@@ -701,9 +701,11 @@ export function TakeAssessmentClient({
                         value={letter}
                         checked={answers[q.id] === letter}
                         onChange={() => handleAnswerChange(q.id, letter)}
-                        className="accent-indigo"
+                        className="mt-1 shrink-0 accent-indigo"
                       />
-                      {letter}. {text}
+                      <span className="whitespace-pre-wrap">
+                        {letter}. {text}
+                      </span>
                     </label>
                   );
                 })}
@@ -714,6 +716,7 @@ export function TakeAssessmentClient({
                 value={answers[q.id] ?? ""}
                 onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                 placeholder="Write your answer here..."
+                className="text-base"
               />
             )}
           </div>
@@ -767,6 +770,10 @@ export function TakeAssessmentClient({
           }`}
         >
           <video ref={videoRef} muted playsInline className="size-full object-cover" />
+          <span className="pointer-events-none absolute left-1.5 top-1.5 flex items-center gap-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
+            REC
+          </span>
         </div>
       )}
 

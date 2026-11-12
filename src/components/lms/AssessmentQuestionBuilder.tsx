@@ -3,7 +3,6 @@
 import { useActionState, useState } from "react";
 import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RequiredMark } from "@/components/ui/required-mark";
@@ -253,7 +252,14 @@ export function AssessmentQuestionBuilder({
                   Option {letter}
                   <RequiredMark />
                 </Label>
-                <Input id={`option${letter}`} name={`option${letter}`} required className="mt-1.5" />
+                <Textarea
+                  id={`option${letter}`}
+                  name={`option${letter}`}
+                  required
+                  rows={2}
+                  className="mt-1.5"
+                  placeholder="Press Enter for a new line if the option needs more than one — not just a single short phrase."
+                />
               </div>
             ))}
             <div>

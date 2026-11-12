@@ -154,8 +154,9 @@ export default async function AccountDetailsPage({
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
         A single directory of every student, college, trainer, and admin account — so you don&apos;t need
         to open the database to check a contact detail. Passwords are stored as one-way hashes and can
-        never be read back; the eye icon sets a fresh password for that account and reveals it here
-        until you navigate away.
+        never be read back — &quot;Generate New Password&quot; sets a brand-new one and shows it once, which
+        also overwrites any password set elsewhere (Manage Accounts, a self-service reset, or an earlier
+        click here). Only use it when you actually need to hand the account a new password.
       </p>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">

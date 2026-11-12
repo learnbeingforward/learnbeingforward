@@ -99,13 +99,13 @@ export default async function StudentAssessmentsPage({
                     return (
                       <p
                         key={letter}
-                        className={
+                        className={`whitespace-pre-wrap ${
                           isCorrectOption
                             ? "font-medium text-green-700"
                             : isSelected
                               ? "font-medium text-red-700"
                               : ""
-                        }
+                        }`}
                       >
                         {letter}. {text} {isSelected && "(your answer)"} {isCorrectOption && "(correct)"}
                       </p>
