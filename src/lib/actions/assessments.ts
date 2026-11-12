@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getEmployeeKeys, type EmployeePageKey } from "@/lib/employee-access";
@@ -266,7 +267,7 @@ export async function publishAssessment(assessmentId: string) {
 
 // ---------- Admin: assign to students ----------
 
-export type AssignAssessmentState = { ok: boolean; error?: string; assignedCount?: number } | null;
+export type AssignAssessmentState = { ok: boolean; error?: string; assignedCount?: number; updatedCount?: number } | null;
 
 export async function assignAssessmentToStudents(
   assessmentId: string,
@@ -289,11 +290,26 @@ export async function assignAssessmentToStudents(
   const students = await prisma.user.findMany({ where: { id: { in: studentIds }, role: "STUDENT" } });
 
   let assignedCount = 0;
+  let updatedCount = 0;
   for (const student of students) {
     const existing = await prisma.assessmentAssignment.findUnique({
       where: { assessmentId_studentId: { assessmentId, studentId: student.id } },
     });
-    if (existing) continue;
+    if (existing) {
+      // Already assigned — if they haven't started yet, they'll see whatever
+      // questions exist now anyway (the take-exam page always reads the
+      // assessment's current questions, it was never a frozen snapshot), so the
+      // only thing actually stale here is maxMarks from whenever they were first
+      // assigned. Re-selecting them after editing the assessment just re-syncs
+      // that instead of silently doing nothing, which is what made it look like
+      // "resending" wasn't possible. Anyone already in progress or submitted is
+      // left alone — use Allow Retest on their submission for those.
+      if (existing.status === "ASSIGNED" && existing.maxMarks !== maxMarks) {
+        await prisma.assessmentAssignment.update({ where: { id: existing.id }, data: { maxMarks } });
+        updatedCount++;
+      }
+      continue;
+    }
 
     await prisma.assessmentAssignment.create({
       data: { assessmentId, studentId: student.id, maxMarks },
@@ -311,7 +327,7 @@ export async function assignAssessmentToStudents(
 
   revalidatePath("/lms/company/assessments");
   revalidatePath("/lms/student/assessments");
-  return { ok: true, assignedCount };
+  return { ok: true, assignedCount, updatedCount };
 }
 
 // ---------- Student: take the assessment ----------
@@ -800,6 +816,55 @@ export async function sendResultToStudent(assignmentId: string, formData: FormDa
   revalidatePath("/lms/company/assessments/submissions");
   revalidatePath("/lms/student/assessments");
   return { ok: true, newlyShared, alreadyShared };
+}
+
+/**
+ * Lets the admin give a student a clean retake of an assessment they already
+ * submitted — e.g. an accidental/premature submit the college asked to be
+ * redone. Wipes this attempt's answers, violations, snapshots, and marks, and
+ * puts the assignment back to ASSIGNED so it behaves exactly like a fresh send.
+ * Only ever admin-initiated; a student has no way to trigger this themselves.
+ */
+export async function allowAssessmentRetest(assignmentId: string) {
+  await requireSuperAdmin("assessments.submissions");
+
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment) return;
+
+  const snapshots = await prisma.assessmentSnapshot.findMany({ where: { assignmentId } });
+  for (const snap of snapshots) {
+    try {
+      await unlink(path.join(process.cwd(), "public", snap.imageUrl));
+    } catch {
+      // Already gone locally — fine, still clean up GitHub + the DB row.
+    }
+    await deleteUploadFromGitHub(snap.imageUrl);
+  }
+
+  await prisma.$transaction([
+    prisma.assessmentAnswer.deleteMany({ where: { assignmentId } }),
+    prisma.assessmentSnapshot.deleteMany({ where: { assignmentId } }),
+    prisma.assessmentAssignment.update({
+      where: { id: assignmentId },
+      data: {
+        status: "ASSIGNED",
+        violationCount: 0,
+        audioViolationCount: 0,
+        autoSubmitted: false,
+        startedAt: null,
+        submittedAt: null,
+        totalMarks: null,
+        needsGrading: false,
+        mcqPhaseSubmittedAt: null,
+        sentToCollegeAt: null,
+        sentToStudentAt: null,
+      },
+    }),
+  ]);
+
+  revalidatePath("/lms/company/assessments/submissions");
+  revalidatePath("/lms/student/assessments");
+  redirect("/lms/company/assessments/submissions");
 }
 
 // ---------- Admin: proctoring snapshots ----------

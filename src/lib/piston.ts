@@ -39,25 +39,35 @@ const EXECUTION_TIMEOUT_MS = 8000;
  * compare against an expected output — callers do that themselves (trimmed
  * comparison), since what counts as a "match" can vary by question. */
 export async function runCode(language: SupportedLanguage, code: string, stdin: string): Promise<RunResult> {
-  const apiKey = process.env.CODE_EXEC_API_KEY;
+  // Trim whitespace and strip any surrounding quotes — some hosting panels'
+  // env-var forms save the value exactly as typed, quotes included, which
+  // would otherwise silently break the Authorization header below.
+  const apiKey = process.env.CODE_EXEC_API_KEY?.trim().replace(/^["']|["']$/g, "");
   if (!apiKey) {
     throw new Error(
       "Code execution isn't configured yet — set CODE_EXEC_API_KEY (see your onlinecompiler.io account) in the environment."
     );
   }
 
-  const res = await fetch(`${EXEC_API}/execute`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: apiKey },
-    body: JSON.stringify({
-      language: LANGUAGE_NAME[language],
-      version: "*",
-      files: [{ name: FILE_NAME[language], content: code }],
-      stdin,
-      run_timeout: EXECUTION_TIMEOUT_MS,
-      compile_timeout: EXECUTION_TIMEOUT_MS,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${EXEC_API}/execute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: apiKey },
+      body: JSON.stringify({
+        language: LANGUAGE_NAME[language],
+        version: "*",
+        files: [{ name: FILE_NAME[language], content: code }],
+        stdin,
+        run_timeout: EXECUTION_TIMEOUT_MS,
+        compile_timeout: EXECUTION_TIMEOUT_MS,
+      }),
+    });
+  } catch (err) {
+    throw new Error(
+      `Couldn't reach the code execution service (network error: ${err instanceof Error ? err.message : "unknown"}). Try again in a moment.`
+    );
+  }
 
   if (!res.ok) {
     let detail = "";

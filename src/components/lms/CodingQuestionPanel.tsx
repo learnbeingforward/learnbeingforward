@@ -40,7 +40,15 @@ function parseStarterCode(raw: string | null): Record<string, string> {
   }
 }
 
-export function CodingQuestionPanel({ assignmentId, question }: { assignmentId: string; question: Question }) {
+export function CodingQuestionPanel({
+  assignmentId,
+  question,
+  onSubmitted,
+}: {
+  assignmentId: string;
+  question: Question;
+  onSubmitted?: () => void;
+}) {
   const starterMap = parseStarterCode(question.starterCode);
   const [language, setLanguage] = useState(question.savedLanguage ?? "python");
   const [code, setCode] = useState(question.savedCode ?? starterMap[question.savedLanguage ?? "python"] ?? "");
@@ -80,6 +88,7 @@ export function CodingQuestionPanel({ assignmentId, question }: { assignmentId: 
       if (result?.ok) {
         setPassed(result.testCasesPassed ?? null);
         setTotal(result.testCasesTotal ?? null);
+        onSubmitted?.();
       }
     });
   }

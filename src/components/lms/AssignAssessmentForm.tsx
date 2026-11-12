@@ -102,7 +102,11 @@ export function AssignAssessmentForm({
       {state?.error && <p className="mt-3 text-sm text-destructive">{state.error}</p>}
       {state?.ok && (
         <p className="mt-3 flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Sent to {state.assignedCount} student{state.assignedCount !== 1 ? "s" : ""}.
+          <CheckCircle2 className="size-4" /> Sent to {state.assignedCount} new student
+          {state.assignedCount !== 1 ? "s" : ""}.
+          {!!state.updatedCount && (
+            <> Updated the question set for {state.updatedCount} already-assigned student{state.updatedCount !== 1 ? "s" : ""} who hadn&apos;t started yet.</>
+          )}
         </p>
       )}
 

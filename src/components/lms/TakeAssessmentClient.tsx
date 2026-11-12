@@ -88,6 +88,10 @@ export function TakeAssessmentClient({
   const [mcqPhaseSubmitted, setMcqPhaseSubmitted] = useState(initialMcqPhaseSubmitted || mcqQuestions.length === 0);
   const [submittingMcqPhase, setSubmittingMcqPhase] = useState(false);
   const activeQuestions = hasCodingQuestions ? (mcqPhaseSubmitted ? codingQuestions : mcqQuestions) : questions;
+  const [codingAnswered, setCodingAnswered] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(codingQuestions.map((q) => [q.id, q.testCasesPassed !== null]))
+  );
+  const [reviewing, setReviewing] = useState(false);
   const [started, setStarted] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState(CALIBRATION_SECONDS);
@@ -318,10 +322,13 @@ export function TakeAssessmentClient({
         sumSquares += centered * centered;
       }
       const rms = Math.sqrt(sumSquares / data.length);
-      // Was baseline*3+10 — too high a bar, so only shouting (not normal talking)
-      // ever crossed it. Lowered so a student simply speaking during the exam
-      // reliably registers as "loud" for this check, not just raised voices.
-      const threshold = audioBaselineRef.current * 1.6 + 6;
+      // Threshold is ~60-65% above whatever the room's own ambient level turned out
+      // to be during calibration, not a fixed loudness — a quiet room flags a quiet
+      // voice, a noisier room needs a little more to stand out above it. The old
+      // flat "+6" offset dominated in genuinely quiet rooms (baseline near 0) and
+      // pushed the real threshold well past 65% above baseline; kept only a tiny
+      // floor so true silence doesn't trigger on sensor noise alone.
+      const threshold = audioBaselineRef.current * 1.625 + 2;
 
       const window = audioWindowRef.current;
       window.push(rms > threshold);
@@ -630,10 +637,71 @@ export function TakeAssessmentClient({
   const isLast = currentIndex === activeQuestions.length - 1;
   const inCodingPhase = hasCodingQuestions && mcqPhaseSubmitted;
 
+  function isAnswered(question: Question) {
+    if (question.questionType === "CODING") return !!codingAnswered[question.id];
+    const value = answers[question.id];
+    return !!value && value.trim() !== "";
+  }
+
+  if (reviewing) {
+    // Scoped to whatever the student can actually still change — once the MCQ
+    // phase is locked in, reviewing the coding phase shouldn't dangle the
+    // already-submitted MCQ list in front of them as if it's still editable.
+    const reviewQuestions = inCodingPhase ? codingQuestions : hasCodingQuestions ? mcqQuestions : questions;
+    const unanswered = reviewQuestions.filter((rq) => !isAnswered(rq));
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6">
+        <div className="w-full max-w-lg">
+          <h1 className="text-center text-xl font-bold text-white">Review Before You Submit</h1>
+          <p className="mt-2 text-center text-sm text-white/70">
+            {unanswered.length === 0
+              ? "You've answered every question here."
+              : `${unanswered.length} question${unanswered.length !== 1 ? "s are" : " is"} still unanswered — you can go back and finish them, or submit as-is.`}
+          </p>
+          <div className="mt-5 grid grid-cols-6 gap-2 sm:grid-cols-8">
+            {reviewQuestions.map((rq, i) => (
+              <button
+                key={rq.id}
+                type="button"
+                onClick={() => {
+                  setCurrentIndex(i);
+                  setReviewing(false);
+                }}
+                className={`flex aspect-square items-center justify-center rounded-lg text-sm font-semibold ${
+                  isAnswered(rq) ? "bg-green-500 text-white" : "bg-white/20 text-white"
+                }`}
+                title={isAnswered(rq) ? "Answered" : "Not answered — click to go to it"}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <Button variant="outline" onClick={() => setReviewing(false)} className="border-white/30 text-white hover:bg-white/10">
+              <ChevronLeft className="size-4" /> Back to Questions
+            </Button>
+            {!inCodingPhase && hasCodingQuestions ? (
+              <Button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="bg-gold text-indigo hover:bg-gold-light">
+                {submittingMcqPhase && <Loader2 className="size-4 animate-spin" />}
+                Confirm & Continue to Coding
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={submitting} className="bg-gold text-indigo hover:bg-gold-light">
+                {submitting && <Loader2 className="size-4 animate-spin" />}
+                Confirm & Submit Assessment
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <div className="sticky top-0 z-10 border-b border-border bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div>
             <h1 className="font-semibold text-indigo">{assessmentTitle}</h1>
             <p className="text-xs text-muted-foreground">
@@ -656,17 +724,45 @@ export function TakeAssessmentClient({
       </div>
 
       {warning && (
-        <div className="mx-auto mt-4 max-w-3xl rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mx-auto mt-4 max-w-5xl rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle className="mr-1.5 inline size-4" /> {warning}
         </div>
       )}
       {audioWarning && (
-        <div className="mx-auto mt-4 max-w-3xl rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <div className="mx-auto mt-4 max-w-5xl rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <AlertTriangle className="mr-1.5 inline size-4" /> {audioWarning}
         </div>
       )}
 
-      <div className="mx-auto max-w-3xl space-y-4 p-6">
+      <div className="mx-auto flex max-w-5xl gap-5 p-6">
+        <aside className="hidden w-28 shrink-0 sm:block">
+          <div className="sticky top-24">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {activeQuestions.filter(isAnswered).length}/{activeQuestions.length} answered
+            </p>
+            <div className="grid max-h-[70vh] grid-cols-3 gap-1.5 overflow-y-auto pr-1">
+              {activeQuestions.map((aq, i) => (
+                <button
+                  key={aq.id}
+                  type="button"
+                  onClick={() => setCurrentIndex(i)}
+                  className={`flex aspect-square items-center justify-center rounded-md text-xs font-semibold transition-colors ${
+                    i === currentIndex
+                      ? "border-2 border-indigo text-indigo"
+                      : isAnswered(aq)
+                        ? "bg-green-500 text-white"
+                        : "border border-border bg-white text-muted-foreground"
+                  }`}
+                  title={isAnswered(aq) ? "Answered" : "Not answered"}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex-1 space-y-4">
         {hasCodingQuestions && (
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo">
             {inCodingPhase ? "Phase 2 — Coding" : "Phase 1 — Multiple Choice & Written"}
@@ -677,7 +773,12 @@ export function TakeAssessmentClient({
         </p>
 
         {q.questionType === "CODING" ? (
-          <CodingQuestionPanel key={q.id} assignmentId={assignmentId} question={q} />
+          <CodingQuestionPanel
+            key={q.id}
+            assignmentId={assignmentId}
+            question={q}
+            onSubmitted={() => setCodingAnswered((prev) => ({ ...prev, [q.id]: true }))}
+          />
         ) : (
           <div className="rounded-xl border border-border bg-white p-5">
             <p className="mb-3 whitespace-pre-wrap text-base font-medium leading-relaxed text-indigo">
@@ -732,17 +833,9 @@ export function TakeAssessmentClient({
           </Button>
 
           {isLast ? (
-            !inCodingPhase && hasCodingQuestions ? (
-              <Button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="bg-indigo text-white hover:bg-indigo/90">
-                {submittingMcqPhase && <Loader2 className="size-4 animate-spin" />}
-                Submit & Continue to Coding <ChevronRight className="size-4" />
-              </Button>
-            ) : (
-              <Button onClick={handleSubmit} disabled={submitting} className="bg-indigo text-white hover:bg-indigo/90">
-                {submitting && <Loader2 className="size-4 animate-spin" />}
-                Submit Assessment
-              </Button>
-            )
+            <Button onClick={() => setReviewing(true)} className="bg-indigo text-white hover:bg-indigo/90">
+              Review & {!inCodingPhase && hasCodingQuestions ? "Continue" : "Submit"} <ChevronRight className="size-4" />
+            </Button>
           ) : (
             <Button
               onClick={() => setCurrentIndex((i) => Math.min(activeQuestions.length - 1, i + 1))}
@@ -757,6 +850,7 @@ export function TakeAssessmentClient({
             Once you continue, you can&apos;t come back to these questions — review your answers first.
           </p>
         )}
+      </div>
       </div>
 
       {proctoringEnabled && (

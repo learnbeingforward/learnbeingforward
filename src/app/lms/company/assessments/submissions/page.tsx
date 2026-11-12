@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GradeWrittenAnswerForm } from "@/components/lms/GradeWrittenAnswerForm";
 import { AssessmentSnapshotGallery } from "@/components/lms/AssessmentSnapshotGallery";
-import { sendResultToCollege, sendResultToStudent } from "@/lib/actions/assessments";
+import { sendResultToCollege, sendResultToStudent, allowAssessmentRetest } from "@/lib/actions/assessments";
 import { writtenAnswerBadge } from "@/lib/assessment-ui";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -97,7 +97,16 @@ export default async function AssessmentSubmissionsPage({
                 {assignment.sentToStudentAt ? "Re-send to Student" : "Send to Student"}
               </Button>
             </form>
+            <form action={allowAssessmentRetest.bind(null, assignmentId)}>
+              <Button type="submit" size="sm" variant="outline" className="border-amber-400 text-amber-700">
+                Allow Retest
+              </Button>
+            </form>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            &quot;Allow Retest&quot; wipes this attempt (answers, violations, proctoring photos, marks) and puts it
+            back to not-yet-started — use it if a student needs to redo the assessment from scratch.
+          </p>
         </div>
 
         {assignment.assessment.proctoringEnabled && (
