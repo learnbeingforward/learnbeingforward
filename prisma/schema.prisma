@@ -604,6 +604,7 @@ enum AssessmentType {
 enum AssessmentQuestionType {
   MCQ
   WRITTEN
+  CODING
 }
 
 enum AssessmentAttemptStatus {
@@ -646,9 +647,30 @@ model AssessmentQuestion {
   optionD       String?  @db.Text
   correctOption String?
 
+  // CODING-only: a JSON map of language -> starter code, e.g. {"python": "...",
+  // "java": "...", "c": "...", "cpp": "..."}. Null/missing entries just start blank.
+  starterCode   String?  @db.Text
+  testCases     CodingTestCase[]
+
   answers       AssessmentAnswer[]
 
   @@index([assessmentId])
+}
+
+/** One input/expected-output pair for a CODING question. The first few (isHidden =
+ * false) are shown to the student as worked examples, like LeetCode's visible
+ * cases; the rest only run in the background on Submit and never reveal their
+ * input or expected output to the student — only the pass/fail count. */
+model CodingTestCase {
+  id             String             @id @default(cuid())
+  questionId     String
+  question       AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  input          String             @db.Text
+  expectedOutput String             @db.Text
+  isHidden       Boolean            @default(false)
+  order          Int                @default(0)
+
+  @@index([questionId])
 }
 
 model AssessmentAssignment {
@@ -666,6 +688,11 @@ model AssessmentAssignment {
   totalMarks          Int?
   maxMarks            Int?
   needsGrading        Boolean                  @default(false)
+  // Only meaningful for assessments that include CODING questions: once set, the
+  // student has locked in their MCQ/written answers and moved on to the coding
+  // phase, and can't go back. Assessments with no coding questions never touch
+  // this — they stay single-phase, same as before.
+  mcqPhaseSubmittedAt DateTime?
   sentToCollegeAt     DateTime?
   sentToStudentAt     DateTime?
   assignedAt          DateTime                 @default(now())
@@ -731,6 +758,15 @@ model AssessmentAnswer {
   writtenAnswer  String?              @db.Text
   isCorrect      Boolean?
   marksAwarded   Int?
+
+  // CODING-only: the student's submitted code, which language it's in, and how
+  // many of the question's test cases it passed (out of how many) — the pair
+  // powers the proportional marksAwarded and lets the admin review without
+  // re-running anything.
+  codeSubmission  String? @db.Text
+  codeLanguage    String?
+  testCasesPassed Int?
+  testCasesTotal  Int?
 
   @@unique([assignmentId, questionId])
   @@index([questionId])

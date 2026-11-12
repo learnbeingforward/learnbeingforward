@@ -12,7 +12,9 @@ import {
   recordAssessmentViolation,
   recordAssessmentTimeout,
   recordAudioViolation,
+  submitMcqPhase,
 } from "@/lib/actions/assessments";
+import { CodingQuestionPanel } from "@/components/lms/CodingQuestionPanel";
 
 const VIOLATION_LIMIT = 3;
 const AUDIO_VIOLATION_LIMIT = 3;
@@ -30,7 +32,7 @@ const AUDIO_WINDOW_FRACTION = 0.4;
 
 type Question = {
   id: string;
-  questionType: "MCQ" | "WRITTEN";
+  questionType: "MCQ" | "WRITTEN" | "CODING";
   questionText: string;
   marks: number;
   optionA: string | null;
@@ -38,6 +40,12 @@ type Question = {
   optionC: string | null;
   optionD: string | null;
   savedAnswer: string | null;
+  starterCode: string | null;
+  visibleTestCases: { id: string; input: string; expectedOutput: string }[];
+  savedCode: string | null;
+  savedLanguage: string | null;
+  testCasesPassed: number | null;
+  testCasesTotal: number | null;
 };
 
 function formatClock(totalSeconds: number) {
@@ -56,6 +64,8 @@ export function TakeAssessmentClient({
   availableUntil,
   proctoringEnabled,
   initialAudioViolationCount,
+  hasCodingQuestions,
+  initialMcqPhaseSubmitted,
 }: {
   assignmentId: string;
   assessmentTitle: string;
@@ -66,8 +76,18 @@ export function TakeAssessmentClient({
   availableUntil: string | null;
   proctoringEnabled: boolean;
   initialAudioViolationCount: number;
+  hasCodingQuestions: boolean;
+  initialMcqPhaseSubmitted: boolean;
 }) {
   const router = useRouter();
+  // Mixed assessments run in two one-way phases: every MCQ/written question first,
+  // then — once explicitly submitted — the coding questions. An assessment with no
+  // coding questions never touches this at all and behaves exactly as before.
+  const mcqQuestions = questions.filter((q) => q.questionType !== "CODING");
+  const codingQuestions = questions.filter((q) => q.questionType === "CODING");
+  const [mcqPhaseSubmitted, setMcqPhaseSubmitted] = useState(initialMcqPhaseSubmitted || mcqQuestions.length === 0);
+  const [submittingMcqPhase, setSubmittingMcqPhase] = useState(false);
+  const activeQuestions = hasCodingQuestions ? (mcqPhaseSubmitted ? codingQuestions : mcqQuestions) : questions;
   const [started, setStarted] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState(CALIBRATION_SECONDS);
@@ -500,6 +520,18 @@ export function TakeAssessmentClient({
     router.push("/lms/student/assessments");
   }
 
+  async function handleSubmitMcqPhase() {
+    setSubmittingMcqPhase(true);
+    for (const [questionId, timer] of Object.entries(saveTimers.current)) {
+      clearTimeout(timer);
+      await saveAssessmentAnswer(assignmentId, questionId, answers[questionId] ?? "");
+    }
+    await submitMcqPhase(assignmentId);
+    setMcqPhaseSubmitted(true);
+    setCurrentIndex(0);
+    setSubmittingMcqPhase(false);
+  }
+
   if (autoSubmitted) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6 text-center text-white">
@@ -594,8 +626,9 @@ export function TakeAssessmentClient({
     );
   }
 
-  const q = questions[currentIndex];
-  const isLast = currentIndex === questions.length - 1;
+  const q = activeQuestions[currentIndex];
+  const isLast = currentIndex === activeQuestions.length - 1;
+  const inCodingPhase = hasCodingQuestions && mcqPhaseSubmitted;
 
   return (
     <div className="min-h-screen bg-cream">
@@ -634,48 +667,57 @@ export function TakeAssessmentClient({
       )}
 
       <div className="mx-auto max-w-3xl space-y-4 p-6">
+        {hasCodingQuestions && (
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo">
+            {inCodingPhase ? "Phase 2 — Coding" : "Phase 1 — Multiple Choice & Written"}
+          </p>
+        )}
         <p className="text-xs font-medium text-muted-foreground">
-          Question {currentIndex + 1} of {questions.length}
+          Question {currentIndex + 1} of {activeQuestions.length}
         </p>
 
-        <div className="rounded-xl border border-border bg-white p-5">
-          <p className="mb-3 text-sm font-medium text-indigo">
-            Q{currentIndex + 1}. {q.questionText}{" "}
-            <span className="text-xs font-normal text-muted-foreground">
-              ({q.marks} mark{q.marks !== 1 ? "s" : ""})
-            </span>
-          </p>
-          {q.questionType === "MCQ" ? (
-            <div className="space-y-2">
-              {(["A", "B", "C", "D"] as const).map((letter) => {
-                const text = q[`option${letter}` as "optionA"];
-                return (
-                  <label
-                    key={letter}
-                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm has-[:checked]:border-indigo has-[:checked]:bg-indigo/5"
-                  >
-                    <input
-                      type="radio"
-                      name={`q-${q.id}`}
-                      value={letter}
-                      checked={answers[q.id] === letter}
-                      onChange={() => handleAnswerChange(q.id, letter)}
-                      className="accent-indigo"
-                    />
-                    {letter}. {text}
-                  </label>
-                );
-              })}
-            </div>
-          ) : (
-            <Textarea
-              rows={5}
-              value={answers[q.id] ?? ""}
-              onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-              placeholder="Write your answer here..."
-            />
-          )}
-        </div>
+        {q.questionType === "CODING" ? (
+          <CodingQuestionPanel key={q.id} assignmentId={assignmentId} question={q} />
+        ) : (
+          <div className="rounded-xl border border-border bg-white p-5">
+            <p className="mb-3 text-sm font-medium text-indigo">
+              Q{currentIndex + 1}. {q.questionText}{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({q.marks} mark{q.marks !== 1 ? "s" : ""})
+              </span>
+            </p>
+            {q.questionType === "MCQ" ? (
+              <div className="space-y-2">
+                {(["A", "B", "C", "D"] as const).map((letter) => {
+                  const text = q[`option${letter}` as "optionA"];
+                  return (
+                    <label
+                      key={letter}
+                      className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm has-[:checked]:border-indigo has-[:checked]:bg-indigo/5"
+                    >
+                      <input
+                        type="radio"
+                        name={`q-${q.id}`}
+                        value={letter}
+                        checked={answers[q.id] === letter}
+                        onChange={() => handleAnswerChange(q.id, letter)}
+                        className="accent-indigo"
+                      />
+                      {letter}. {text}
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <Textarea
+                rows={5}
+                value={answers[q.id] ?? ""}
+                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                placeholder="Write your answer here..."
+              />
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-3">
           <Button
@@ -687,19 +729,31 @@ export function TakeAssessmentClient({
           </Button>
 
           {isLast ? (
-            <Button onClick={handleSubmit} disabled={submitting} className="bg-indigo text-white hover:bg-indigo/90">
-              {submitting && <Loader2 className="size-4 animate-spin" />}
-              Submit Assessment
-            </Button>
+            !inCodingPhase && hasCodingQuestions ? (
+              <Button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="bg-indigo text-white hover:bg-indigo/90">
+                {submittingMcqPhase && <Loader2 className="size-4 animate-spin" />}
+                Submit & Continue to Coding <ChevronRight className="size-4" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={submitting} className="bg-indigo text-white hover:bg-indigo/90">
+                {submitting && <Loader2 className="size-4 animate-spin" />}
+                Submit Assessment
+              </Button>
+            )
           ) : (
             <Button
-              onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+              onClick={() => setCurrentIndex((i) => Math.min(activeQuestions.length - 1, i + 1))}
               className="bg-indigo text-white hover:bg-indigo/90"
             >
               Next <ChevronRight className="size-4" />
             </Button>
           )}
         </div>
+        {!inCodingPhase && hasCodingQuestions && isLast && (
+          <p className="text-center text-xs text-muted-foreground">
+            Once you continue, you can&apos;t come back to these questions — review your answers first.
+          </p>
+        )}
       </div>
 
       {proctoringEnabled && (

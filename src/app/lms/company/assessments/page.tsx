@@ -31,7 +31,10 @@ export default async function CompanyAssessmentsPage({
   if (assessmentId) {
     const assessment = await prisma.assessment.findUnique({
       where: { id: assessmentId },
-      include: { questions: { orderBy: { order: "asc" } }, assignments: true },
+      include: {
+        questions: { orderBy: { order: "asc" }, include: { _count: { select: { testCases: true } } } },
+        assignments: true,
+      },
     });
 
     if (!assessment) {
@@ -93,7 +96,10 @@ export default async function CompanyAssessmentsPage({
             <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Published</Badge>
           )}
         </div>
-        <AssessmentQuestionBuilder assessmentId={assessmentId} questions={assessment.questions} />
+        <AssessmentQuestionBuilder
+          assessmentId={assessmentId}
+          questions={assessment.questions.map((q) => ({ ...q, testCaseCount: q._count.testCases }))}
+        />
       </DashboardShell>
     );
   }

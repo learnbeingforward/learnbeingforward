@@ -148,10 +148,13 @@ export async function addAssessmentQuestion(
   const questionType = String(formData.get("questionType") ?? "");
   const questionText = String(formData.get("questionText") ?? "").trim();
   const marksInput = String(formData.get("marks") ?? "1");
-  const marks = Math.min(10, Math.max(1, Number.parseInt(marksInput, 10) || 1));
+  // Coding questions are typically weighted heavier than a single MCQ/written
+  // question, so they get a higher ceiling than the rest.
+  const marksCap = questionType === "CODING" ? 50 : 10;
+  const marks = Math.min(marksCap, Math.max(1, Number.parseInt(marksInput, 10) || 1));
 
   if (!questionText) return { ok: false, error: "Enter the question text." };
-  if (!["MCQ", "WRITTEN"].includes(questionType)) {
+  if (!["MCQ", "WRITTEN", "CODING"].includes(questionType)) {
     return { ok: false, error: "Choose a question type." };
   }
 
@@ -186,6 +189,51 @@ export async function addAssessmentQuestion(
         optionC,
         optionD,
         correctOption,
+      },
+    });
+  } else if (questionType === "CODING") {
+    const inputs = formData.getAll("testCaseInput").map(String);
+    const outputs = formData.getAll("testCaseOutput").map(String);
+    const hiddenFlags = formData.getAll("testCaseHidden").map(String);
+    const starterPython = String(formData.get("starterPython") ?? "");
+    const starterJava = String(formData.get("starterJava") ?? "");
+    const starterC = String(formData.get("starterC") ?? "");
+    const starterCpp = String(formData.get("starterCpp") ?? "");
+
+    const testCases = inputs
+      .map((input, i) => ({ input, expectedOutput: outputs[i] ?? "", isHidden: hiddenFlags[i] === "true" }))
+      .filter((tc) => tc.expectedOutput.trim() !== "" || tc.input.trim() !== "");
+
+    if (testCases.length === 0) {
+      return { ok: false, error: "Add at least one test case." };
+    }
+    if (!testCases.some((tc) => !tc.isHidden)) {
+      return { ok: false, error: "At least one test case must be visible to the student (not hidden)." };
+    }
+
+    const starterCode = JSON.stringify({
+      python: starterPython,
+      java: starterJava,
+      c: starterC,
+      cpp: starterCpp,
+    });
+
+    await prisma.assessmentQuestion.create({
+      data: {
+        assessmentId,
+        order: (maxOrder._max.order ?? 0) + 1,
+        questionType: "CODING",
+        questionText,
+        marks,
+        starterCode,
+        testCases: {
+          create: testCases.map((tc, i) => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+            isHidden: tc.isHidden,
+            order: i,
+          })),
+        },
       },
     });
   } else {
@@ -341,6 +389,176 @@ export async function saveAssessmentAnswer(
       update: { writtenAnswer: value },
     });
   }
+}
+
+// ---------- Student: coding questions ----------
+
+export type RunCodeState = {
+  ok: boolean;
+  error?: string;
+  results?: { input: string; expectedOutput: string; actualOutput: string; passed: boolean }[];
+} | null;
+
+/** The "Run" button — only ever touches the VISIBLE test cases, shows the student
+ * their actual output, and never persists anything. Hidden test cases are never
+ * fetched here, so there's no way for a student to see them by inspecting network
+ * traffic from Run. */
+export async function runStudentCode(
+  assignmentId: string,
+  questionId: string,
+  language: string,
+  code: string
+): Promise<RunCodeState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    return { ok: false, error: "Not authorized." };
+  }
+  if (!["python", "java", "c", "cpp"].includes(language)) {
+    return { ok: false, error: "Unsupported language." };
+  }
+
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment || assignment.studentId !== session.user.id) {
+    return { ok: false, error: "Not your assessment." };
+  }
+
+  const question = await prisma.assessmentQuestion.findUnique({
+    where: { id: questionId },
+    include: { testCases: { where: { isHidden: false }, orderBy: { order: "asc" } } },
+  });
+  if (!question || question.questionType !== "CODING") {
+    return { ok: false, error: "Question not found." };
+  }
+
+  const { runCode, outputsMatch } = await import("@/lib/piston");
+  try {
+    const results = await Promise.all(
+      question.testCases.map(async (tc) => {
+        const result = await runCode(language as "python" | "java" | "c" | "cpp", code, tc.input);
+        const actualOutput = result.compileError ? `Compile error:\n${result.compileError}` : result.stdout || result.stderr;
+        return {
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+          actualOutput,
+          passed: !result.compileError && outputsMatch(result.stdout, tc.expectedOutput),
+        };
+      })
+    );
+    return { ok: true, results };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Couldn't run the code." };
+  }
+}
+
+export type SubmitCodeState = {
+  ok: boolean;
+  error?: string;
+  testCasesPassed?: number;
+  testCasesTotal?: number;
+  marksAwarded?: number;
+} | null;
+
+/** The "Submit Code" button for one coding question — runs against EVERY test case
+ * (visible and hidden), scores proportionally to how many passed, and persists the
+ * answer. Hidden test cases' inputs/outputs are never sent back to the client,
+ * only the pass/fail counts. */
+export async function submitCodingAnswer(
+  assignmentId: string,
+  questionId: string,
+  formData: FormData
+): Promise<SubmitCodeState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const language = String(formData.get("language") ?? "");
+  const code = String(formData.get("code") ?? "");
+  if (!["python", "java", "c", "cpp"].includes(language)) {
+    return { ok: false, error: "Unsupported language." };
+  }
+  if (!code.trim()) return { ok: false, error: "Write some code before submitting." };
+
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment || assignment.studentId !== session.user.id) {
+    return { ok: false, error: "Not your assessment." };
+  }
+  if (assignment.status === "SUBMITTED" || assignment.status === "AUTO_SUBMITTED") {
+    return { ok: false, error: "This assessment has already been submitted." };
+  }
+
+  const question = await prisma.assessmentQuestion.findUnique({
+    where: { id: questionId },
+    include: { testCases: { orderBy: { order: "asc" } } },
+  });
+  if (!question || question.questionType !== "CODING") {
+    return { ok: false, error: "Question not found." };
+  }
+  if (question.testCases.length === 0) {
+    return { ok: false, error: "This question has no test cases configured." };
+  }
+
+  const { runCode, outputsMatch } = await import("@/lib/piston");
+  let passed = 0;
+  try {
+    for (const tc of question.testCases) {
+      const result = await runCode(language as "python" | "java" | "c" | "cpp", code, tc.input);
+      if (!result.compileError && outputsMatch(result.stdout, tc.expectedOutput)) passed += 1;
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Couldn't run the code." };
+  }
+
+  const total = question.testCases.length;
+  const marksAwarded = Math.round((passed / total) * question.marks);
+
+  await prisma.assessmentAnswer.upsert({
+    where: { assignmentId_questionId: { assignmentId, questionId } },
+    create: {
+      assignmentId,
+      questionId,
+      codeSubmission: code,
+      codeLanguage: language,
+      testCasesPassed: passed,
+      testCasesTotal: total,
+      marksAwarded,
+      isCorrect: passed === total,
+    },
+    update: {
+      codeSubmission: code,
+      codeLanguage: language,
+      testCasesPassed: passed,
+      testCasesTotal: total,
+      marksAwarded,
+      isCorrect: passed === total,
+    },
+  });
+
+  return { ok: true, testCasesPassed: passed, testCasesTotal: total, marksAwarded };
+}
+
+/**
+ * Locks in the MCQ/written phase of a mixed assessment and moves the student into
+ * the coding phase — one-way. Only meaningful for assessments that actually have a
+ * CODING question; for anything else this is never called from the UI at all.
+ */
+export async function submitMcqPhase(assignmentId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    throw new Error("Only students can do this.");
+  }
+
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment || assignment.studentId !== session.user.id) {
+    throw new Error("Not your assessment.");
+  }
+  if (assignment.mcqPhaseSubmittedAt) return;
+
+  await prisma.assessmentAssignment.update({
+    where: { id: assignmentId },
+    data: { mcqPhaseSubmittedAt: new Date() },
+  });
+  revalidatePath("/lms/student/assessments");
 }
 
 async function finalizeSubmission(assignmentId: string, auto: boolean) {

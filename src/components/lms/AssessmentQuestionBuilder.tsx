@@ -19,7 +19,7 @@ import { addAssessmentQuestion, deleteAssessmentQuestion, type AddQuestionState 
 export type BuilderQuestion = {
   id: string;
   order: number;
-  questionType: "MCQ" | "WRITTEN";
+  questionType: "MCQ" | "WRITTEN" | "CODING";
   questionText: string;
   marks: number;
   optionA: string | null;
@@ -27,7 +27,12 @@ export type BuilderQuestion = {
   optionC: string | null;
   optionD: string | null;
   correctOption: string | null;
+  testCaseCount?: number;
 };
+
+const CODING_MARK_OPTIONS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50];
+
+type TestCaseRow = { key: number; hidden: boolean };
 
 export function AssessmentQuestionBuilder({
   assessmentId,
@@ -36,8 +41,15 @@ export function AssessmentQuestionBuilder({
   assessmentId: string;
   questions: BuilderQuestion[];
 }) {
-  const [questionType, setQuestionType] = useState<"MCQ" | "WRITTEN">("MCQ");
+  const [questionType, setQuestionType] = useState<"MCQ" | "WRITTEN" | "CODING">("MCQ");
   const [formKey, setFormKey] = useState(0);
+  const [testCaseRows, setTestCaseRows] = useState<TestCaseRow[]>([
+    { key: 0, hidden: false },
+    { key: 1, hidden: false },
+    { key: 2, hidden: false },
+    { key: 3, hidden: true },
+  ]);
+  const nextTestCaseKey = Math.max(0, ...testCaseRows.map((r) => r.key)) + 1;
   const [state, formAction, isPending] = useActionState<AddQuestionState, FormData>(
     addAssessmentQuestion.bind(null, assessmentId),
     null
@@ -45,7 +57,15 @@ export function AssessmentQuestionBuilder({
   const [handledState, setHandledState] = useState(state);
   if (state !== handledState) {
     setHandledState(state);
-    if (state?.ok) setFormKey((k) => k + 1);
+    if (state?.ok) {
+      setFormKey((k) => k + 1);
+      setTestCaseRows([
+        { key: 0, hidden: false },
+        { key: 1, hidden: false },
+        { key: 2, hidden: false },
+        { key: 3, hidden: true },
+      ]);
+    }
   }
 
   return (
@@ -65,8 +85,9 @@ export function AssessmentQuestionBuilder({
                     <span className="font-semibold">Q{i + 1}.</span> {q.questionText}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {q.questionType === "MCQ" ? "Multiple Choice" : "Written"} &middot; {q.marks} mark
-                    {q.marks !== 1 ? "s" : ""}
+                    {q.questionType === "MCQ" ? "Multiple Choice" : q.questionType === "CODING" ? "Coding" : "Written"}
+                    {q.questionType === "CODING" && q.testCaseCount ? ` · ${q.testCaseCount} test cases` : ""} &middot;{" "}
+                    {q.marks} mark{q.marks !== 1 ? "s" : ""}
                   </p>
                 </div>
                 <form action={deleteAssessmentQuestion.bind(null, q.id)}>
@@ -115,11 +136,116 @@ export function AssessmentQuestionBuilder({
             >
               Written Answer
             </button>
+            <button
+              type="button"
+              onClick={() => setQuestionType("CODING")}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                questionType === "CODING" ? "border-indigo bg-indigo text-white" : "border-border text-muted-foreground hover:text-indigo"
+              }`}
+            >
+              Coding
+            </button>
           </div>
           <input type="hidden" name="questionType" value={questionType} />
         </div>
 
-        {questionType === "MCQ" ? (
+        {questionType === "CODING" ? (
+          <div className="space-y-4">
+            <div>
+              <Label>Starter Code (optional, per language)</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pre-filled in the student&apos;s editor when they pick that language. Leave blank for an empty editor.
+              </p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                {[
+                  { name: "starterPython", label: "Python" },
+                  { name: "starterJava", label: "Java" },
+                  { name: "starterC", label: "C" },
+                  { name: "starterCpp", label: "C++" },
+                ].map((lang) => (
+                  <div key={lang.name}>
+                    <Label htmlFor={lang.name} className="text-xs">
+                      {lang.label}
+                    </Label>
+                    <textarea
+                      id={lang.name}
+                      name={lang.name}
+                      rows={4}
+                      spellCheck={false}
+                      className="mt-1 w-full rounded-lg border border-border bg-indigo-dark p-2 font-mono text-xs text-white outline-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <Label>
+                  Test Cases
+                  <RequiredMark />
+                </Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-border text-indigo"
+                  onClick={() => setTestCaseRows((prev) => [...prev, { key: nextTestCaseKey, hidden: true }])}
+                >
+                  Add Test Case
+                </Button>
+              </div>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Visible test cases are shown to the student as examples. Hidden ones only run in the background when
+                they submit — at least one visible test case is required.
+              </p>
+              <div className="space-y-3">
+                {testCaseRows.map((row, i) => (
+                  <div key={row.key} className="rounded-lg border border-border p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-indigo">Test Case {i + 1}</p>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-1.5 text-xs text-indigo">
+                          <input
+                            type="checkbox"
+                            checked={row.hidden}
+                            onChange={() =>
+                              setTestCaseRows((prev) =>
+                                prev.map((r) => (r.key === row.key ? { ...r, hidden: !r.hidden } : r))
+                              )
+                            }
+                            className="accent-indigo"
+                          />
+                          Hidden
+                        </label>
+                        <input type="hidden" name="testCaseHidden" value={String(row.hidden)} />
+                        {testCaseRows.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setTestCaseRows((prev) => prev.filter((r) => r.key !== row.key))}
+                            className="text-muted-foreground hover:text-red-600"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-xs">Input</Label>
+                        <Textarea name="testCaseInput" rows={2} className="mt-1 font-mono text-xs" />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Expected Output</Label>
+                        <Textarea name="testCaseOutput" rows={2} className="mt-1 font-mono text-xs" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : questionType === "MCQ" ? (
           <div className="space-y-3">
             {(["A", "B", "C", "D"] as const).map((letter) => (
               <div key={letter}>
@@ -168,7 +294,7 @@ export function AssessmentQuestionBuilder({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              {(questionType === "CODING" ? CODING_MARK_OPTIONS : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).map((n) => (
                 <SelectItem key={n} value={String(n)}>
                   {n} mark{n !== 1 ? "s" : ""}
                 </SelectItem>

@@ -15,7 +15,14 @@ export default async function TakeAssessmentPage({
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
     include: {
-      assessment: { include: { questions: { orderBy: { order: "asc" } } } },
+      assessment: {
+        include: {
+          questions: {
+            orderBy: { order: "asc" },
+            include: { testCases: { where: { isHidden: false }, orderBy: { order: "asc" } } },
+          },
+        },
+      },
       answers: true,
     },
   });
@@ -38,20 +45,29 @@ export default async function TakeAssessmentPage({
 
   const answersByQuestion = new Map(assignment.answers.map((a) => [a.questionId, a]));
 
-  const questions = assignment.assessment.questions.map((q) => ({
-    id: q.id,
-    questionType: q.questionType,
-    questionText: q.questionText,
-    marks: q.marks,
-    optionA: q.optionA,
-    optionB: q.optionB,
-    optionC: q.optionC,
-    optionD: q.optionD,
-    savedAnswer:
-      q.questionType === "MCQ"
-        ? (answersByQuestion.get(q.id)?.selectedOption ?? null)
-        : (answersByQuestion.get(q.id)?.writtenAnswer ?? null),
-  }));
+  const questions = assignment.assessment.questions.map((q) => {
+    const existing = answersByQuestion.get(q.id);
+    return {
+      id: q.id,
+      questionType: q.questionType,
+      questionText: q.questionText,
+      marks: q.marks,
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
+      optionD: q.optionD,
+      savedAnswer:
+        q.questionType === "MCQ" ? (existing?.selectedOption ?? null) : (existing?.writtenAnswer ?? null),
+      starterCode: q.starterCode,
+      visibleTestCases: q.testCases.map((tc) => ({ id: tc.id, input: tc.input, expectedOutput: tc.expectedOutput })),
+      savedCode: existing?.codeSubmission ?? null,
+      savedLanguage: existing?.codeLanguage ?? null,
+      testCasesPassed: existing?.testCasesPassed ?? null,
+      testCasesTotal: existing?.testCasesTotal ?? null,
+    };
+  });
+
+  const hasCodingQuestions = questions.some((q) => q.questionType === "CODING");
 
   return (
     <TakeAssessmentClient
@@ -64,6 +80,8 @@ export default async function TakeAssessmentPage({
       availableUntil={assignment.assessment.availableUntil?.toISOString() ?? null}
       proctoringEnabled={assignment.assessment.proctoringEnabled}
       initialAudioViolationCount={assignment.audioViolationCount}
+      hasCodingQuestions={hasCodingQuestions}
+      initialMcqPhaseSubmitted={!!assignment.mcqPhaseSubmittedAt}
     />
   );
 }
