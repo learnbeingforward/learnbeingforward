@@ -31,9 +31,13 @@ export default async function TakeAssessmentPage({
     notFound();
   }
 
-  if (assignment.status === "SUBMITTED" || assignment.status === "AUTO_SUBMITTED") {
-    redirect("/lms/student/assessments");
-  }
+  // Submitting the assessment calls a server action from this same page, which
+  // flips the status to SUBMITTED/AUTO_SUBMITTED and — since Server Actions
+  // re-render the current route with fresh data — would otherwise redirect away
+  // from here before the student ever sees their post-submission summary.
+  // TakeAssessmentClient shows that summary itself instead, both right after
+  // submitting and on any later re-visit of this URL.
+  const alreadySubmitted = assignment.status === "SUBMITTED" || assignment.status === "AUTO_SUBMITTED";
 
   const now = new Date();
   const { availableFrom, availableUntil } = assignment.assessment;
@@ -82,6 +86,8 @@ export default async function TakeAssessmentPage({
       initialAudioViolationCount={assignment.audioViolationCount}
       hasCodingQuestions={hasCodingQuestions}
       initialMcqPhaseSubmitted={!!assignment.mcqPhaseSubmittedAt}
+      alreadySubmitted={alreadySubmitted}
+      wasAutoSubmitted={assignment.autoSubmitted}
     />
   );
 }

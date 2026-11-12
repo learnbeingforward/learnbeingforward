@@ -47,7 +47,7 @@ export function CodingQuestionPanel({
 }: {
   assignmentId: string;
   question: Question;
-  onSubmitted?: () => void;
+  onSubmitted?: (result: { code: string; language: string; passed: number; total: number }) => void;
 }) {
   const starterMap = parseStarterCode(question.starterCode);
   const [language, setLanguage] = useState(question.savedLanguage ?? "python");
@@ -88,7 +88,7 @@ export function CodingQuestionPanel({
       if (result?.ok) {
         setPassed(result.testCasesPassed ?? null);
         setTotal(result.testCasesTotal ?? null);
-        onSubmitted?.();
+        onSubmitted?.({ code, language, passed: result.testCasesPassed ?? 0, total: result.testCasesTotal ?? 0 });
       }
     });
   }

@@ -78,6 +78,8 @@ export function TakeAssessmentClient({
   initialAudioViolationCount,
   hasCodingQuestions,
   initialMcqPhaseSubmitted,
+  alreadySubmitted,
+  wasAutoSubmitted,
 }: {
   assignmentId: string;
   assessmentTitle: string;
@@ -90,6 +92,8 @@ export function TakeAssessmentClient({
   initialAudioViolationCount: number;
   hasCodingQuestions: boolean;
   initialMcqPhaseSubmitted: boolean;
+  alreadySubmitted: boolean;
+  wasAutoSubmitted: boolean;
 }) {
   const router = useRouter();
   // Mixed assessments run in two one-way phases: every MCQ/written question first,
@@ -133,8 +137,33 @@ export function TakeAssessmentClient({
   const [audioViolationCount, setAudioViolationCount] = useState(initialAudioViolationCount);
   const [warning, setWarning] = useState<string | null>(null);
   const [audioWarning, setAudioWarning] = useState<string | null>(null);
-  const [autoSubmitted, setAutoSubmitted] = useState(false);
-  const [timedOutMessage, setTimedOutMessage] = useState(false);
+  const [autoSubmitted, setAutoSubmitted] = useState(wasAutoSubmitted);
+  const [autoSubmitReason, setAutoSubmitReason] = useState<"time" | "violation" | "audio" | null>(() => {
+    if (!wasAutoSubmitted) return null;
+    // Revisiting an already-auto-submitted attempt (no live event to know the exact
+    // cause from) — infer it from whichever limit was actually hit.
+    if (initialAudioViolationCount >= AUDIO_VIOLATION_LIMIT) return "audio";
+    if (initialViolationCount >= VIOLATION_LIMIT) return "violation";
+    return "time";
+  });
+  // Shown instead of an immediate redirect once the attempt is over (submitted,
+  // auto-submitted, or auto-submitted on violation) — a recap of what was actually
+  // answered, since a student otherwise has no way to tell what went through. Also
+  // shown immediately on load if this attempt was already submitted earlier (e.g.
+  // revisiting the URL), instead of the page.tsx redirect that used to happen here.
+  const [showSummary, setShowSummary] = useState(alreadySubmitted);
+  const [codingSubmissions, setCodingSubmissions] = useState<
+    Record<string, { code: string; language: string; passed: number; total: number }>
+  >(() =>
+    Object.fromEntries(
+      codingQuestions
+        .filter((q) => q.testCasesPassed !== null)
+        .map((q) => [
+          q.id,
+          { code: q.savedCode ?? "", language: q.savedLanguage ?? "python", passed: q.testCasesPassed ?? 0, total: q.testCasesTotal ?? 0 },
+        ])
+    )
+  );
   const [submitting, setSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [deadline, setDeadline] = useState<number | null>(null);
@@ -202,15 +231,18 @@ export function TakeAssessmentClient({
   async function handleTimeUp() {
     if (finished.current) return;
     finished.current = true;
-    setTimedOutMessage(true);
+    setAutoSubmitReason("time");
     stopMedia();
     for (const [questionId, timer] of Object.entries(saveTimers.current)) {
       clearTimeout(timer);
       await saveAssessmentAnswer(assignmentId, questionId, answers[questionId] ?? "");
     }
     await submitAssessmentAttempt(assignmentId);
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+    }
     setAutoSubmitted(true);
-    setTimeout(() => router.push("/lms/student/assessments"), 4000);
+    setShowSummary(true);
   }
 
   // ---------- "Left the exam" detection (tab switch, window blur, exiting full-screen) ----------
@@ -272,8 +304,9 @@ export function TakeAssessmentClient({
     setLeaveDeadline(null);
     stopMedia();
     await recordAssessmentTimeout(assignmentId);
+    setAutoSubmitReason("violation");
     setAutoSubmitted(true);
-    setTimeout(() => router.push("/lms/student/assessments"), 4000);
+    setShowSummary(true);
   }
 
   async function handleReturnToFullscreen() {
@@ -289,8 +322,9 @@ export function TakeAssessmentClient({
     if (result.autoSubmitted) {
       finished.current = true;
       stopMedia();
+      setAutoSubmitReason("violation");
       setAutoSubmitted(true);
-      setTimeout(() => router.push("/lms/student/assessments"), 4000);
+      setShowSummary(true);
     } else {
       setWarning(
         `Warning ${result.violationCount}/${VIOLATION_LIMIT}: you left the assessment screen. After ${VIOLATION_LIMIT} warnings the assessment is submitted automatically.`
@@ -386,8 +420,9 @@ export function TakeAssessmentClient({
     if (result.autoSubmitted) {
       finished.current = true;
       stopMedia();
+      setAutoSubmitReason("audio");
       setAutoSubmitted(true);
-      setTimeout(() => router.push("/lms/student/assessments"), 4000);
+      setShowSummary(true);
     } else {
       setAudioWarning(
         `Audio warning ${result.audioViolationCount}/${AUDIO_VIOLATION_LIMIT}: noise detected. After ${AUDIO_VIOLATION_LIMIT} warnings the assessment is submitted automatically.`
@@ -596,7 +631,7 @@ export function TakeAssessmentClient({
     if (document.fullscreenElement) {
       await document.exitFullscreen().catch(() => {});
     }
-    router.push("/lms/student/assessments");
+    setShowSummary(true);
   }
 
   async function handleSubmitMcqPhase() {
@@ -611,18 +646,98 @@ export function TakeAssessmentClient({
     setSubmittingMcqPhase(false);
   }
 
-  if (autoSubmitted) {
+  if (showSummary) {
+    const AUTO_SUBMIT_MESSAGE: Record<NonNullable<typeof autoSubmitReason>, string> = {
+      time: "Your time was up, so the assessment was submitted automatically with whatever answers were saved.",
+      violation: "You left the assessment screen and didn't return in time, so it was submitted automatically with whatever answers were saved.",
+      audio: "Too much background noise was detected, so the assessment was submitted automatically with whatever answers were saved.",
+    };
+
     return (
-      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6 text-center text-white">
-        <div>
-          <AlertTriangle className="mx-auto mb-4 size-12 text-red-400" />
-          <h1 className="text-xl font-bold">Assessment Submitted Automatically</h1>
-          <p className="mt-2 max-w-md text-sm text-white/70">
-            {timedOutMessage
-              ? "Your time was up, so the assessment was submitted automatically with whatever answers were saved."
-              : "You left the assessment screen and didn't return in time, so it was submitted automatically with whatever answers were saved."}{" "}
-            Redirecting you back...
+      <div className="min-h-screen bg-indigo-dark p-6">
+        <div className="mx-auto max-w-3xl">
+          {autoSubmitted && autoSubmitReason && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-400/40 bg-red-500/10 p-4 text-white">
+              <AlertTriangle className="mt-0.5 size-6 shrink-0 text-red-400" />
+              <div>
+                <p className="font-semibold">Assessment Submitted Automatically</p>
+                <p className="mt-1 text-sm text-white/70">{AUTO_SUBMIT_MESSAGE[autoSubmitReason]}</p>
+              </div>
+            </div>
+          )}
+
+          <h1 className="text-xl font-bold text-white">Your Submission</h1>
+          <p className="mt-1 text-sm text-white/70">
+            Here&apos;s what was recorded for every question — review it, then head back to your assessments.
           </p>
+
+          <div className="mt-5 space-y-3">
+            {questions.map((sq, i) => {
+              if (sq.questionType === "CODING") {
+                const sub = codingSubmissions[sq.id];
+                return (
+                  <div key={sq.id} className="rounded-xl border border-white/15 bg-white/5 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="whitespace-pre-wrap text-sm font-medium text-white">
+                        Q{i + 1}. {sq.questionText}
+                      </p>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                          sub ? "bg-indigo-light/20 text-indigo-light" : "bg-white/10 text-white/60"
+                        }`}
+                      >
+                        {sub ? `${sub.passed}/${sub.total} test cases passed` : "Not attempted"}
+                      </span>
+                    </div>
+                    {sub ? (
+                      <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark/60 p-3 text-xs text-white/80">
+                        {sub.code || "(empty submission)"}
+                      </pre>
+                    ) : (
+                      <p className="mt-2 text-sm text-white/50">You didn&apos;t submit code for this question.</p>
+                    )}
+                  </div>
+                );
+              }
+
+              const value = answers[sq.id];
+              const answered = !!value && value.trim() !== "";
+              return (
+                <div key={sq.id} className="rounded-xl border border-white/15 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="whitespace-pre-wrap text-sm font-medium text-white">
+                      Q{i + 1}. {sq.questionText}
+                    </p>
+                    {!answered && (
+                      <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/60">
+                        Skipped
+                      </span>
+                    )}
+                  </div>
+                  {sq.questionType === "MCQ" ? (
+                    answered ? (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-indigo-light">
+                        {value}. {sq[`option${value}` as "optionA"]}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm text-white/50">No option selected.</p>
+                    )
+                  ) : answered ? (
+                    <p className="mt-2 whitespace-pre-wrap rounded-lg bg-indigo-dark/60 p-3 text-sm text-white/80">{value}</p>
+                  ) : (
+                    <p className="mt-2 text-sm text-white/50">No answer given.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <Button
+            onClick={() => router.push("/lms/student/assessments")}
+            className="mt-6 w-full bg-gold text-indigo hover:bg-gold-light sm:w-auto"
+          >
+            Back to Assessments
+          </Button>
         </div>
       </div>
     );
@@ -968,7 +1083,10 @@ export function TakeAssessmentClient({
             key={q.id}
             assignmentId={assignmentId}
             question={q}
-            onSubmitted={() => setCodingAnswered((prev) => ({ ...prev, [q.id]: true }))}
+            onSubmitted={(result) => {
+              setCodingAnswered((prev) => ({ ...prev, [q.id]: true }));
+              setCodingSubmissions((prev) => ({ ...prev, [q.id]: result }));
+            }}
           />
         ) : (
           <div className="rounded-xl border border-border bg-white p-5">
