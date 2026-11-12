@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ChevronLeft, ChevronRight, Maximize, Loader2, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Maximize,
+  Loader2,
+  Mic,
+  Monitor,
+  Video,
+  Volume2,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -93,8 +105,18 @@ export function TakeAssessmentClient({
   );
   const [reviewing, setReviewing] = useState(false);
   const [started, setStarted] = useState(false);
-  const [calibrating, setCalibrating] = useState(false);
   const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState(CALIBRATION_SECONDS);
+  // Proctored assessments go through a sequential camera/mic/audio/system check
+  // interface before the real "Start Assessment" button appears, instead of asking
+  // for every permission at once — see handleCheckCamera etc. below.
+  const [preExamChecking, setPreExamChecking] = useState(false);
+  const [checkStatus, setCheckStatus] = useState<Record<"camera" | "microphone" | "audio" | "system", "pending" | "checking" | "passed" | "failed">>({
+    camera: "pending",
+    microphone: "pending",
+    audio: "pending",
+    system: "pending",
+  });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   // Browsers only grant fullscreen from a fresh click — the automatic attempt right
   // after the camera/mic prompt usually works, but if the browser consumed the user
   // gesture while that permission UI was open, it silently fails. Rather than
@@ -139,10 +161,19 @@ export function TakeAssessmentClient({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioBaselineRef = useRef(0);
   const audioWindowRef = useRef<boolean[]>([]);
+  // Camera and microphone are requested separately during the system-check steps
+  // (so each gets its own tick/cross), then merged into one MediaStream for the
+  // actual exam once both pass — see handleFinalStart.
+  const camStreamRef = useRef<MediaStream | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
 
   function stopMedia() {
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
     mediaStreamRef.current = null;
+    camStreamRef.current?.getTracks().forEach((t) => t.stop());
+    camStreamRef.current = null;
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
     audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
     captureVideoRef.current?.pause();
@@ -400,45 +431,128 @@ export function TakeAssessmentClient({
   }
 
   async function handleStart() {
+    // Non-proctored assessments skip the camera/mic/audio system-check interface
+    // entirely — there's nothing to check — and go straight to full-screen.
     setStarting(true);
     setMediaError(null);
-
-    if (!proctoringEnabled) {
-      try {
-        await document.documentElement.requestFullscreen();
-      } catch {
-        // Fullscreen can be denied by the browser — the leave-detection checks still apply either way.
-      }
-      try {
-        await beginExam();
-      } catch (err) {
-        setMediaError(err instanceof Error ? err.message : "Couldn't start the assessment.");
-      }
-      setStarting(false);
-      return;
-    }
-
     try {
-      // Ask for the camera/mic BEFORE entering full-screen — the permission prompt
-      // itself knocks the page straight back out of full-screen in most browsers, so
-      // requesting full-screen first just gets silently cancelled. Asking first and
-      // entering full-screen once the prompt is already closed avoids that entirely.
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // Fullscreen can be denied by the browser — the leave-detection checks still apply either way.
+    }
+    try {
+      await beginExam();
+    } catch (err) {
+      setMediaError(err instanceof Error ? err.message : "Couldn't start the assessment.");
+    }
+    setStarting(false);
+  }
+
+  // ---------- Pre-exam system check (proctored assessments only) ----------
+  //
+  // Four sequential checks — camera, microphone, audio calibration, system (full-
+  // screen support) — each requested and confirmed one at a time with its own
+  // tick/cross, instead of asking for every permission in one opaque prompt. The
+  // camera and microphone streams are requested separately (so each gets its own
+  // pass/fail) and merged into one MediaStream for the real exam once both pass.
+
+  async function handleCheckCamera() {
+    setCheckStatus((s) => ({ ...s, camera: "checking" }));
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      camStreamRef.current = stream;
+      setCheckStatus((s) => ({ ...s, camera: "passed" }));
+    } catch {
+      setCheckStatus((s) => ({ ...s, camera: "failed" }));
+    }
+  }
+
+  async function handleCheckMicrophone() {
+    setCheckStatus((s) => ({ ...s, microphone: "checking" }));
+    try {
       // autoGainControl/noiseSuppression/echoCancellation are all enabled by default
-      // and actively fight this detector: AGC in particular renormalizes the input
-      // level within a second or two of a loud burst, so sustained shouting reads as
-      // loud only briefly before the browser quietly turns it back down — producing
-      // just one violation instead of one per sustained window. Disabling them keeps
-      // the raw mic level the RMS check actually relies on.
+      // and actively fight the live violation detector: AGC in particular
+      // renormalizes the input level within a second or two of a loud burst, so
+      // sustained shouting reads as loud only briefly. Disabling them keeps the raw
+      // mic level the RMS check actually relies on.
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
         audio: { autoGainControl: false, noiseSuppression: false, echoCancellation: false },
       });
-      mediaStreamRef.current = stream;
+      micStreamRef.current = stream;
+      setCheckStatus((s) => ({ ...s, microphone: "passed" }));
+    } catch {
+      setCheckStatus((s) => ({ ...s, microphone: "failed" }));
+    }
+  }
+
+  async function handleCheckAudioCalibration() {
+    const micStream = micStreamRef.current;
+    if (!micStream) {
+      setCheckStatus((s) => ({ ...s, audio: "failed" }));
+      return;
+    }
+    setCheckStatus((s) => ({ ...s, audio: "checking" }));
+    setCalibrationSecondsLeft(CALIBRATION_SECONDS);
+
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const audioCtx = new AudioCtx();
+    const source = audioCtx.createMediaStreamSource(micStream);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+    audioContextRef.current = audioCtx;
+    analyserRef.current = analyser;
+
+    const samples: number[] = [];
+    const calibrationStart = Date.now();
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        const data = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(data);
+        let sumSquares = 0;
+        for (const v of data) {
+          const centered = v - 128;
+          sumSquares += centered * centered;
+        }
+        samples.push(Math.sqrt(sumSquares / data.length));
+
+        const elapsed = Date.now() - calibrationStart;
+        setCalibrationSecondsLeft(Math.max(0, Math.ceil((CALIBRATION_SECONDS * 1000 - elapsed) / 1000)));
+        if (elapsed >= CALIBRATION_SECONDS * 1000) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 100);
+    });
+
+    audioBaselineRef.current = samples.length > 0 ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
+    setCheckStatus((s) => ({ ...s, audio: "passed" }));
+  }
+
+  function handleCheckSystem() {
+    setCheckStatus((s) => ({ ...s, system: "checking" }));
+    const supported = typeof document.documentElement.requestFullscreen === "function";
+    setCheckStatus((s) => ({ ...s, system: supported ? "passed" : "failed" }));
+  }
+
+  async function handleFinalStart() {
+    setStarting(true);
+    setMediaError(null);
+    try {
+      const camStream = camStreamRef.current;
+      const micStream = micStreamRef.current;
+      if (!camStream || !micStream) {
+        throw new Error("Camera and microphone checks must pass before you can start.");
+      }
+      // Merge the already-granted tracks into one stream rather than asking for
+      // camera+mic access a third time — the browser already has both open.
+      const combined = new MediaStream([...camStream.getVideoTracks(), ...micStream.getAudioTracks()]);
+      mediaStreamRef.current = combined;
 
       const captureVideo = document.createElement("video");
       captureVideo.muted = true;
       captureVideo.playsInline = true;
-      captureVideo.srcObject = stream;
+      captureVideo.srcObject = combined;
       await captureVideo.play().catch(() => {});
       captureVideoRef.current = captureVideo;
 
@@ -448,58 +562,16 @@ export function TakeAssessmentClient({
         // Denied by the browser — the leave-detection checks still apply either way.
       }
 
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      const audioCtx = new AudioCtx();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(analyser);
-      audioContextRef.current = audioCtx;
-      analyserRef.current = analyser;
-
-      setStarting(false);
-      setCalibrating(true);
-      setCalibrationSecondsLeft(CALIBRATION_SECONDS);
-
-      const samples: number[] = [];
-      const calibrationStart = Date.now();
-      await new Promise<void>((resolve) => {
-        const interval = setInterval(() => {
-          const data = new Uint8Array(analyser.fftSize);
-          analyser.getByteTimeDomainData(data);
-          let sumSquares = 0;
-          for (const v of data) {
-            const centered = v - 128;
-            sumSquares += centered * centered;
-          }
-          samples.push(Math.sqrt(sumSquares / data.length));
-
-          const elapsed = Date.now() - calibrationStart;
-          setCalibrationSecondsLeft(Math.max(0, Math.ceil((CALIBRATION_SECONDS * 1000 - elapsed) / 1000)));
-          if (elapsed >= CALIBRATION_SECONDS * 1000) {
-            clearInterval(interval);
-            resolve();
-          }
-        }, 100);
-      });
-
-      audioBaselineRef.current = samples.length > 0 ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
-      setCalibrating(false);
-
+      setPreExamChecking(false);
       if (document.fullscreenElement) {
         await beginExam();
       } else {
-        // The earlier automatic request didn't take — ask for one explicit click
-        // instead of silently starting the exam in a normal browser tab.
+        // The automatic request didn't take — ask for one explicit click instead
+        // of silently starting the exam in a normal browser tab.
         setNeedsFullscreenClick(true);
       }
     } catch (err) {
-      stopMedia();
-      setMediaError(
-        err instanceof Error && err.name === "NotAllowedError"
-          ? "Camera and microphone access is required for this assessment. Please allow access and try again."
-          : "Couldn't access your camera/microphone. Please check your device and try again."
-      );
+      setMediaError(err instanceof Error ? err.message : "Couldn't start the assessment.");
     }
     setStarting(false);
   }
@@ -584,18 +656,133 @@ export function TakeAssessmentClient({
     );
   }
 
-  if (calibrating) {
+  if (preExamChecking) {
+    const steps = [
+      {
+        key: "camera" as const,
+        label: "Camera",
+        icon: Video,
+        hint: "Grants camera access so the proctor can periodically confirm it's really you taking the assessment.",
+        failHint: "Access was blocked. Allow camera access for this site in your browser's address-bar settings, then retry.",
+        action: handleCheckCamera,
+      },
+      {
+        key: "microphone" as const,
+        label: "Microphone",
+        icon: Mic,
+        hint: "Grants microphone access so background noise can be monitored during the assessment.",
+        failHint: "Access was blocked. Allow microphone access for this site in your browser's address-bar settings, then retry.",
+        action: handleCheckMicrophone,
+      },
+      {
+        key: "audio" as const,
+        label: "Audio Calibration",
+        icon: Volume2,
+        hint: `Stay quiet for ${CALIBRATION_SECONDS} seconds so we can measure your room's normal background noise. Keep your surroundings this quiet — and your own volume low — for the whole assessment: anything noticeably louder than this baseline is flagged as a violation, up to ${AUDIO_VIOLATION_LIMIT} warnings before auto-submit.`,
+        failHint: "Couldn't calibrate — make sure the microphone check above passed first, then retry.",
+        action: handleCheckAudioCalibration,
+      },
+      {
+        key: "system" as const,
+        label: "System Check",
+        icon: Monitor,
+        hint: "Confirms your browser supports full-screen mode, which this assessment requires for the whole duration.",
+        failHint: "Your browser doesn't support full-screen mode. Try the latest Chrome, Edge, or Firefox.",
+        action: handleCheckSystem,
+      },
+    ];
+    const allPassed = steps.every((s) => checkStatus[s.key] === "passed");
+    const firstPendingIndex = steps.findIndex((s) => checkStatus[s.key] !== "passed");
+
     return (
-      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6 text-center text-white">
-        <div className="max-w-md">
-          <Video className="mx-auto mb-4 size-10 text-gold" />
-          <h1 className="text-xl font-bold">Calibrating your microphone</h1>
-          <p className="mt-3 text-sm text-white/70">
-            Please stay quiet for a few seconds. Once calibration finishes, speaking or background noise above
-            this level will count as a violation — please remain quiet for the entire assessment, just as you are
-            now.
+      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6">
+        <div className="w-full max-w-lg">
+          <h1 className="text-center text-xl font-bold text-white">Pre-Assessment System Check</h1>
+          <p className="mt-2 text-center text-sm text-white/70">
+            Complete these {steps.length} checks in order — each needs a quick permission or a few seconds — before
+            you can start the assessment.
           </p>
-          <p className="mt-4 text-3xl font-bold text-gold">{calibrationSecondsLeft}s</p>
+
+          <div className="mt-6 space-y-3">
+            {steps.map((step, i) => {
+              const status = checkStatus[step.key];
+              const Icon = step.icon;
+              const isActive = i === firstPendingIndex;
+              return (
+                <div
+                  key={step.key}
+                  className={`rounded-xl border p-4 ${
+                    status === "passed"
+                      ? "border-green-400/40 bg-green-500/10"
+                      : status === "failed"
+                        ? "border-red-400/40 bg-red-500/10"
+                        : "border-white/15 bg-white/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+                      <Icon className="size-5 text-gold" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-white">
+                        {i + 1}. {step.label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-white/60">{status === "failed" ? step.failHint : step.hint}</p>
+                      {step.key === "audio" && status === "checking" && (
+                        <p className="mt-1 text-xs font-semibold text-gold">Listening... {calibrationSecondsLeft}s</p>
+                      )}
+                    </div>
+                    {status === "passed" && <CheckCircle2 className="size-6 shrink-0 text-green-400" />}
+                    {status === "failed" && <XCircle className="size-6 shrink-0 text-red-400" />}
+                    {status !== "passed" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!isActive || status === "checking"}
+                        onClick={step.action}
+                        className="shrink-0 bg-gold text-indigo hover:bg-gold-light disabled:opacity-40"
+                      >
+                        {status === "checking" ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : status === "failed" ? (
+                          "Retry"
+                        ) : (
+                          "Check"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {allPassed && (
+            <label className="mt-5 flex items-start gap-2 rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-white/80">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 accent-gold"
+              />
+              <span>
+                I understand this assessment is proctored — my camera and audio are monitored for the entire
+                duration, switching tabs or leaving full-screen counts as a violation, and I agree not to use any
+                outside help.
+              </span>
+            </label>
+          )}
+
+          {mediaError && <p className="mt-3 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{mediaError}</p>}
+
+          <Button
+            onClick={handleFinalStart}
+            disabled={!allPassed || !agreedToTerms || starting}
+            className="mt-5 w-full bg-gold text-indigo hover:bg-gold-light disabled:opacity-40"
+          >
+            {starting ? <Loader2 className="size-4 animate-spin" /> : <Maximize className="size-4" />}
+            Start Assessment (Full-Screen)
+          </Button>
         </div>
       </div>
     );
@@ -624,9 +811,13 @@ export function TakeAssessmentClient({
           {mediaError && (
             <p className="mt-3 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{mediaError}</p>
           )}
-          <Button onClick={handleStart} disabled={starting} className="mt-6 bg-gold text-indigo hover:bg-gold-light">
+          <Button
+            onClick={proctoringEnabled ? () => setPreExamChecking(true) : handleStart}
+            disabled={starting}
+            className="mt-6 bg-gold text-indigo hover:bg-gold-light"
+          >
             {starting ? <Loader2 className="size-4 animate-spin" /> : <Maximize className="size-4" />}
-            Start Assessment (Full-Screen)
+            {proctoringEnabled ? "Start System Check" : "Start Assessment (Full-Screen)"}
           </Button>
         </div>
       </div>
