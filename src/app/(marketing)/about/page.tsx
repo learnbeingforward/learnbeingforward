@@ -65,9 +65,12 @@ export default function AboutPage() {
         <div className="container-page">
           <Reveal>
             <div className="grid gap-10 rounded-2xl border border-border bg-white p-8 sm:grid-cols-[auto_1fr] sm:p-12">
-              <div className="mx-auto flex size-32 shrink-0 items-center justify-center rounded-full bg-indigo/10 text-4xl font-bold text-indigo sm:size-40">
-                LK
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/founder-lohit-kumar.webp"
+                alt="Lohit Kumar, Founder & Lead Trainer"
+                className="mx-auto size-32 shrink-0 rounded-full object-cover sm:size-40"
+              />
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide text-indigo">
                   Founder &amp; Lead Trainer
