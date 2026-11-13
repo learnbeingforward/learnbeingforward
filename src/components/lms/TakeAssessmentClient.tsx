@@ -31,6 +31,7 @@ import {
   recordAssessmentTimeout,
   recordAudioViolation,
   submitMcqPhase,
+  setCameraPosition,
 } from "@/lib/actions/assessments";
 import { CodingQuestionPanel } from "@/components/lms/CodingQuestionPanel";
 
@@ -79,6 +80,32 @@ function formatClockParts(totalSeconds: number) {
   const s = totalSeconds % 60;
   return { h, m, s };
 }
+
+// Standard MediaPipe FaceMesh canonical landmark indices (468-point model, same
+// indices regardless of face/camera) — nose tip, outer eye corners, forehead and
+// chin. A cheap, heuristic head-pose proxy: where the nose sits relative to the
+// eye midpoint, normalized by face size, isn't a real 3D pose estimate, but it's
+// consistent enough session-to-session to catch a LARGE deviation from how the
+// student was sitting during calibration, which is all "are you still looking at
+// roughly the same place" actually needs.
+function getGazeOffset(keypoints: { x: number; y: number }[]): { dx: number; dy: number } | null {
+  const nose = keypoints[1];
+  const leftEye = keypoints[33];
+  const rightEye = keypoints[263];
+  const forehead = keypoints[10];
+  const chin = keypoints[152];
+  if (!nose || !leftEye || !rightEye || !forehead || !chin) return null;
+  const faceWidth = Math.abs(rightEye.x - leftEye.x) || 1;
+  const faceHeight = Math.abs(chin.y - forehead.y) || 1;
+  const eyeMidX = (leftEye.x + rightEye.x) / 2;
+  const eyeMidY = (leftEye.y + rightEye.y) / 2;
+  return { dx: (nose.x - eyeMidX) / faceWidth, dy: (nose.y - eyeMidY) / faceHeight };
+}
+
+const GAZE_DEVIATION_THRESHOLD = 0.55;
+const GAZE_SUSTAINED_CHECKS = 3;
+const NO_FACE_SUSTAINED_CHECKS = 4;
+const AI_FLAG_COOLDOWN_MS = 60_000;
 
 export function TakeAssessmentClient({
   assignmentId,
@@ -137,13 +164,19 @@ export function TakeAssessmentClient({
   // interface before the real "Start Assessment" button appears, instead of asking
   // for every permission at once — see handleCheckCamera etc. below.
   const [preExamChecking, setPreExamChecking] = useState(false);
-  const [checkStatus, setCheckStatus] = useState<Record<"camera" | "microphone" | "audio" | "system", "pending" | "checking" | "passed" | "failed">>({
+  const [checkStatus, setCheckStatus] = useState<Record<"camera" | "position" | "microphone" | "audio" | "system", "pending" | "checking" | "passed" | "failed">>({
     camera: "pending",
+    position: "pending",
     microphone: "pending",
     audio: "pending",
     system: "pending",
   });
+  const [cameraPositionValue, setCameraPositionValue] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // Shown after all system checks pass, before the exam actually starts — reading
+  // this (and agreeing to it) is what triggers full-screen + the timer, not the
+  // system check screen itself.
+  const [showInstructions, setShowInstructions] = useState(false);
   // Browsers only grant fullscreen from a fresh click — the automatic attempt right
   // after the camera/mic prompt usually works, but if the browser consumed the user
   // gesture while that permission UI was open, it silently fails. Rather than
@@ -218,6 +251,29 @@ export function TakeAssessmentClient({
   // actual exam once both pass — see handleFinalStart.
   const camStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+
+  // ---------- AI proctor (entirely client-side — no video ever leaves the browser,
+  // only the one frame captured at the moment something is flagged) ----------
+  // Object detector (phone / extra people) and face-landmark detector (gaze),
+  // loaded lazily once the camera check passes so they're warm well before the
+  // exam actually starts. `unknown` here rather than their real types since the
+  // libraries are dynamic-imported — see loadAiModels.
+  const cocoModelRef = useRef<{ detect: (input: HTMLVideoElement) => Promise<{ class: string; score: number }[]> } | null>(null);
+  const faceModelRef = useRef<{
+    estimateFaces: (input: HTMLVideoElement) => Promise<{ keypoints: { x: number; y: number; name?: string }[] }[]>;
+  } | null>(null);
+  const aiModelsLoadingRef = useRef(false);
+  // Baseline horizontal/vertical nose-vs-eye-and-face-box offset ratio, sampled
+  // during the audio calibration step while the student looks at their screen
+  // normally — "looking away" is flagged as a large deviation from THIS, not
+  // against some fixed assumption about head position.
+  const gazeBaselineRef = useRef<{ dx: number; dy: number } | null>(null);
+  const gazeAwayStreakRef = useRef(0);
+  const noFaceStreakRef = useRef(0);
+  // One cooldown timestamp per flag reason so a sustained issue (e.g. the phone
+  // stays on the desk in view) produces one flagged snapshot, not one every few
+  // seconds for as long as it's visible.
+  const lastFlagAtRef = useRef<Record<string, number>>({});
 
   function stopMedia() {
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -369,31 +425,121 @@ export function TakeAssessmentClient({
 
   // ---------- Proctoring: webcam snapshots ----------
 
+  /** Grabs one frame from the live camera and uploads it — the only thing ever
+   * sent anywhere is this single still image, never a video stream or recording.
+   * `reason` is set only for AI-proctor-triggered captures (see below); routine
+   * periodic ones leave it unset. */
+  function captureSnapshot(reason?: string) {
+    const video = captureVideoRef.current;
+    if (!video || video.readyState < 2) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const body = new FormData();
+        body.set("assignmentId", assignmentId);
+        body.set("image", blob, "snapshot.jpg");
+        if (reason) body.set("reason", reason);
+        fetch("/api/assessment-snapshots", { method: "POST", body }).catch(() => {});
+      },
+      "image/jpeg",
+      0.7
+    );
+  }
+
+  useEffect(() => {
+    if (!started || !proctoringEnabled) return;
+    const id = setInterval(() => captureSnapshot(), SNAPSHOT_INTERVAL_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, proctoringEnabled, assignmentId]);
+
+  // ---------- AI proctor: object detection (phone / extra people) + gaze ----------
+  //
+  // Runs entirely in the browser via TensorFlow.js — no frame is ever sent
+  // anywhere unless something is actually flagged, and even then it's one still
+  // image, not a stream. Deliberately doesn't touch violationCount/autoSubmit:
+  // vision detection on a webcam is far less reliable than the deterministic
+  // tab-switch/audio checks, so a false positive here should never end someone's
+  // exam — it only flags a snapshot for a human admin to actually look at.
+
+  function flagIfOffCooldown(reason: string) {
+    const last = lastFlagAtRef.current[reason] ?? 0;
+    if (Date.now() - last < AI_FLAG_COOLDOWN_MS) return;
+    lastFlagAtRef.current[reason] = Date.now();
+    captureSnapshot(reason);
+  }
+
   useEffect(() => {
     if (!started || !proctoringEnabled) return;
     const id = setInterval(() => {
+      if (finished.current) return;
       const video = captureVideoRef.current;
-      if (!video || video.readyState < 2) return;
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 320;
-      canvas.height = video.videoHeight || 240;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) return;
-          const body = new FormData();
-          body.set("assignmentId", assignmentId);
-          body.set("image", blob, "snapshot.jpg");
-          fetch("/api/assessment-snapshots", { method: "POST", body }).catch(() => {});
-        },
-        "image/jpeg",
-        0.7
-      );
-    }, SNAPSHOT_INTERVAL_MS);
+      const cocoModel = cocoModelRef.current;
+      if (!video || video.readyState < 2 || !cocoModel) return;
+      cocoModel
+        .detect(video)
+        .then((predictions) => {
+          const phone = predictions.find((p) => p.class === "cell phone" && p.score > 0.5);
+          if (phone) {
+            flagIfOffCooldown("phone_detected");
+            return;
+          }
+          const peopleCount = predictions.filter((p) => p.class === "person" && p.score > 0.5).length;
+          if (peopleCount > 1) flagIfOffCooldown("multiple_people");
+        })
+        .catch(() => {});
+    }, 5000);
     return () => clearInterval(id);
-  }, [started, proctoringEnabled, assignmentId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, proctoringEnabled]);
+
+  useEffect(() => {
+    if (!started || !proctoringEnabled) return;
+    const id = setInterval(() => {
+      if (finished.current) return;
+      const video = captureVideoRef.current;
+      const faceModel = faceModelRef.current;
+      if (!video || video.readyState < 2 || !faceModel) return;
+      faceModel
+        .estimateFaces(video)
+        .then((faces) => {
+          if (faces.length === 0) {
+            noFaceStreakRef.current += 1;
+            gazeAwayStreakRef.current = 0;
+            if (noFaceStreakRef.current >= NO_FACE_SUSTAINED_CHECKS) {
+              flagIfOffCooldown("no_face");
+              noFaceStreakRef.current = 0;
+            }
+            return;
+          }
+          noFaceStreakRef.current = 0;
+
+          const baseline = gazeBaselineRef.current;
+          if (!baseline) return; // calibration never captured one — skip gaze checks
+          const offset = getGazeOffset(faces[0].keypoints);
+          if (!offset) return;
+          const deviation = Math.hypot(offset.dx - baseline.dx, offset.dy - baseline.dy);
+          if (deviation > GAZE_DEVIATION_THRESHOLD) {
+            gazeAwayStreakRef.current += 1;
+            if (gazeAwayStreakRef.current >= GAZE_SUSTAINED_CHECKS) {
+              flagIfOffCooldown("looking_away");
+              gazeAwayStreakRef.current = 0;
+            }
+          } else {
+            gazeAwayStreakRef.current = 0;
+          }
+        })
+        .catch(() => {});
+    }, 2500);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, proctoringEnabled]);
 
   // ---------- Proctoring: real-time audio-level monitoring ----------
 
@@ -410,13 +556,11 @@ export function TakeAssessmentClient({
         sumSquares += centered * centered;
       }
       const rms = Math.sqrt(sumSquares / data.length);
-      // Threshold is ~60-65% above whatever the room's own ambient level turned out
+      // Threshold is ~65-70% above whatever the room's own ambient level turned out
       // to be during calibration, not a fixed loudness — a quiet room flags a quiet
-      // voice, a noisier room needs a little more to stand out above it. The old
-      // flat "+6" offset dominated in genuinely quiet rooms (baseline near 0) and
-      // pushed the real threshold well past 65% above baseline; kept only a tiny
-      // floor so true silence doesn't trigger on sensor noise alone.
-      const threshold = audioBaselineRef.current * 1.625 + 2;
+      // voice, a noisier room needs a little more to stand out above it. Kept only a
+      // tiny floor so true silence doesn't trigger on sensor noise alone.
+      const threshold = audioBaselineRef.current * 1.675 + 2;
 
       const window = audioWindowRef.current;
       window.push(rms > threshold);
@@ -537,15 +681,53 @@ export function TakeAssessmentClient({
   // camera and microphone streams are requested separately (so each gets its own
   // pass/fail) and merged into one MediaStream for the real exam once both pass.
 
+  /** Loads the object-detection (phone/person) and face-landmark (gaze) models in
+   * the background. Best-effort: if this fails (slow connection, old device), the
+   * exam still runs fine with just the existing tab-switch/audio checks — the AI
+   * proctor is an enhancement, not a dependency. */
+  async function loadAiModels() {
+    if (aiModelsLoadingRef.current || (cocoModelRef.current && faceModelRef.current)) return;
+    aiModelsLoadingRef.current = true;
+    try {
+      const tf = await import("@tensorflow/tfjs");
+      await tf.ready();
+      const [cocoSsd, faceLandmarksDetection] = await Promise.all([
+        import("@tensorflow-models/coco-ssd"),
+        import("@tensorflow-models/face-landmarks-detection"),
+      ]);
+      const [cocoModel, faceModel] = await Promise.all([
+        cocoSsd.load({ base: "lite_mobilenet_v2" }),
+        faceLandmarksDetection.createDetector(faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh, {
+          runtime: "tfjs",
+          refineLandmarks: false,
+          maxFaces: 1,
+        }),
+      ]);
+      cocoModelRef.current = cocoModel;
+      faceModelRef.current = faceModel;
+    } catch (err) {
+      console.error("[ai-proctor] Failed to load detection models:", err);
+    } finally {
+      aiModelsLoadingRef.current = false;
+    }
+  }
+
   async function handleCheckCamera() {
     setCheckStatus((s) => ({ ...s, camera: "checking" }));
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       camStreamRef.current = stream;
       setCheckStatus((s) => ({ ...s, camera: "passed" }));
+      void loadAiModels();
     } catch {
       setCheckStatus((s) => ({ ...s, camera: "failed" }));
     }
+  }
+
+  function handleSelectCameraPosition(position: string) {
+    setCameraPositionValue(position);
+    setCheckStatus((s) => ({ ...s, position: "passed" }));
+    void setCameraPosition(assignmentId, position).catch(() => {});
   }
 
   async function handleCheckMicrophone() {
@@ -586,6 +768,27 @@ export function TakeAssessmentClient({
 
     const samples: number[] = [];
     const calibrationStart = Date.now();
+
+    // Gaze baseline is sampled on a slower cadence in parallel, while the student
+    // looks at their screen normally for this same quiet stretch — only if the
+    // face model finished loading in time. If not, the AI proctor simply skips
+    // gaze checks for this session; phone/multi-person detection is unaffected.
+    const gazeSamples: { dx: number; dy: number }[] = [];
+    const gazeVideo = captureVideoRef.current;
+    const gazeModel = faceModelRef.current;
+    const gazeTimer =
+      gazeModel && gazeVideo
+        ? setInterval(() => {
+            gazeModel
+              .estimateFaces(gazeVideo)
+              .then((faces) => {
+                const offset = faces[0] ? getGazeOffset(faces[0].keypoints) : null;
+                if (offset) gazeSamples.push(offset);
+              })
+              .catch(() => {});
+          }, 400)
+        : null;
+
     await new Promise<void>((resolve) => {
       const interval = setInterval(() => {
         const data = new Uint8Array(analyser.fftSize);
@@ -605,6 +808,14 @@ export function TakeAssessmentClient({
         }
       }, 100);
     });
+
+    if (gazeTimer) clearInterval(gazeTimer);
+    if (gazeSamples.length > 0) {
+      gazeBaselineRef.current = {
+        dx: gazeSamples.reduce((a, s) => a + s.dx, 0) / gazeSamples.length,
+        dy: gazeSamples.reduce((a, s) => a + s.dy, 0) / gazeSamples.length,
+      };
+    }
 
     audioBaselineRef.current = samples.length > 0 ? samples.reduce((a, b) => a + b, 0) / samples.length : 0;
     setCheckStatus((s) => ({ ...s, audio: "passed" }));
@@ -699,109 +910,134 @@ export function TakeAssessmentClient({
       audio: "Too much background noise was detected, so the assessment was submitted automatically with whatever answers were saved.",
     };
 
+    function isQuestionAnswered(sq: (typeof questions)[number]) {
+      if (sq.questionType === "CODING") return !!codingSubmissions[sq.id];
+      const value = answers[sq.id];
+      return !!value && value.trim() !== "";
+    }
+    const totalAnswered = questions.filter(isQuestionAnswered).length;
+    const totalBookmarked = questions.filter((q) => bookmarked[q.id]).length;
+
+    function renderQuestionCard(sq: (typeof questions)[number], globalIndex: number) {
+      if (sq.questionType === "CODING") {
+        const sub = codingSubmissions[sq.id];
+        return (
+          <div key={sq.id} className="rounded-xl border border-border bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="whitespace-pre-wrap text-sm font-medium text-indigo">
+                Q{globalIndex + 1}. {sq.questionText}
+              </p>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+                  sub ? "bg-indigo/10 text-indigo" : "bg-cream text-muted-foreground"
+                }`}
+              >
+                {sub ? `${sub.passed}/${sub.total} test cases passed` : "Not attempted"}
+              </span>
+            </div>
+            {sub ? (
+              <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 text-xs text-white">{sub.code || "(empty submission)"}</pre>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">You didn&apos;t submit code for this question.</p>
+            )}
+          </div>
+        );
+      }
+
+      const value = answers[sq.id];
+      const answered = !!value && value.trim() !== "";
+      return (
+        <div key={sq.id} className="rounded-xl border border-border bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <p className="whitespace-pre-wrap text-sm font-medium text-indigo">
+              Q{globalIndex + 1}. {sq.questionText}
+            </p>
+            {!answered && (
+              <span className="shrink-0 rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-muted-foreground">Skipped</span>
+            )}
+          </div>
+          {sq.questionType === "MCQ" ? (
+            answered ? (
+              <p className="mt-2 whitespace-pre-wrap text-sm text-indigo">
+                {value}. {sq[`option${value}` as "optionA"]}
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">No option selected.</p>
+            )
+          ) : answered ? (
+            <p className="mt-2 whitespace-pre-wrap rounded-lg bg-cream p-3 text-sm text-indigo">{value}</p>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">No answer given.</p>
+          )}
+        </div>
+      );
+    }
+
+    // Mixed assessments get two clearly separate sections, matching how the
+    // student actually took it (MCQ/written phase, then a locked-in coding
+    // phase) — otherwise auto-submitting mid-phase would bury "never even
+    // reached" coding questions in among answered ones with no explanation.
+    const sections: { label: string; qs: typeof questions }[] = hasCodingQuestions
+      ? [
+          { label: "Multiple Choice & Written", qs: mcqQuestions },
+          { label: "Coding", qs: codingQuestions },
+        ]
+      : [{ label: "Questions", qs: questions }];
+
     return (
-      <div className="min-h-screen bg-indigo-dark p-6">
-        <div className="mx-auto max-w-3xl">
-          {autoSubmitted && autoSubmitReason && (
-            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-400/40 bg-red-500/10 p-4 text-white">
-              <AlertTriangle className="mt-0.5 size-6 shrink-0 text-red-400" />
+      <div className="min-h-screen bg-cream pb-10">
+        <div className="bg-indigo-dark px-4 py-6 text-white sm:px-6">
+          <div className="mx-auto flex max-w-4xl items-center justify-between">
+            <p className="font-semibold">{assessmentTitle}</p>
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/70">Assessment Completed</span>
+          </div>
+        </div>
+
+        <div className="mx-auto -mt-8 max-w-4xl px-4 sm:px-6">
+          <div className="rounded-2xl border border-border bg-white p-6 shadow-lg sm:p-8">
+            {autoSubmitted && autoSubmitReason && (
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                <AlertTriangle className="mt-0.5 size-6 shrink-0 text-red-500" />
+                <div>
+                  <p className="font-semibold text-red-700">Assessment Submitted Automatically</p>
+                  <p className="mt-1 text-sm text-red-700/80">{AUTO_SUBMIT_MESSAGE[autoSubmitReason]}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 border-b border-border pb-6">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-green-100">
+                <CheckCircle2 className="size-8 text-green-600" />
+              </div>
               <div>
-                <p className="font-semibold">Assessment Submitted Automatically</p>
-                <p className="mt-1 text-sm text-white/70">{AUTO_SUBMIT_MESSAGE[autoSubmitReason]}</p>
+                <h1 className="text-xl font-bold text-indigo sm:text-2xl">Your assessment has been submitted</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Here&apos;s what was recorded for every question — review it, then head back to your assessments.
+                </p>
               </div>
             </div>
-          )}
 
-          <h1 className="text-xl font-bold text-white">Your Submission</h1>
-          <p className="mt-1 text-sm text-white/70">
-            Here&apos;s what was recorded for every question, grouped the same way you answered them — review it,
-            then head back to your assessments.
-          </p>
-
-          {(() => {
-            function isQuestionAnswered(sq: (typeof questions)[number]) {
-              if (sq.questionType === "CODING") return !!codingSubmissions[sq.id];
-              const value = answers[sq.id];
-              return !!value && value.trim() !== "";
-            }
-
-            function renderQuestionCard(sq: (typeof questions)[number], globalIndex: number) {
-              if (sq.questionType === "CODING") {
-                const sub = codingSubmissions[sq.id];
-                return (
-                  <div key={sq.id} className="rounded-xl border border-white/15 bg-white/5 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="whitespace-pre-wrap text-sm font-medium text-white">
-                        Q{globalIndex + 1}. {sq.questionText}
-                      </p>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                          sub ? "bg-indigo-light/20 text-indigo-light" : "bg-white/10 text-white/60"
-                        }`}
-                      >
-                        {sub ? `${sub.passed}/${sub.total} test cases passed` : "Not attempted"}
-                      </span>
-                    </div>
-                    {sub ? (
-                      <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark/60 p-3 text-xs text-white/80">
-                        {sub.code || "(empty submission)"}
-                      </pre>
-                    ) : (
-                      <p className="mt-2 text-sm text-white/50">You didn&apos;t submit code for this question.</p>
-                    )}
-                  </div>
-                );
-              }
-
-              const value = answers[sq.id];
-              const answered = !!value && value.trim() !== "";
-              return (
-                <div key={sq.id} className="rounded-xl border border-white/15 bg-white/5 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="whitespace-pre-wrap text-sm font-medium text-white">
-                      Q{globalIndex + 1}. {sq.questionText}
-                    </p>
-                    {!answered && (
-                      <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/60">
-                        Skipped
-                      </span>
-                    )}
-                  </div>
-                  {sq.questionType === "MCQ" ? (
-                    answered ? (
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-indigo-light">
-                        {value}. {sq[`option${value}` as "optionA"]}
-                      </p>
-                    ) : (
-                      <p className="mt-2 text-sm text-white/50">No option selected.</p>
-                    )
-                  ) : answered ? (
-                    <p className="mt-2 whitespace-pre-wrap rounded-lg bg-indigo-dark/60 p-3 text-sm text-white/80">{value}</p>
-                  ) : (
-                    <p className="mt-2 text-sm text-white/50">No answer given.</p>
-                  )}
+            <div className="my-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "Total Questions", value: questions.length, className: "bg-cream text-indigo" },
+                { label: "Attempted", value: totalAnswered, className: "bg-green-50 text-green-700" },
+                { label: "Not Attempted", value: questions.length - totalAnswered, className: "bg-amber-50 text-amber-700" },
+                { label: "Bookmarked", value: totalBookmarked, className: "bg-indigo/5 text-indigo" },
+              ].map((tile) => (
+                <div key={tile.label} className={`rounded-xl p-4 text-center ${tile.className}`}>
+                  <p className="text-2xl font-bold">{tile.value}</p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide">{tile.label}</p>
                 </div>
-              );
-            }
+              ))}
+            </div>
 
-            // Mixed assessments get two clearly separate sections, matching how the
-            // student actually took it (MCQ/written phase, then a locked-in coding
-            // phase) — otherwise auto-submitting mid-phase would bury "never even
-            // reached" coding questions in among answered ones with no explanation.
-            const sections: { label: string; qs: typeof questions }[] = hasCodingQuestions
-              ? [
-                  { label: "Multiple Choice & Written", qs: mcqQuestions },
-                  { label: "Coding", qs: codingQuestions },
-                ]
-              : [{ label: "Questions", qs: questions }];
-
-            return sections.map((section) => {
+            {sections.map((section) => {
               const sectionAnswered = section.qs.filter(isQuestionAnswered).length;
               return (
                 <div key={section.label} className="mt-6">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wide text-white/60">{section.label}</p>
-                    <p className="text-xs text-white/60">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{section.label}</p>
+                    <p className="text-xs text-muted-foreground">
                       {sectionAnswered}/{section.qs.length} attempted
                     </p>
                   </div>
@@ -810,15 +1046,30 @@ export function TakeAssessmentClient({
                   </div>
                 </div>
               );
-            });
-          })()}
+            })}
 
-          <Button
-            onClick={() => router.push("/lms/student/assessments")}
-            className="mt-6 w-full bg-gold text-indigo hover:bg-gold-light sm:w-auto"
-          >
-            Back to Assessments
-          </Button>
+            <div className="mt-6 flex items-start gap-3 rounded-xl bg-indigo/5 p-5">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white">
+                <CheckCircle2 className="size-5 text-indigo" />
+              </div>
+              <div>
+                <p className="font-semibold text-indigo">Your result will be shared after evaluation</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  We&apos;re compiling your answers, running any submitted code against all test cases, and
+                  reviewing proctoring activity. You&apos;ll be notified once your result is ready — you don&apos;t
+                  need to do anything else.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => router.push("/lms/student/assessments")}
+              className="mt-6 w-full bg-indigo text-white hover:bg-indigo/90 sm:w-auto"
+            >
+              Go to Dashboard <ChevronRight className="size-4" />
+            </Button>
+          </div>
+          <p className="mt-4 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
         </div>
       </div>
     );
@@ -863,6 +1114,14 @@ export function TakeAssessmentClient({
         action: handleCheckCamera,
       },
       {
+        key: "position" as const,
+        label: "Camera Position",
+        icon: Video,
+        hint: "Where is your webcam, relative to your screen? This helps us tell the AI proctor what \"looking at your screen\" should look like for you.",
+        failHint: "",
+        action: () => {},
+      },
+      {
         key: "microphone" as const,
         label: "Microphone",
         icon: Mic,
@@ -889,6 +1148,13 @@ export function TakeAssessmentClient({
     ];
     const allPassed = steps.every((s) => checkStatus[s.key] === "passed");
     const firstPendingIndex = steps.findIndex((s) => checkStatus[s.key] !== "passed");
+    const CAMERA_POSITION_OPTIONS = [
+      { value: "TOP_CENTER", label: "Top Center" },
+      { value: "TOP_LEFT", label: "Top Left" },
+      { value: "TOP_RIGHT", label: "Top Right" },
+      { value: "BOTTOM_LEFT", label: "Bottom Left" },
+      { value: "BOTTOM_RIGHT", label: "Bottom Right" },
+    ];
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6">
@@ -927,10 +1193,15 @@ export function TakeAssessmentClient({
                       {step.key === "audio" && status === "checking" && (
                         <p className="mt-1 text-xs font-semibold text-gold">Listening... {calibrationSecondsLeft}s</p>
                       )}
+                      {step.key === "position" && status === "passed" && cameraPositionValue && (
+                        <p className="mt-1 text-xs font-semibold text-gold">
+                          You chose: {CAMERA_POSITION_OPTIONS.find((o) => o.value === cameraPositionValue)?.label}
+                        </p>
+                      )}
                     </div>
                     {status === "passed" && <CheckCircle2 className="size-6 shrink-0 text-green-400" />}
                     {status === "failed" && <XCircle className="size-6 shrink-0 text-red-400" />}
-                    {status !== "passed" && (
+                    {status !== "passed" && step.key !== "position" && (
                       <Button
                         type="button"
                         size="sm"
@@ -948,37 +1219,221 @@ export function TakeAssessmentClient({
                       </Button>
                     )}
                   </div>
+                  {step.key === "position" && status !== "passed" && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {CAMERA_POSITION_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          disabled={!isActive}
+                          onClick={() => handleSelectCameraPosition(opt.value)}
+                          className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white transition-colors hover:border-gold hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          {allPassed && (
-            <label className="mt-5 flex items-start gap-2 rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-white/80">
+          {mediaError && <p className="mt-5 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{mediaError}</p>}
+
+          <Button
+            onClick={() => {
+              setPreExamChecking(false);
+              setShowInstructions(true);
+            }}
+            disabled={!allPassed}
+            className="mt-5 w-full bg-gold text-indigo hover:bg-gold-light disabled:opacity-40"
+          >
+            Next: Instructions <ChevronRight className="size-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showInstructions) {
+    const totalMarks = questions.reduce((s, q) => s + q.marks, 0);
+    const sectionLabels = hasCodingQuestions ? ["Multiple Choice & Written", "Coding"] : ["All Questions"];
+    const violations = [
+      {
+        violation: "Switching tabs / windows, or leaving full-screen",
+        detectedBy: "Browser visibility + full-screen events",
+        severity: "WARNING" as const,
+        outcome: `Up to ${VIOLATION_LIMIT} warnings, then auto-submitted with whatever was answered.`,
+      },
+      {
+        violation: "Background noise above your calibrated baseline",
+        detectedBy: "Live microphone level (Web Audio API)",
+        severity: "WARNING" as const,
+        outcome: `Up to ${AUDIO_VIOLATION_LIMIT} warnings, then auto-submitted with whatever was answered.`,
+      },
+      {
+        violation: "A phone, another person, or looking away from the screen",
+        detectedBy: "In-browser AI proctor (TensorFlow.js — nothing is uploaded except one flagged snapshot)",
+        severity: "FLAGGED FOR REVIEW" as const,
+        outcome: "A single still image is captured and sent to the admin to review — this does not auto-submit by itself.",
+      },
+    ];
+    const severityClass: Record<string, string> = {
+      WARNING: "bg-amber-100 text-amber-700",
+      "FLAGGED FOR REVIEW": "bg-indigo/10 text-indigo",
+    };
+
+    return (
+      <div className="min-h-screen bg-cream pb-10">
+        <div className="bg-indigo-dark px-4 py-6 text-white sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                setShowInstructions(false);
+                setPreExamChecking(true);
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80 hover:text-white"
+            >
+              <ChevronLeft className="size-3.5" /> System Check
+            </button>
+            <div className="text-center">
+              <p className="font-semibold">{assessmentTitle}</p>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                Read before you start
+              </p>
+            </div>
+            <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
+              <CheckCircle2 className="size-3.5" /> All system checks passed
+            </span>
+          </div>
+        </div>
+
+        <div className="mx-auto -mt-8 max-w-6xl px-4 sm:px-6">
+          <div className="rounded-2xl border border-border bg-white p-6 shadow-lg sm:p-8">
+            <h1 className="text-2xl font-bold text-indigo">Instructions &amp; Rules</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Please read everything on this page. The timer starts only when you click Start Assessment.
+            </p>
+
+            <div className="mt-6 grid grid-cols-2 gap-3 border-y border-border py-6 sm:grid-cols-4">
+              {[
+                { label: "Duration", value: `${durationMinutes} min` },
+                { label: "Questions", value: String(questions.length) },
+                { label: "Sections", value: sectionLabels.join(", ") },
+                { label: "Total Marks", value: String(totalMarks) },
+              ].map((tile) => (
+                <div key={tile.label} className="rounded-xl bg-cream p-4 text-center">
+                  <p className="text-xl font-bold text-indigo">{tile.value}</p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{tile.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">General Instructions</p>
+                <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-indigo">
+                  <li>Once started, this assessment runs full-screen for the entire duration.</li>
+                  <li>Do not switch tabs, minimize the window, or exit full-screen — each time counts as a violation.</li>
+                  <li>Answer every question within the time limit — it auto-submits at 00:00 with whatever is saved.</li>
+                  {hasCodingQuestions && (
+                    <li>
+                      Coding questions are a separate, locked-in phase — once you finish the multiple-choice/written
+                      section, you can&apos;t return to it.
+                    </li>
+                  )}
+                  <li>Your answers are saved automatically as you go — no need to click anything to save.</li>
+                  <li>Keep your room quiet and your camera in view of your face for the whole assessment.</li>
+                </ol>
+              </div>
+
+              <div className="rounded-xl bg-cream p-5">
+                <p className="flex items-center gap-2 font-semibold text-indigo">
+                  <Video className="size-5" /> AI Proctoring is ON
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  These are monitored for the full session and reviewed by an admin afterward:
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["Webcam video (live AI analysis only — never recorded)", "Microphone audio level", "Tab & window switches", "Full-screen exit"].map(
+                    (chip) => (
+                      <span key={chip} className="rounded-full border border-border bg-white px-3 py-1 text-xs text-indigo">
+                        {chip}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Violations &amp; What Happens</p>
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-cream text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2.5">Violation</th>
+                      <th className="px-4 py-2.5">Detected By</th>
+                      <th className="px-4 py-2.5">What Happens</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {violations.map((v) => (
+                      <tr key={v.violation}>
+                        <td className="px-4 py-3 font-medium text-indigo">{v.violation}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{v.detectedBy}</td>
+                        <td className="px-4 py-3">
+                          <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${severityClass[v.severity]}`}>
+                            {v.severity}
+                          </span>
+                          <p className="text-xs text-muted-foreground">{v.outcome}</p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <label className="mt-6 flex items-start gap-2 rounded-xl border border-border bg-cream p-4 text-sm text-indigo">
               <input
                 type="checkbox"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 accent-gold"
+                className="mt-0.5 accent-indigo"
               />
               <span>
-                I understand this assessment is proctored — my camera and audio are monitored for the entire
-                duration, switching tabs or leaving full-screen counts as a violation, and I agree not to use any
-                outside help.
+                I have read the instructions. I agree to be monitored through my camera and microphone, and I
+                understand that malpractice can lead to disqualification.
               </span>
             </label>
-          )}
 
-          {mediaError && <p className="mt-3 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{mediaError}</p>}
+            {mediaError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-destructive">{mediaError}</p>}
 
-          <Button
-            onClick={handleFinalStart}
-            disabled={!allPassed || !agreedToTerms || starting}
-            className="mt-5 w-full bg-gold text-indigo hover:bg-gold-light disabled:opacity-40"
-          >
-            {starting ? <Loader2 className="size-4 animate-spin" /> : <Maximize className="size-4" />}
-            Start Assessment (Full-Screen)
-          </Button>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInstructions(false);
+                  setPreExamChecking(true);
+                }}
+                className="text-sm font-semibold text-indigo underline underline-offset-2"
+              >
+                ‹ Back to System Check
+              </button>
+              <Button
+                onClick={handleFinalStart}
+                disabled={!agreedToTerms || starting}
+                className="bg-indigo text-white hover:bg-indigo/90 disabled:opacity-40"
+              >
+                {starting ? <Loader2 className="size-4 animate-spin" /> : <Maximize className="size-4" />}
+                Start Assessment
+              </Button>
+            </div>
+          </div>
+          <p className="mt-4 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
         </div>
       </div>
     );

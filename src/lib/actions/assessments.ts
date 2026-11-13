@@ -367,6 +367,27 @@ export async function startAssessmentAttempt(assignmentId: string) {
   revalidatePath("/lms/student/assessments");
 }
 
+const CAMERA_POSITIONS = ["TOP_CENTER", "TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"] as const;
+
+/** Recorded during the pre-exam system check, purely as context for an admin
+ * reviewing a flagged snapshot later — the AI proctor's own gaze check is
+ * calibrated per-student from a short look-at-your-screen sample, so it doesn't
+ * actually depend on this being accurate. */
+export async function setCameraPosition(assignmentId: string, position: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") {
+    throw new Error("Only students can do this.");
+  }
+  if (!(CAMERA_POSITIONS as readonly string[]).includes(position)) {
+    throw new Error("Invalid camera position.");
+  }
+  const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment || assignment.studentId !== session.user.id) {
+    throw new Error("Not your assessment.");
+  }
+  await prisma.assessmentAssignment.update({ where: { id: assignmentId }, data: { cameraPosition: position } });
+}
+
 export async function saveAssessmentAnswer(
   assignmentId: string,
   questionId: string,
@@ -611,7 +632,7 @@ async function finalizeSubmission(assignmentId: string, auto: boolean) {
   await notify("STUDENT", `${assignment.student.name} submitted "${assignment.assessment.title}"`, {
     message: auto ? "Auto-submitted (proctoring violations or time up)." : undefined,
     href: `/lms/company/assessments/submissions?assignmentId=${assignmentId}`,
-    requiredKey: "assessments.submissions",
+    requiredKey: "assessments.submissions.view",
   });
 
   revalidatePath("/lms/student/assessments");
@@ -723,7 +744,7 @@ export async function recordAssessmentTimeout(assignmentId: string) {
 // ---------- Admin: grading & results ----------
 
 export async function gradeWrittenAnswer(answerId: string, marksAwarded: number) {
-  await requireSuperAdmin("assessments.submissions");
+  await requireSuperAdmin("assessments.submissions.grade");
 
   const answer = await prisma.assessmentAnswer.update({
     where: { id: answerId },
@@ -755,7 +776,7 @@ export type SendResultState = {
 } | null;
 
 export async function sendResultToCollege(assignmentId: string, formData: FormData): Promise<SendResultState> {
-  await requireSuperAdmin("assessments.submissions");
+  await requireSuperAdmin("assessments.submissions.send");
   const snapshotIds = formData.getAll("snapshotIds").map(String);
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
@@ -793,7 +814,7 @@ export async function sendResultToCollege(assignmentId: string, formData: FormDa
 }
 
 export async function sendResultToStudent(assignmentId: string, formData: FormData): Promise<SendResultState> {
-  await requireSuperAdmin("assessments.submissions");
+  await requireSuperAdmin("assessments.submissions.send");
   const snapshotIds = formData.getAll("snapshotIds").map(String);
   const assignment = await prisma.assessmentAssignment.findUnique({
     where: { id: assignmentId },
@@ -835,7 +856,7 @@ export async function sendResultToStudent(assignmentId: string, formData: FormDa
  * Only ever admin-initiated; a student has no way to trigger this themselves.
  */
 export async function allowAssessmentRetest(assignmentId: string) {
-  await requireSuperAdmin("assessments.submissions");
+  await requireSuperAdmin("assessments.submissions.send");
 
   const assignment = await prisma.assessmentAssignment.findUnique({ where: { id: assignmentId } });
   if (!assignment) return;
@@ -879,7 +900,7 @@ export async function allowAssessmentRetest(assignmentId: string) {
 // ---------- Admin: proctoring snapshots ----------
 
 export async function deleteAssessmentSnapshots(assignmentId: string, formData: FormData) {
-  await requireSuperAdmin("assessments.submissions");
+  await requireSuperAdmin("assessments.submissions.send");
   const snapshotIds = formData.getAll("snapshotIds").map(String);
   if (snapshotIds.length === 0) return;
 

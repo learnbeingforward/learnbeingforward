@@ -5,10 +5,9 @@ import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GradeWrittenAnswerForm } from "@/components/lms/GradeWrittenAnswerForm";
 import { AssessmentSnapshotGallery } from "@/components/lms/AssessmentSnapshotGallery";
+import { AssessmentAnswerReview, type ReviewAnswer } from "@/components/lms/AssessmentAnswerReview";
 import { sendResultToCollege, sendResultToStudent, allowAssessmentRetest } from "@/lib/actions/assessments";
-import { writtenAnswerBadge } from "@/lib/assessment-ui";
 
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude",
@@ -16,12 +15,26 @@ const TYPE_LABELS: Record<string, string> = {
   CODING: "Coding",
 };
 
+const CAMERA_POSITION_LABELS: Record<string, string> = {
+  TOP_CENTER: "Top center",
+  TOP_LEFT: "Top left",
+  TOP_RIGHT: "Top right",
+  BOTTOM_LEFT: "Bottom left",
+  BOTTOM_RIGHT: "Bottom right",
+};
+
 export default async function AssessmentSubmissionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ assignmentId?: string }>;
 }) {
-  const { navLinks } = await requireCompanyPageAccess("assessments.submissions");
+  const { navLinks, keys } = await requireCompanyPageAccess([
+    "assessments.submissions.view",
+    "assessments.submissions.grade",
+    "assessments.submissions.send",
+  ]);
+  const canGrade = keys.includes("assessments.submissions.grade");
+  const canSend = keys.includes("assessments.submissions.send");
 
   const { assignmentId } = await searchParams;
 
@@ -30,8 +43,8 @@ export default async function AssessmentSubmissionsPage({
       where: { id: assignmentId },
       include: {
         student: { include: { college: true } },
-        assessment: true,
-        answers: { include: { question: true } },
+        assessment: { include: { questions: { orderBy: { order: "asc" } } } },
+        answers: true,
         snapshots: { orderBy: { capturedAt: "asc" } },
       },
     });
@@ -45,7 +58,29 @@ export default async function AssessmentSubmissionsPage({
       );
     }
 
-    const sortedAnswers = [...assignment.answers].sort((a, b) => a.question.order - b.question.order);
+    const answersByQuestion = new Map(assignment.answers.map((a) => [a.questionId, a]));
+    const reviewAnswers: ReviewAnswer[] = assignment.assessment.questions.map((q) => {
+      const a = answersByQuestion.get(q.id);
+      return {
+        answerId: a?.id ?? null,
+        questionId: q.id,
+        questionType: q.questionType,
+        questionText: q.questionText,
+        marks: q.marks,
+        marksAwarded: a?.marksAwarded ?? null,
+        optionA: q.optionA,
+        optionB: q.optionB,
+        optionC: q.optionC,
+        optionD: q.optionD,
+        correctOption: q.correctOption,
+        selectedOption: a?.selectedOption ?? null,
+        writtenAnswer: a?.writtenAnswer ?? null,
+        codeSubmission: a?.codeSubmission ?? null,
+        codeLanguage: a?.codeLanguage ?? null,
+        testCasesPassed: a?.testCasesPassed ?? null,
+        testCasesTotal: a?.testCasesTotal ?? null,
+      };
+    });
 
     return (
       <DashboardShell title={assignment.student.name} subtitle="Assessment submission" navLinks={navLinks}>
@@ -70,116 +105,82 @@ export default async function AssessmentSubmissionsPage({
               {assignment.audioViolationCount} audio violation(s).
             </p>
           )}
+          {assignment.assessment.proctoringEnabled && assignment.snapshots.some((s) => s.flagReason) && (
+            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              ⚠ The in-browser AI proctor flagged {assignment.snapshots.filter((s) => s.flagReason).length}{" "}
+              snapshot(s) during this attempt — see below. This does not auto-submit on its own.
+            </p>
+          )}
+          {assignment.cameraPosition && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Student reported camera position: {CAMERA_POSITION_LABELS[assignment.cameraPosition] ?? assignment.cameraPosition}
+            </p>
+          )}
           {assignment.needsGrading && (
             <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
               Written answers below still need marks assigned — total will update as you grade them.
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <form
-              action={async (formData: FormData) => {
-                "use server";
-                await sendResultToCollege(assignmentId, formData);
-              }}
-            >
-              <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                {assignment.sentToCollegeAt ? "Re-send to College" : "Send to College"}
-              </Button>
-            </form>
-            <form
-              action={async (formData: FormData) => {
-                "use server";
-                await sendResultToStudent(assignmentId, formData);
-              }}
-            >
-              <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                {assignment.sentToStudentAt ? "Re-send to Student" : "Send to Student"}
-              </Button>
-            </form>
-            <form action={allowAssessmentRetest.bind(null, assignmentId)}>
-              <Button type="submit" size="sm" variant="outline" className="border-amber-400 text-amber-700">
-                Allow Retest
-              </Button>
-            </form>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            &quot;Allow Retest&quot; wipes this attempt (answers, violations, proctoring photos, marks) and puts it
-            back to not-yet-started — use it if a student needs to redo the assessment from scratch.
-          </p>
+          {canSend ? (
+            <>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <form
+                  action={async (formData: FormData) => {
+                    "use server";
+                    await sendResultToCollege(assignmentId, formData);
+                  }}
+                >
+                  <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+                    {assignment.sentToCollegeAt ? "Re-send to College" : "Send to College"}
+                  </Button>
+                </form>
+                <form
+                  action={async (formData: FormData) => {
+                    "use server";
+                    await sendResultToStudent(assignmentId, formData);
+                  }}
+                >
+                  <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+                    {assignment.sentToStudentAt ? "Re-send to Student" : "Send to Student"}
+                  </Button>
+                </form>
+                <form action={allowAssessmentRetest.bind(null, assignmentId)}>
+                  <Button type="submit" size="sm" variant="outline" className="border-amber-400 text-amber-700">
+                    Allow Retest
+                  </Button>
+                </form>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                &quot;Allow Retest&quot; wipes this attempt (answers, violations, proctoring photos, marks) and puts it
+                back to not-yet-started — use it if a student needs to redo the assessment from scratch.
+              </p>
+            </>
+          ) : (
+            <p className="mt-4 text-xs text-muted-foreground">
+              You don&apos;t have permission to send results or allow a retest for this submission.
+            </p>
+          )}
         </div>
 
         {assignment.assessment.proctoringEnabled && (
           <div className="mb-6">
             <AssessmentSnapshotGallery
               assignmentId={assignmentId}
+              canManage={canSend}
               snapshots={assignment.snapshots.map((s) => ({
                 id: s.id,
                 imageUrl: s.imageUrl,
                 capturedAt: s.capturedAt.toISOString(),
                 sharedWithStudent: s.sharedWithStudent,
                 sharedWithCollege: s.sharedWithCollege,
+                flagReason: s.flagReason,
               }))}
             />
           </div>
         )}
 
-        <div className="space-y-3">
-          {sortedAnswers.map((ans, i) => (
-            <div key={ans.id} className="rounded-xl border border-border bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-indigo">
-                  Q{i + 1}. {ans.question.questionText}
-                </p>
-                {ans.question.questionType === "MCQ" ? (
-                  <Badge
-                    className={
-                      ans.isCorrect
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : "bg-red-100 text-red-700 hover:bg-red-100"
-                    }
-                  >
-                    {ans.isCorrect ? "Correct" : "Wrong"} &middot; {ans.marksAwarded ?? 0}/{ans.question.marks}
-                  </Badge>
-                ) : (
-                  <Badge className={writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className}>
-                    {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
-                  </Badge>
-                )}
-              </div>
-              {ans.question.questionType === "MCQ" ? (
-                <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                  {(["A", "B", "C", "D"] as const).map((letter) => {
-                    const text = ans.question[`option${letter}` as "optionA"];
-                    const isSelected = ans.selectedOption === letter;
-                    const isCorrectOption = ans.question.correctOption === letter;
-                    return (
-                      <p
-                        key={letter}
-                        className={`whitespace-pre-wrap ${
-                          isCorrectOption
-                            ? "font-medium text-green-700"
-                            : isSelected
-                              ? "font-medium text-red-700"
-                              : ""
-                        }`}
-                      >
-                        {letter}. {text} {isSelected && "(selected)"} {isCorrectOption && "(correct)"}
-                      </p>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="mt-2 space-y-2">
-                  <p className="rounded-lg bg-cream p-3 text-sm text-indigo">
-                    {ans.writtenAnswer || <span className="text-muted-foreground">No answer given.</span>}
-                  </p>
-                  <GradeWrittenAnswerForm answerId={ans.id} maxMarks={ans.question.marks} currentMarks={ans.marksAwarded} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <AssessmentAnswerReview answers={reviewAnswers} editable={canGrade} />
       </DashboardShell>
     );
   }

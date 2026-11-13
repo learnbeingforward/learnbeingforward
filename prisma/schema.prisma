@@ -698,6 +698,11 @@ model AssessmentAssignment {
   // phase, and can't go back. Assessments with no coding questions never touch
   // this — they stay single-phase, same as before.
   mcqPhaseSubmittedAt DateTime?
+  // Proctored assessments only: where the student says their webcam physically
+  // sits relative to their screen (asked during the pre-exam system check). Used
+  // to give the admin context on flagged snapshots — the AI proctor's gaze check
+  // is calibrated per-student regardless, so this is informational, not load-bearing.
+  cameraPosition      String?
   sentToCollegeAt     DateTime?
   sentToStudentAt     DateTime?
   assignedAt          DateTime                 @default(now())
@@ -718,6 +723,11 @@ model AssessmentSnapshot {
   capturedAt        DateTime             @default(now())
   sharedWithStudent Boolean              @default(false)
   sharedWithCollege Boolean              @default(false)
+  // Null for the routine snapshots taken every 30s. Set when the in-browser AI
+  // proctor (object + gaze detection, entirely client-side — no video is ever
+  // uploaded, just this one frame) flagged the moment it was captured, e.g.
+  // "phone_detected", "multiple_people", "looking_away", "no_face".
+  flagReason        String?
 
   @@index([assignmentId])
 }

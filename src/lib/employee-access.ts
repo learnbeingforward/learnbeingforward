@@ -31,7 +31,9 @@ export type EmployeePageKey =
   | "overview.edit-site"
   | "overview.trainer-content"
   | "assessments.build"
-  | "assessments.submissions"
+  | "assessments.submissions.view"
+  | "assessments.submissions.grade"
+  | "assessments.submissions.send"
   | "course-content";
 
 type CatalogPermission = { key: EmployeePageKey; label: string };
@@ -147,7 +149,15 @@ export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
     group: "Assessments",
     pages: [
       { navLabel: "Build & Send Assessments", href: "/lms/company/assessments", permissions: [{ key: "assessments.build", label: "Build & Send Assessments" }] },
-      { navLabel: "Assessment Submissions", href: "/lms/company/assessments/submissions", permissions: [{ key: "assessments.submissions", label: "Assessment Submissions" }] },
+      {
+        navLabel: "Assessment Submissions",
+        href: "/lms/company/assessments/submissions",
+        permissions: [
+          { key: "assessments.submissions.view", label: "View submissions & proctoring snapshots" },
+          { key: "assessments.submissions.grade", label: "Grade written answers" },
+          { key: "assessments.submissions.send", label: "Send results to student/college, allow retest, delete snapshots" },
+        ],
+      },
     ],
   },
   {
@@ -169,7 +179,9 @@ const SUPER_ADMIN_ONLY_KEYS = new Set<EmployeePageKey>([
   "colleges.approvals",
   "colleges.sent",
   "assessments.build",
-  "assessments.submissions",
+  "assessments.submissions.view",
+  "assessments.submissions.grade",
+  "assessments.submissions.send",
 ]);
 
 const FLAT_PAGES = EMPLOYEE_PAGE_CATALOG.flatMap((g) => g.pages);
@@ -193,6 +205,7 @@ const LEGACY_KEY_EXPANSIONS: Record<string, EmployeePageKey[]> = {
     "overview.notifications.trainer",
     "overview.notifications.admin",
   ],
+  "assessments.submissions": ["assessments.submissions.view", "assessments.submissions.grade", "assessments.submissions.send"],
 };
 
 export function parseEmployeeKeys(value: unknown): EmployeePageKey[] {

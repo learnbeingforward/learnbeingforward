@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/lms/BackLink";
 import { SharedSnapshotGallery } from "@/components/lms/SharedSnapshotGallery";
-import { writtenAnswerBadge } from "@/lib/assessment-ui";
+import { AssessmentAnswerReview, type ReviewAnswer } from "@/components/lms/AssessmentAnswerReview";
 import { format } from "date-fns";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -29,8 +29,8 @@ export default async function StudentAssessmentsPage({
     const assignment = await prisma.assessmentAssignment.findUnique({
       where: { id: assignmentId },
       include: {
-        assessment: true,
-        answers: { include: { question: true } },
+        assessment: { include: { questions: { orderBy: { order: "asc" } } } },
+        answers: true,
         snapshots: { where: { sharedWithStudent: true }, orderBy: { capturedAt: "asc" } },
       },
     });
@@ -44,7 +44,29 @@ export default async function StudentAssessmentsPage({
       );
     }
 
-    const sortedAnswers = [...assignment.answers].sort((a, b) => a.question.order - b.question.order);
+    const answersByQuestion = new Map(assignment.answers.map((a) => [a.questionId, a]));
+    const reviewAnswers: ReviewAnswer[] = assignment.assessment.questions.map((q) => {
+      const a = answersByQuestion.get(q.id);
+      return {
+        answerId: a?.id ?? null,
+        questionId: q.id,
+        questionType: q.questionType,
+        questionText: q.questionText,
+        marks: q.marks,
+        marksAwarded: a?.marksAwarded ?? null,
+        optionA: q.optionA,
+        optionB: q.optionB,
+        optionC: q.optionC,
+        optionD: q.optionD,
+        correctOption: q.correctOption,
+        selectedOption: a?.selectedOption ?? null,
+        writtenAnswer: a?.writtenAnswer ?? null,
+        codeSubmission: a?.codeSubmission ?? null,
+        codeLanguage: a?.codeLanguage ?? null,
+        testCasesPassed: a?.testCasesPassed ?? null,
+        testCasesTotal: a?.testCasesTotal ?? null,
+      };
+    });
 
     return (
       <DashboardShell title={assignment.assessment.title} subtitle="Your result" navLinks={navLinks}>
@@ -67,59 +89,7 @@ export default async function StudentAssessmentsPage({
           </div>
         )}
 
-        <div className="space-y-3">
-          {sortedAnswers.map((ans, i) => (
-            <div key={ans.id} className="rounded-xl border border-border bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-indigo">
-                  Q{i + 1}. {ans.question.questionText}
-                </p>
-                {ans.question.questionType === "MCQ" ? (
-                  <Badge
-                    className={
-                      ans.isCorrect
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : "bg-red-100 text-red-700 hover:bg-red-100"
-                    }
-                  >
-                    {ans.isCorrect ? "Correct" : "Wrong"} &middot; {ans.marksAwarded ?? 0}/{ans.question.marks}
-                  </Badge>
-                ) : (
-                  <Badge className={writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className}>
-                    {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
-                  </Badge>
-                )}
-              </div>
-              {ans.question.questionType === "MCQ" ? (
-                <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                  {(["A", "B", "C", "D"] as const).map((letter) => {
-                    const text = ans.question[`option${letter}` as "optionA"];
-                    const isSelected = ans.selectedOption === letter;
-                    const isCorrectOption = ans.question.correctOption === letter;
-                    return (
-                      <p
-                        key={letter}
-                        className={`whitespace-pre-wrap ${
-                          isCorrectOption
-                            ? "font-medium text-green-700"
-                            : isSelected
-                              ? "font-medium text-red-700"
-                              : ""
-                        }`}
-                      >
-                        {letter}. {text} {isSelected && "(your answer)"} {isCorrectOption && "(correct)"}
-                      </p>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-2 rounded-lg bg-cream p-3 text-sm text-indigo">
-                  {ans.writtenAnswer || <span className="text-muted-foreground">No answer given.</span>}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
+        <AssessmentAnswerReview answers={reviewAnswers} />
       </DashboardShell>
     );
   }

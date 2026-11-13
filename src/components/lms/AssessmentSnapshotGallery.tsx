@@ -15,20 +15,35 @@ type Snapshot = {
   capturedAt: string;
   sharedWithStudent?: boolean;
   sharedWithCollege?: boolean;
+  flagReason?: string | null;
+};
+
+const FLAG_LABELS: Record<string, string> = {
+  phone_detected: "Phone detected",
+  multiple_people: "Multiple people",
+  looking_away: "Looking away",
+  no_face: "No face in frame",
 };
 
 export function AssessmentSnapshotGallery({
   assignmentId,
   snapshots,
+  canManage = true,
 }: {
   assignmentId: string;
   snapshots: Snapshot[];
+  /** Hides Delete/Send Selected — someone with only view access shouldn't be
+   * able to destroy evidence or release it, even though they can look at it. */
+  canManage?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const flaggedCount = snapshots.filter((s) => s.flagReason).length;
+  const [expanded, setExpanded] = useState(flaggedCount > 0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<"student" | "college" | "delete" | null>(null);
+  // Flagged ones first — they're the ones actually worth an admin's attention.
+  const sortedSnapshots = [...snapshots].sort((a, b) => (a.flagReason ? -1 : 0) - (b.flagReason ? -1 : 0));
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -94,6 +109,11 @@ export function AssessmentSnapshotGallery({
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-indigo">
           <Images className="size-4" /> Snapshot Images ({snapshots.length})
+          {flaggedCount > 0 && (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+              {flaggedCount} AI-flagged
+            </span>
+          )}
         </span>
         {expanded ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
       </button>
@@ -115,6 +135,7 @@ export function AssessmentSnapshotGallery({
                 />
                 Select all ({snapshots.length})
               </label>
+              {canManage && (
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -150,6 +171,7 @@ export function AssessmentSnapshotGallery({
                   Send Selected to College
                 </Button>
               </div>
+              )}
             </div>
 
             {statusMessage && (
@@ -159,8 +181,13 @@ export function AssessmentSnapshotGallery({
             )}
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-              {snapshots.map((s) => (
-                <label key={s.id} className="group relative block cursor-pointer overflow-hidden rounded-lg border border-border">
+              {sortedSnapshots.map((s) => (
+                <label
+                  key={s.id}
+                  className={`group relative block cursor-pointer overflow-hidden rounded-lg border ${
+                    s.flagReason ? "border-2 border-red-400" : "border-border"
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={selected.has(s.id)}
@@ -178,6 +205,11 @@ export function AssessmentSnapshotGallery({
                   )}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={s.imageUrl} alt="Proctoring snapshot" className="aspect-video w-full object-cover" />
+                  {s.flagReason && (
+                    <p className="bg-red-600 px-1.5 py-1 text-center text-[10px] font-semibold text-white">
+                      ⚠ {FLAG_LABELS[s.flagReason] ?? s.flagReason}
+                    </p>
+                  )}
                   <p className="bg-indigo/5 px-1.5 py-1 text-center text-[10px] text-muted-foreground">
                     {new Date(s.capturedAt).toLocaleTimeString()}
                   </p>
