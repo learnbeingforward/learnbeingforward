@@ -200,6 +200,8 @@ export async function addAssessmentQuestion(
     const starterJava = String(formData.get("starterJava") ?? "");
     const starterC = String(formData.get("starterC") ?? "");
     const starterCpp = String(formData.get("starterCpp") ?? "");
+    const timeLimitRaw = String(formData.get("timeLimitSeconds") ?? "").trim();
+    const timeLimitSeconds = timeLimitRaw ? Math.min(30, Math.max(1, Number.parseInt(timeLimitRaw, 10) || 8)) : null;
 
     const testCases = inputs
       .map((input, i) => ({ input, expectedOutput: outputs[i] ?? "", isHidden: hiddenFlags[i] === "true" }))
@@ -227,6 +229,7 @@ export async function addAssessmentQuestion(
         questionText,
         marks,
         starterCode,
+        timeLimitSeconds,
         testCases: {
           create: testCases.map((tc, i) => ({
             input: tc.input,
@@ -447,16 +450,21 @@ export async function runStudentCode(
   }
 
   const { runCode, outputsMatch } = await import("@/lib/piston");
+  const runTimeoutMs = question.timeLimitSeconds ? question.timeLimitSeconds * 1000 : undefined;
   try {
     const results = await Promise.all(
       question.testCases.map(async (tc) => {
-        const result = await runCode(language as "python" | "java" | "c" | "cpp", code, tc.input);
-        const actualOutput = result.compileError ? `Compile error:\n${result.compileError}` : result.stdout || result.stderr;
+        const result = await runCode(language as "python" | "java" | "c" | "cpp", code, tc.input, runTimeoutMs);
+        const actualOutput = result.timedOut
+          ? `Time limit exceeded (${question.timeLimitSeconds ?? 8}s).`
+          : result.compileError
+            ? `Compile error:\n${result.compileError}`
+            : result.stdout || result.stderr;
         return {
           input: tc.input,
           expectedOutput: tc.expectedOutput,
           actualOutput,
-          passed: !result.compileError && outputsMatch(result.stdout, tc.expectedOutput),
+          passed: !result.compileError && !result.timedOut && outputsMatch(result.stdout, tc.expectedOutput),
         };
       })
     );
@@ -515,11 +523,12 @@ export async function submitCodingAnswer(
   }
 
   const { runCode, outputsMatch } = await import("@/lib/piston");
+  const runTimeoutMs = question.timeLimitSeconds ? question.timeLimitSeconds * 1000 : undefined;
   let passed = 0;
   try {
     for (const tc of question.testCases) {
-      const result = await runCode(language as "python" | "java" | "c" | "cpp", code, tc.input);
-      if (!result.compileError && outputsMatch(result.stdout, tc.expectedOutput)) passed += 1;
+      const result = await runCode(language as "python" | "java" | "c" | "cpp", code, tc.input, runTimeoutMs);
+      if (!result.compileError && !result.timedOut && outputsMatch(result.stdout, tc.expectedOutput)) passed += 1;
     }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Couldn't run the code." };

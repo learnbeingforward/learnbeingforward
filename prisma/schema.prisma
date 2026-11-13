@@ -651,6 +651,11 @@ model AssessmentQuestion {
   // "java": "...", "c": "...", "cpp": "..."}. Null/missing entries just start blank.
   starterCode   String?  @db.Text
   testCases     CodingTestCase[]
+  // CODING-only, optional: overrides the default 8s execution timeout per test
+  // case run. Pairing a tight limit (e.g. 1-2s) with a large hidden test case lets
+  // an admin fail a brute-force solution that's functionally correct but too slow
+  // — the intended algorithm finishes in time, a naive one times out.
+  timeLimitSeconds Int?
 
   answers       AssessmentAnswer[]
 

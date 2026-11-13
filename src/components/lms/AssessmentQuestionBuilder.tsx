@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RequiredMark } from "@/components/ui/required-mark";
@@ -191,6 +192,25 @@ print(result)`}
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="timeLimitSeconds">Time Limit (seconds, optional)</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Leave blank for the default 8s. To catch a correct-but-brute-force solution (e.g. linear search where
+                the question expects binary search), set a tight limit like 1-2s and add a large hidden test case
+                below (tens of thousands of elements) — the required algorithm finishes well inside the limit, a
+                naive one times out and fails it.
+              </p>
+              <Input
+                id="timeLimitSeconds"
+                name="timeLimitSeconds"
+                type="number"
+                min="1"
+                max="30"
+                placeholder="8"
+                className="mt-1.5 w-32"
+              />
             </div>
 
             <div>

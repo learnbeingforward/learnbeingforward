@@ -34,11 +34,23 @@ export type RunResult = {
 };
 
 const EXECUTION_TIMEOUT_MS = 8000;
+const MIN_RUN_TIMEOUT_MS = 1000;
+const MAX_RUN_TIMEOUT_MS = 30000;
 
 /** Runs one program against one stdin input and returns raw stdout/stderr. Doesn't
  * compare against an expected output — callers do that themselves (trimmed
- * comparison), since what counts as a "match" can vary by question. */
-export async function runCode(language: SupportedLanguage, code: string, stdin: string): Promise<RunResult> {
+ * comparison), since what counts as a "match" can vary by question.
+ *
+ * `runTimeoutMs` lets a question tighten the default 8s run limit — pairing a
+ * tight limit with a large hidden test case fails a brute-force solution that's
+ * functionally correct but too slow, while the intended algorithm still finishes
+ * in time. Compile time is never shortened by this, only the run itself. */
+export async function runCode(
+  language: SupportedLanguage,
+  code: string,
+  stdin: string,
+  runTimeoutMs?: number
+): Promise<RunResult> {
   // Trim whitespace and strip any surrounding quotes — some hosting panels'
   // env-var forms save the value exactly as typed, quotes included, which
   // would otherwise silently break the Authorization header below.
@@ -48,6 +60,10 @@ export async function runCode(language: SupportedLanguage, code: string, stdin: 
       "Code execution isn't configured yet — set CODE_EXEC_API_KEY (see your onlinecompiler.io account) in the environment."
     );
   }
+
+  const runTimeout = runTimeoutMs
+    ? Math.min(MAX_RUN_TIMEOUT_MS, Math.max(MIN_RUN_TIMEOUT_MS, runTimeoutMs))
+    : EXECUTION_TIMEOUT_MS;
 
   let res: Response;
   try {
@@ -59,7 +75,7 @@ export async function runCode(language: SupportedLanguage, code: string, stdin: 
         version: "*",
         files: [{ name: FILE_NAME[language], content: code }],
         stdin,
-        run_timeout: EXECUTION_TIMEOUT_MS,
+        run_timeout: runTimeout,
         compile_timeout: EXECUTION_TIMEOUT_MS,
       }),
     });

@@ -17,6 +17,7 @@ type Question = {
   questionText: string;
   marks: number;
   starterCode: string | null;
+  timeLimitSeconds: number | null;
   visibleTestCases: { id: string; input: string; expectedOutput: string }[];
   savedCode: string | null;
   savedLanguage: string | null;
@@ -101,6 +102,7 @@ export function CodingQuestionPanel({
           ({question.marks} mark{question.marks !== 1 ? "s" : ""})
         </span>
       </p>
+      <p className="mb-3 text-xs text-muted-foreground">Time limit: {question.timeLimitSeconds ?? 8} sec per test case</p>
       {passed !== null && total !== null && (
         <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-indigo">
           <CheckCircle2 className="size-3.5 text-green-600" /> Last submitted: {passed}/{total} test cases passed

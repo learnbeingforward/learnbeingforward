@@ -63,6 +63,7 @@ export default async function TakeAssessmentPage({
       savedAnswer:
         q.questionType === "MCQ" ? (existing?.selectedOption ?? null) : (existing?.writtenAnswer ?? null),
       starterCode: q.starterCode,
+      timeLimitSeconds: q.timeLimitSeconds,
       visibleTestCases: q.testCases.map((tc) => ({ id: tc.id, input: tc.input, expectedOutput: tc.expectedOutput })),
       savedCode: existing?.codeSubmission ?? null,
       savedLanguage: existing?.codeLanguage ?? null,

@@ -4,13 +4,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  Bookmark,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  List,
   Maximize,
+  Maximize2,
+  Minimize2,
   Loader2,
   Mic,
   Monitor,
+  Square,
   Video,
   Volume2,
   XCircle,
@@ -53,6 +59,7 @@ type Question = {
   optionD: string | null;
   savedAnswer: string | null;
   starterCode: string | null;
+  timeLimitSeconds: number | null;
   visibleTestCases: { id: string; input: string; expectedOutput: string }[];
   savedCode: string | null;
   savedLanguage: string | null;
@@ -64,6 +71,13 @@ function formatClock(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function formatClockParts(totalSeconds: number) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return { h, m, s };
 }
 
 export function TakeAssessmentClient({
@@ -108,6 +122,15 @@ export function TakeAssessmentClient({
     Object.fromEntries(codingQuestions.map((q) => [q.id, q.testCasesPassed !== null]))
   );
   const [reviewing, setReviewing] = useState(false);
+  // Pure client-side "mark for review" flag — not graded, just a note-to-self the
+  // student can toggle per question (shown in the overview screen and the finish
+  // confirmation's counts).
+  const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
+  // The question-number strip shows 10 at a time; this is which window (0, 10,
+  // 20, …) is currently visible, independent of which question is actually open.
+  const [navWindowStart, setNavWindowStart] = useState(0);
+  const [showAllProblems, setShowAllProblems] = useState(false);
+  const [webcamExpanded, setWebcamExpanded] = useState(false);
   const [started, setStarted] = useState(false);
   const [calibrationSecondsLeft, setCalibrationSecondsLeft] = useState(CALIBRATION_SECONDS);
   // Proctored assessments go through a sequential camera/mic/audio/system check
@@ -454,6 +477,29 @@ export function TakeAssessmentClient({
     e.currentTarget.releasePointerCapture(e.pointerId);
   }
 
+  // ---------- Keyboard shortcuts: ←/→ to move between questions, 1-4 to pick an MCQ option ----------
+
+  useEffect(() => {
+    if (!started || reviewing || showAllProblems || showSummary) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "TEXTAREA" || tag === "INPUT" || (e.target as HTMLElement | null)?.isContentEditable) return;
+      if (e.key === "ArrowLeft") {
+        setCurrentIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "ArrowRight") {
+        setCurrentIndex((i) => Math.min(activeQuestions.length - 1, i + 1));
+      } else if (["1", "2", "3", "4"].includes(e.key)) {
+        const current = activeQuestions[currentIndex];
+        if (current && current.questionType === "MCQ") {
+          handleAnswerChange(current.id, (["A", "B", "C", "D"] as const)[Number(e.key) - 1]);
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started, reviewing, showAllProblems, showSummary, currentIndex]);
+
   // ---------- Start flow (with optional camera/mic calibration) ----------
 
   async function beginExam() {
@@ -668,18 +714,25 @@ export function TakeAssessmentClient({
 
           <h1 className="text-xl font-bold text-white">Your Submission</h1>
           <p className="mt-1 text-sm text-white/70">
-            Here&apos;s what was recorded for every question — review it, then head back to your assessments.
+            Here&apos;s what was recorded for every question, grouped the same way you answered them — review it,
+            then head back to your assessments.
           </p>
 
-          <div className="mt-5 space-y-3">
-            {questions.map((sq, i) => {
+          {(() => {
+            function isQuestionAnswered(sq: (typeof questions)[number]) {
+              if (sq.questionType === "CODING") return !!codingSubmissions[sq.id];
+              const value = answers[sq.id];
+              return !!value && value.trim() !== "";
+            }
+
+            function renderQuestionCard(sq: (typeof questions)[number], globalIndex: number) {
               if (sq.questionType === "CODING") {
                 const sub = codingSubmissions[sq.id];
                 return (
                   <div key={sq.id} className="rounded-xl border border-white/15 bg-white/5 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <p className="whitespace-pre-wrap text-sm font-medium text-white">
-                        Q{i + 1}. {sq.questionText}
+                        Q{globalIndex + 1}. {sq.questionText}
                       </p>
                       <span
                         className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -706,7 +759,7 @@ export function TakeAssessmentClient({
                 <div key={sq.id} className="rounded-xl border border-white/15 bg-white/5 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <p className="whitespace-pre-wrap text-sm font-medium text-white">
-                      Q{i + 1}. {sq.questionText}
+                      Q{globalIndex + 1}. {sq.questionText}
                     </p>
                     {!answered && (
                       <span className="shrink-0 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/60">
@@ -729,8 +782,36 @@ export function TakeAssessmentClient({
                   )}
                 </div>
               );
-            })}
-          </div>
+            }
+
+            // Mixed assessments get two clearly separate sections, matching how the
+            // student actually took it (MCQ/written phase, then a locked-in coding
+            // phase) — otherwise auto-submitting mid-phase would bury "never even
+            // reached" coding questions in among answered ones with no explanation.
+            const sections: { label: string; qs: typeof questions }[] = hasCodingQuestions
+              ? [
+                  { label: "Multiple Choice & Written", qs: mcqQuestions },
+                  { label: "Coding", qs: codingQuestions },
+                ]
+              : [{ label: "Questions", qs: questions }];
+
+            return sections.map((section) => {
+              const sectionAnswered = section.qs.filter(isQuestionAnswered).length;
+              return (
+                <div key={section.label} className="mt-6">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wide text-white/60">{section.label}</p>
+                    <p className="text-xs text-white/60">
+                      {sectionAnswered}/{section.qs.length} attempted
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {section.qs.map((sq) => renderQuestionCard(sq, questions.findIndex((x) => x.id === sq.id)))}
+                  </div>
+                </div>
+              );
+            });
+          })()}
 
           <Button
             onClick={() => router.push("/lms/student/assessments")}
@@ -949,234 +1030,456 @@ export function TakeAssessmentClient({
     return !!value && value.trim() !== "";
   }
 
-  if (reviewing) {
-    // Scoped to whatever the student can actually still change — once the MCQ
-    // phase is locked in, reviewing the coding phase shouldn't dangle the
-    // already-submitted MCQ list in front of them as if it's still editable.
-    const reviewQuestions = inCodingPhase ? codingQuestions : hasCodingQuestions ? mcqQuestions : questions;
-    const unanswered = reviewQuestions.filter((rq) => !isAnswered(rq));
+  // Scoped to whatever the student can actually still change — once the MCQ phase
+  // is locked in, the finish-confirmation and overview screens shouldn't dangle the
+  // already-submitted MCQ list in front of them as if it's still editable.
+  const reviewQuestions = inCodingPhase ? codingQuestions : hasCodingQuestions ? mcqQuestions : questions;
+  const unansweredCount = reviewQuestions.filter((rq) => !isAnswered(rq)).length;
+  const bookmarkedCount = reviewQuestions.filter((rq) => bookmarked[rq.id]).length;
+  const answeredCount = activeQuestions.filter(isAnswered).length;
+
+  const NAV_WINDOW_SIZE = 10;
+  const navWindowQuestions = activeQuestions.slice(navWindowStart, navWindowStart + NAV_WINDOW_SIZE);
+  const hasPrevWindow = navWindowStart > 0;
+  const hasNextWindow = navWindowStart + NAV_WINDOW_SIZE < activeQuestions.length;
+
+  function jumpTo(i: number) {
+    setCurrentIndex(i);
+    setNavWindowStart(Math.floor(i / NAV_WINDOW_SIZE) * NAV_WINDOW_SIZE);
+  }
+
+  function toggleBookmark(id: string) {
+    setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function renderTimer() {
+    if (remainingSeconds === null) return <span className="text-2xl font-bold">--:--:--</span>;
+    const { h, m, s } = formatClockParts(remainingSeconds);
+    const danger = remainingSeconds < 300;
+    return (
+      <span className={`text-2xl font-bold tabular-nums ${danger ? "text-red-400" : "text-white"}`}>
+        {h > 0 && (
+          <>
+            {h}
+            <span className="text-sm font-medium">h</span>{" "}
+          </>
+        )}
+        {String(m).padStart(2, "0")}
+        <span className="text-sm font-medium">m</span>{" "}
+        {String(s).padStart(2, "0")}
+        <span className="text-sm font-medium">s</span>
+      </span>
+    );
+  }
+
+  // ---------- "All Problems" overview ----------
+
+  if (showAllProblems) {
+    const sections: { label: string; qs: Question[] }[] = hasCodingQuestions
+      ? [
+          { label: "Phase 1 — Multiple Choice & Written", qs: mcqQuestions },
+          { label: "Phase 2 — Coding", qs: codingQuestions },
+        ]
+      : [{ label: assessmentTitle, qs: questions }];
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6">
-        <div className="w-full max-w-lg">
-          <h1 className="text-center text-xl font-bold text-white">Review Before You Submit</h1>
-          <p className="mt-2 text-center text-sm text-white/70">
-            {unanswered.length === 0
-              ? "You've answered every question here."
-              : `${unanswered.length} question${unanswered.length !== 1 ? "s are" : " is"} still unanswered — you can go back and finish them, or submit as-is.`}
-          </p>
-          <div className="mt-5 grid grid-cols-6 gap-2 sm:grid-cols-8">
-            {reviewQuestions.map((rq, i) => (
-              <button
-                key={rq.id}
-                type="button"
-                onClick={() => {
-                  setCurrentIndex(i);
-                  setReviewing(false);
-                }}
-                className={`flex aspect-square items-center justify-center rounded-lg text-sm font-semibold ${
-                  isAnswered(rq) ? "bg-green-500 text-white" : "bg-white/20 text-white"
-                }`}
-                title={isAnswered(rq) ? "Answered" : "Not answered — click to go to it"}
-              >
-                {i + 1}
-              </button>
-            ))}
+      <div className="min-h-screen bg-cream">
+        <div className="bg-indigo-dark px-6 py-5 text-white">
+          <div className="mx-auto flex max-w-5xl items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowAllProblems(false)}
+              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80 hover:text-white"
+            >
+              <ChevronLeft className="size-3.5" /> Back to Assessment
+            </button>
+            <p className="text-sm font-semibold">{assessmentTitle}</p>
           </div>
-          <div className="mt-6 flex items-center justify-between gap-3">
-            <Button variant="outline" onClick={() => setReviewing(false)} className="border-white/30 text-white hover:bg-white/10">
-              <ChevronLeft className="size-4" /> Back to Questions
-            </Button>
-            {!inCodingPhase && hasCodingQuestions ? (
-              <Button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="bg-gold text-indigo hover:bg-gold-light">
-                {submittingMcqPhase && <Loader2 className="size-4 animate-spin" />}
-                Confirm & Continue to Coding
-              </Button>
-            ) : (
-              <Button onClick={handleSubmit} disabled={submitting} className="bg-gold text-indigo hover:bg-gold-light">
-                {submitting && <Loader2 className="size-4 animate-spin" />}
-                Confirm & Submit Assessment
-              </Button>
-            )}
-          </div>
+        </div>
+        <div className="mx-auto max-w-5xl space-y-8 p-6">
+          {sections.map((section) => (
+            <div key={section.label}>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{section.label}</p>
+                <p className="text-xs text-muted-foreground">
+                  {section.qs.filter(isAnswered).length}/{section.qs.length} attempted
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">
+                {section.qs.map((sq) => {
+                  const globalIndex = activeQuestions.findIndex((aq) => aq.id === sq.id);
+                  const isCurrentPhase = globalIndex !== -1;
+                  const done = isAnswered(sq);
+                  return (
+                    <button
+                      key={sq.id}
+                      type="button"
+                      disabled={!isCurrentPhase}
+                      onClick={() => {
+                        jumpTo(globalIndex);
+                        setShowAllProblems(false);
+                      }}
+                      className={`rounded-xl border p-3 text-left transition-colors ${
+                        !isCurrentPhase
+                          ? "cursor-not-allowed border-border bg-white/50 opacity-50"
+                          : done
+                            ? "border-green-300 bg-green-50"
+                            : "border-border bg-white hover:border-indigo/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-indigo">Q{questions.findIndex((x) => x.id === sq.id) + 1}</span>
+                        {bookmarked[sq.id] && <Bookmark className="size-3.5 fill-gold text-gold" />}
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {sq.questionType === "CODING" ? "Coding" : sq.questionType === "MCQ" ? "MCQ" : "Written"}
+                      </p>
+                      <p className={`mt-1 text-[11px] font-medium ${done ? "text-green-700" : "text-muted-foreground"}`}>
+                        {done ? "Attempted" : "Not attempted"}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="sticky top-0 z-10 border-b border-border bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div>
-            <h1 className="font-semibold text-indigo">{assessmentTitle}</h1>
-            <p className="text-xs text-muted-foreground">
-              {!isFullscreen && "Not in full-screen — "}Violations: {violationCount}/{VIOLATION_LIMIT}
-              {proctoringEnabled && <> &middot; Audio: {audioViolationCount}/{AUDIO_VIOLATION_LIMIT}</>}
-              {remainingSeconds !== null && <> &middot; Time left: {formatClock(remainingSeconds)}</>}
+    <div className="min-h-screen bg-cream pb-28">
+      {/* HEADER BAND */}
+      <div className="bg-indigo-dark px-4 py-6 text-white sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => setShowAllProblems(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80 hover:text-white"
+          >
+            <ChevronLeft className="size-3.5" /> All Problems
+          </button>
+
+          <div className="text-center">
+            <p className="flex items-center justify-center gap-1.5">
+              <Clock className="size-5 text-gold" />
+              {renderTimer()}
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+              Time left in this assessment session
             </p>
           </div>
-          {!isFullscreen && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => document.documentElement.requestFullscreen().catch(() => {})}
-              className="border-amber-400 text-amber-700"
-            >
-              <Maximize className="size-3.5" /> Return to Full-Screen
-            </Button>
-          )}
+
+          <div className="w-44 sm:w-52">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-green-500 transition-all"
+                style={{ width: `${activeQuestions.length ? (answeredCount / activeQuestions.length) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="mt-1 text-right text-[11px] text-white/70">
+              {answeredCount}/{activeQuestions.length} Questions attempted
+            </p>
+          </div>
         </div>
       </div>
 
-      {warning && (
-        <div className="mx-auto mt-4 max-w-5xl rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <AlertTriangle className="mr-1.5 inline size-4" /> {warning}
-        </div>
-      )}
-      {audioWarning && (
-        <div className="mx-auto mt-4 max-w-5xl rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          <AlertTriangle className="mr-1.5 inline size-4" /> {audioWarning}
-        </div>
-      )}
-
-      <div className="mx-auto flex max-w-5xl gap-5 p-6">
-        <aside className="hidden w-28 shrink-0 sm:block">
-          <div className="sticky top-24">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {activeQuestions.filter(isAnswered).length}/{activeQuestions.length} answered
-            </p>
-            <div className="grid max-h-[70vh] grid-cols-3 gap-1.5 overflow-y-auto pr-1">
-              {activeQuestions.map((aq, i) => (
-                <button
-                  key={aq.id}
-                  type="button"
-                  onClick={() => setCurrentIndex(i)}
-                  className={`flex aspect-square items-center justify-center rounded-md text-xs font-semibold transition-colors ${
-                    i === currentIndex
-                      ? "border-2 border-indigo text-indigo"
-                      : isAnswered(aq)
-                        ? "bg-green-500 text-white"
-                        : "border border-border bg-white text-muted-foreground"
-                  }`}
-                  title={isAnswered(aq) ? "Answered" : "Not answered"}
-                >
-                  {i + 1}
-                </button>
-              ))}
+      {(!isFullscreen || warning || audioWarning) && (
+        <div className="mx-auto max-w-6xl space-y-2 px-4 pt-4 sm:px-6">
+          {!isFullscreen && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+              <span className="flex items-center gap-1.5">
+                <AlertTriangle className="size-4" /> Not in full-screen — Violations: {violationCount}/{VIOLATION_LIMIT}
+                {proctoringEnabled && <> &middot; Audio: {audioViolationCount}/{AUDIO_VIOLATION_LIMIT}</>}
+              </span>
+              <Button
+                size="sm"
+                onClick={() => document.documentElement.requestFullscreen().catch(() => {})}
+                className="bg-gold text-indigo hover:bg-gold-light"
+              >
+                <Maximize className="size-3.5" /> Return to Full-Screen
+              </Button>
             </div>
-          </div>
-        </aside>
+          )}
+          {warning && (
+            <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+              <AlertTriangle className="mr-1.5 inline size-4" /> {warning}
+            </div>
+          )}
+          {audioWarning && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+              <AlertTriangle className="mr-1.5 inline size-4" /> {audioWarning}
+            </div>
+          )}
+        </div>
+      )}
 
-        <div className="flex-1 space-y-4">
-        {hasCodingQuestions && (
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo">
-            {inCodingPhase ? "Phase 2 — Coding" : "Phase 1 — Multiple Choice & Written"}
+      {hasCodingQuestions && (
+        <p className="mx-auto mt-4 max-w-6xl px-4 text-center text-xs font-semibold uppercase tracking-wide text-indigo sm:px-6">
+          {inCodingPhase ? "Phase 2 — Coding" : "Phase 1 — Multiple Choice & Written"}
+        </p>
+      )}
+
+      {/* MAIN CARD — overlaps the header band */}
+      <div className="mx-auto -mt-8 max-w-6xl px-4 sm:px-6">
+        <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-lg">
+          {/* question navigation strip */}
+          <div className="flex items-center justify-center gap-2 overflow-x-auto border-b border-border bg-cream/60 px-4 py-3">
+            <button
+              type="button"
+              disabled={!hasPrevWindow}
+              onClick={() => setNavWindowStart((w) => Math.max(0, w - NAV_WINDOW_SIZE))}
+              className="shrink-0 text-xs font-semibold uppercase tracking-wide text-indigo disabled:opacity-30"
+            >
+              ‹ Prev
+            </button>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {navWindowQuestions.map((nq, idx) => {
+                const i = navWindowStart + idx;
+                const current = i === currentIndex;
+                const done = isAnswered(nq);
+                return (
+                  <button
+                    key={nq.id}
+                    type="button"
+                    onClick={() => jumpTo(i)}
+                    className={`relative flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+                      current
+                        ? "bg-indigo text-white"
+                        : done
+                          ? "border border-border bg-white text-indigo"
+                          : "border border-border bg-white text-muted-foreground"
+                    }`}
+                    title={`Question ${i + 1}${done ? " (answered)" : ""}`}
+                  >
+                    {i + 1}
+                    {done && <span className={`absolute bottom-1 size-1 rounded-full ${current ? "bg-white" : "bg-green-500"}`} />}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              disabled={!hasNextWindow}
+              onClick={() => setNavWindowStart((w) => w + NAV_WINDOW_SIZE)}
+              className="shrink-0 text-xs font-semibold uppercase tracking-wide text-indigo disabled:opacity-30"
+            >
+              Next ›
+            </button>
+          </div>
+
+          {q.questionType === "CODING" ? (
+            <div className="p-6">
+              <CodingQuestionPanel
+                key={q.id}
+                assignmentId={assignmentId}
+                question={q}
+                onSubmitted={(result) => {
+                  setCodingAnswered((prev) => ({ ...prev, [q.id]: true }));
+                  setCodingSubmissions((prev) => ({ ...prev, [q.id]: result }));
+                }}
+              />
+              <p className="mt-6 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-[45%_55%]">
+              {/* question panel */}
+              <div className="border-border p-6 md:border-r">
+                <div className="mb-1 flex items-start justify-between gap-3">
+                  <p className="font-bold text-indigo">{assessmentTitle}</p>
+                  <button
+                    type="button"
+                    onClick={() => toggleBookmark(q.id)}
+                    title={bookmarked[q.id] ? "Remove bookmark" : "Mark for review"}
+                    className="shrink-0"
+                  >
+                    <Bookmark className={`size-5 ${bookmarked[q.id] ? "fill-gold text-gold" : "text-muted-foreground"}`} />
+                  </button>
+                </div>
+                <p className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="rounded bg-cream px-1.5 py-0.5 font-medium">{q.questionType === "MCQ" ? "MCQ" : "Written"}</span>
+                </p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Description</p>
+                <div className="max-h-[50vh] overflow-y-auto pr-1">
+                  <p className="whitespace-pre-wrap text-base leading-relaxed text-indigo">{q.questionText}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {q.marks} mark{q.marks !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+
+              {/* answer panel */}
+              <div className="p-6">
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <p className="font-semibold text-indigo">Answer choices</p>
+                  <span
+                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                      isAnswered(q) ? "border-green-300 bg-green-50 text-green-700" : "border-border bg-cream text-muted-foreground"
+                    }`}
+                  >
+                    {isAnswered(q) ? <CheckCircle2 className="size-3" /> : <span className="size-1.5 rounded-full bg-muted-foreground" />}
+                    {isAnswered(q) ? "Solved" : "Unsolved"}
+                  </span>
+                </div>
+                <p className="mb-4 text-xs text-muted-foreground">Please choose a correct answer.</p>
+
+                {q.questionType === "MCQ" ? (
+                  <div className="space-y-2">
+                    {(["A", "B", "C", "D"] as const).map((letter) => {
+                      const text = q[`option${letter}` as "optionA"];
+                      const selected = answers[q.id] === letter;
+                      return (
+                        <label
+                          key={letter}
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                            selected ? "border-indigo bg-indigo/5" : "border-transparent bg-cream hover:bg-cream/70"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${q.id}`}
+                            value={letter}
+                            checked={selected}
+                            onChange={() => handleAnswerChange(q.id, letter)}
+                            className="mt-1 shrink-0 accent-indigo"
+                          />
+                          <span className="whitespace-pre-wrap">
+                            {letter}. {text}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Textarea
+                    rows={6}
+                    value={answers[q.id] ?? ""}
+                    onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                    placeholder="Write your answer here..."
+                    className="text-base"
+                  />
+                )}
+
+                <p className="mt-6 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {!inCodingPhase && hasCodingQuestions && isLast && (
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Once you finish this phase, you can&apos;t come back to these questions — review your answers first.
           </p>
         )}
-        <p className="text-xs font-medium text-muted-foreground">
-          Question {currentIndex + 1} of {activeQuestions.length}
-        </p>
+      </div>
 
-        {q.questionType === "CODING" ? (
-          <CodingQuestionPanel
-            key={q.id}
-            assignmentId={assignmentId}
-            question={q}
-            onSubmitted={(result) => {
-              setCodingAnswered((prev) => ({ ...prev, [q.id]: true }));
-              setCodingSubmissions((prev) => ({ ...prev, [q.id]: result }));
-            }}
-          />
-        ) : (
-          <div className="rounded-xl border border-border bg-white p-5">
-            <p className="mb-3 whitespace-pre-wrap text-base font-medium leading-relaxed text-indigo">
-              Q{currentIndex + 1}. {q.questionText}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                ({q.marks} mark{q.marks !== 1 ? "s" : ""})
-              </span>
-            </p>
-            {q.questionType === "MCQ" ? (
-              <div className="space-y-2">
-                {(["A", "B", "C", "D"] as const).map((letter) => {
-                  const text = q[`option${letter}` as "optionA"];
-                  return (
-                    <label
-                      key={letter}
-                      className="flex items-start gap-2 rounded-lg border border-border px-3 py-2.5 text-base has-[:checked]:border-indigo has-[:checked]:bg-indigo/5"
-                    >
-                      <input
-                        type="radio"
-                        name={`q-${q.id}`}
-                        value={letter}
-                        checked={answers[q.id] === letter}
-                        onChange={() => handleAnswerChange(q.id, letter)}
-                        className="mt-1 shrink-0 accent-indigo"
-                      />
-                      <span className="whitespace-pre-wrap">
-                        {letter}. {text}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            ) : (
-              <Textarea
-                rows={5}
-                value={answers[q.id] ?? ""}
-                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                placeholder="Write your answer here..."
-                className="text-base"
-              />
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-3">
+      {/* STICKY BOTTOM ACTION BAR */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 px-3 py-3 backdrop-blur">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2">
           <Button
             variant="outline"
-            onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+            onClick={() => jumpTo(Math.max(0, currentIndex - 1))}
             disabled={currentIndex === 0}
+            className="border-border text-xs font-semibold uppercase tracking-wide text-indigo"
           >
-            <ChevronLeft className="size-4" /> Back
+            <ChevronLeft className="size-3.5" /> Previous Problem
           </Button>
-
-          {isLast ? (
-            <Button onClick={() => setReviewing(true)} className="bg-indigo text-white hover:bg-indigo/90">
-              Review & {!inCodingPhase && hasCodingQuestions ? "Continue" : "Submit"} <ChevronRight className="size-4" />
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setCurrentIndex((i) => Math.min(activeQuestions.length - 1, i + 1))}
-              className="bg-indigo text-white hover:bg-indigo/90"
-            >
-              Next <ChevronRight className="size-4" />
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={() => setReviewing(true)}
+            className="border-red-300 text-xs font-semibold uppercase tracking-wide text-red-600 hover:bg-red-50"
+          >
+            <Square className="size-3 fill-current" /> Finish &amp; Submit
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowAllProblems(true)}
+            className="border-border text-xs font-semibold uppercase tracking-wide text-indigo"
+          >
+            <List className="size-3.5" /> Back to All Problems
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => jumpTo(Math.min(activeQuestions.length - 1, currentIndex + 1))}
+            disabled={currentIndex === activeQuestions.length - 1}
+            className="border-border text-xs font-semibold uppercase tracking-wide text-indigo"
+          >
+            Next Problem <ChevronRight className="size-3.5" />
+          </Button>
         </div>
-        {!inCodingPhase && hasCodingQuestions && isLast && (
-          <p className="text-center text-xs text-muted-foreground">
-            Once you continue, you can&apos;t come back to these questions — review your answers first.
-          </p>
-        )}
-      </div>
       </div>
 
+      {/* FLOATING WEBCAM PREVIEW */}
       {proctoringEnabled && (
         <div
           onPointerDown={handlePipPointerDown}
           onPointerMove={handlePipPointerMove}
           onPointerUp={handlePipPointerUp}
           style={pipPos ? { top: pipPos.top, left: pipPos.left } : undefined}
-          className={`fixed z-20 h-24 w-32 cursor-move touch-none select-none overflow-hidden rounded-lg border-2 border-white shadow-lg ${
-            pipPos ? "" : "bottom-4 right-4"
-          }`}
+          className={`fixed z-40 cursor-move touch-none select-none overflow-hidden rounded-xl border-2 border-white shadow-lg transition-[width,height] ${
+            webcamExpanded ? "h-56 w-72" : "h-24 w-32"
+          } ${pipPos ? "" : "right-4 top-4"}`}
         >
           <video ref={videoRef} muted playsInline className="size-full object-cover" />
           <span className="pointer-events-none absolute left-1.5 top-1.5 flex items-center gap-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-white">
             <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
             REC
           </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setWebcamExpanded((v) => !v);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute right-1.5 top-1.5 rounded bg-black/50 p-1 text-white hover:bg-black/70"
+            title={webcamExpanded ? "Collapse" : "Expand"}
+          >
+            {webcamExpanded ? <Minimize2 className="size-3" /> : <Maximize2 className="size-3" />}
+          </button>
+        </div>
+      )}
+
+      {/* FINISH & SUBMIT confirmation modal */}
+      {reviewing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-indigo">
+              {!inCodingPhase && hasCodingQuestions ? "Finish Phase 1 & Continue to Coding?" : "Finish & Submit Assignment?"}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">This can&apos;t be undone once confirmed.</p>
+            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-lg bg-green-50 p-3">
+                <p className="text-2xl font-bold text-green-700">{reviewQuestions.length - unansweredCount}</p>
+                <p className="text-xs text-muted-foreground">Attempted</p>
+              </div>
+              <div className="rounded-lg bg-cream p-3">
+                <p className="text-2xl font-bold text-indigo">{unansweredCount}</p>
+                <p className="text-xs text-muted-foreground">Unattempted</p>
+              </div>
+              <div className="rounded-lg bg-gold/10 p-3">
+                <p className="text-2xl font-bold text-gold">{bookmarkedCount}</p>
+                <p className="text-xs text-muted-foreground">Bookmarked</p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={() => setReviewing(false)} className="border-border text-indigo">
+                Cancel
+              </Button>
+              {!inCodingPhase && hasCodingQuestions ? (
+                <Button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="bg-red-600 text-white hover:bg-red-700">
+                  {submittingMcqPhase && <Loader2 className="size-4 animate-spin" />}
+                  Continue to Coding
+                </Button>
+              ) : (
+                <Button onClick={handleSubmit} disabled={submitting} className="bg-red-600 text-white hover:bg-red-700">
+                  {submitting && <Loader2 className="size-4 animate-spin" />}
+                  Submit
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
