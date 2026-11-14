@@ -240,7 +240,7 @@ export default async function CompanyDashboardPage({
             <span className="grow">Add an account</span>
             <Icon name="chevR" size={16} />
           </Link>
-          <Link className="list-row" href="/lms/company/trainers?view=schedule">
+          <Link className="list-row" href="/lms/company/trainers/schedule">
             <span className="icon-box gold"><Icon name="calendar" size={18} /></span>
             <span className="grow">Schedule training</span>
             <Icon name="chevR" size={16} />

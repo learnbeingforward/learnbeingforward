@@ -1,109 +1,113 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginButton";
 import { updateTrainerRate } from "@/lib/actions/trainers";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function CompanyTrainersPage() {
-  const { session, keys, navLinks } = await requireCompanyPageAccess(["trainers.manage", "trainers.invoices"]);
+  const { session, keys, hasUnread } = await requireCompanyPageAccess(["trainers.manage", "trainers.invoices"]);
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
   const isSuperAdmin = session.user.role === "SUPER_ADMIN";
   const canManage = keys.includes("trainers.manage");
   const canInvoices = keys.includes("trainers.invoices");
 
-  const trainers = await prisma.trainer.findMany({
-    include: { loginUser: true, batches: true },
-    orderBy: { name: "asc" },
-  });
+  const trainers = await prisma.trainer.findMany({ include: { loginUser: true, batches: true }, orderBy: { name: "asc" } });
 
   return (
-    <DashboardShell title="Trainers" subtitle="Manage trainers, batches & invoices" navLinks={navLinks}>
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+    <AppShell
+      nav={nav}
+      active="trainers"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Accounts › Trainers"
+      title="Trainers"
+      subtitle="Batches, schedules, invoices and hourly rates."
+      actions={<Link className="btn btn-ghost-light" href="/lms/company/accounts"><Icon name="plus" size={16} />Add trainer</Link>}
+    >
+      <div className="grid" style={{ ["--min" as string]: "260px" }}>
         {canManage && (
-          <Link
-            href="/lms/company/trainers/batches"
-            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-          >
-            <p className="font-semibold text-indigo">Batches</p>
-            <p className="mt-1 text-sm text-muted-foreground">Group enrolled students into class batches.</p>
+          <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/trainers/batches">
+            <span className="icon-box gold"><Icon name="users" size={20} /></span>
+            <h3 className="h3" style={{ marginTop: 12 }}>Batches</h3>
+            <p className="small muted" style={{ marginTop: 4 }}>Group enrolled students into class batches.</p>
           </Link>
         )}
         {canManage && (
-          <Link
-            href="/lms/company/trainers/schedule"
-            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-          >
-            <p className="font-semibold text-indigo">Schedule Training</p>
-            <p className="mt-1 text-sm text-muted-foreground">Assign a trainer, date and session slots to a batch.</p>
+          <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/trainers/schedule">
+            <span className="icon-box gold"><Icon name="calendar" size={20} /></span>
+            <h3 className="h3" style={{ marginTop: 12 }}>Schedule training</h3>
+            <p className="small muted" style={{ marginTop: 4 }}>Assign a trainer, date and session slots to a batch.</p>
           </Link>
         )}
         {canInvoices && (
-          <Link
-            href="/lms/company/trainers/invoices"
-            className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-          >
-            <p className="font-semibold text-indigo">Invoices</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isSuperAdmin ? "Review and approve trainer invoices." : "Review trainer invoices and recommend a decision."}
-            </p>
+          <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/trainers/invoices">
+            <span className="icon-box gold"><Icon name="money" size={20} /></span>
+            <h3 className="h3" style={{ marginTop: 12 }}>Invoices</h3>
+            <p className="small muted" style={{ marginTop: 4 }}>{isSuperAdmin ? "Review and approve trainer invoices." : "Review trainer invoices and recommend a decision."}</p>
           </Link>
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">
-            All Trainers ({trainers.length})
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create new trainer accounts from the Add Account page — trainers without a login yet can
-            get one below.
-          </p>
-        </div>
+      <section className="card">
+        <h2 className="h2">All trainers ({trainers.length})</h2>
+        <p className="small muted" style={{ marginTop: 4, marginBottom: 18 }}>
+          Create new trainer accounts from the Add Account page — trainers without a login yet can get one below.
+        </p>
         {trainers.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">No trainers yet.</p>
+          <p className="empty">No trainers yet.</p>
         ) : (
-          <div className="divide-y divide-border">
-            {trainers.map((trainer) => (
-              <div key={trainer.id} className="flex flex-wrap items-center justify-between gap-4 p-6">
-                <div>
-                  <p className="font-medium text-indigo">{trainer.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {trainer.email ?? "—"} &middot; {trainer.batches.length} batch
-                    {trainer.batches.length !== 1 ? "es" : ""}
-                    {!trainer.loginUser && " · No login yet"}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <CreateTrainerLoginButton
-                    trainerId={trainer.id}
-                    hasEmail={!!trainer.email}
-                    hasLogin={!!trainer.loginUser}
-                  />
-                  {canManage && (
-                    <form action={updateTrainerRate.bind(null, trainer.id)} className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">₹</span>
-                      <Input
-                        name="hourlyRate"
-                        type="number"
-                        min="0"
-                        defaultValue={trainer.hourlyRate}
-                        className="w-24"
-                      />
-                      <span className="text-sm text-muted-foreground">/hr</span>
-                      <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                        Save
-                      </Button>
-                    </form>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>Trainer</th><th>Batches</th><th>Login</th><th>Hourly rate</th></tr></thead>
+              <tbody>
+                {trainers.map((trainer) => (
+                  <tr key={trainer.id}>
+                    <td>
+                      <div className="stat-inline">
+                        <span className="avatar sm">{trainer.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
+                        <div>
+                          <div className="strong">{trainer.name}</div>
+                          <div className="small muted">{trainer.email ?? "—"}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{trainer.batches.length} batch{trainer.batches.length !== 1 ? "es" : ""}</td>
+                    <td>
+                      {trainer.loginUser ? (
+                        <span className="pill success">Active</span>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="pill warning">No login yet</span>
+                          <CreateTrainerLoginButton trainerId={trainer.id} hasEmail={!!trainer.email} hasLogin={!!trainer.loginUser} />
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {canManage ? (
+                        <form action={updateTrainerRate.bind(null, trainer.id)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="input-group" style={{ width: 130 }}>
+                            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }}>₹</span>
+                            <input className="input" type="number" min={0} name="hourlyRate" defaultValue={trainer.hourlyRate} />
+                          </span>
+                          <button className="btn btn-primary btn-sm" type="submit">Save</button>
+                        </form>
+                      ) : (
+                        <>₹{trainer.hourlyRate}/hr</>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
-    </DashboardShell>
+      </section>
+    </AppShell>
   );
 }
