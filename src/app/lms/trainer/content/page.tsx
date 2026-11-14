@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { trainerNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { AppShell } from "@/components/lbf/AppShell";
+import { TRAINER_NAV } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { UploadContentForm } from "@/components/lms/UploadContentForm";
 import { TrainerSendContentForm } from "@/components/lms/TrainerSendContentForm";
@@ -11,6 +12,7 @@ import { format } from "date-fns";
 export default async function TrainerContentPage() {
   const session = await auth();
   const trainerId = session!.user.trainerId!;
+  const trainer = await prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } });
 
   const [content, courses, modules, subModules, batches] = await Promise.all([
     prisma.sessionContent.findMany({
@@ -25,68 +27,76 @@ export default async function TrainerContentPage() {
   ]);
 
   return (
-    <DashboardShell title="Content" subtitle="What you've taught" navLinks={navLinks}>
-      <div className="mb-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-          Send Course Content to Eligible Students
+    <AppShell
+      nav={TRAINER_NAV}
+      active="content"
+      user={{ name: trainer.name, subtitle: "Trainer" }}
+      crumb="Content"
+      title="Content"
+      subtitle="Share what you've taught. Everything goes to the company admin for approval first."
+    >
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 10 }}>
+          Send course content to eligible students
         </h2>
-        <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
-          Pick a batch to see which students have hit the attendance threshold, choose which modules to send
-          them, and submit — this goes to the company admin for approval before it unlocks for the students.
+        <p className="muted" style={{ marginBottom: 14 }}>
+          Pick a batch to see which students hit the attendance threshold, choose modules, and submit for approval.
         </p>
         <TrainerSendContentForm batches={batches.map((b) => ({ id: b.id, name: b.name, courseName: b.course.name }))} />
-      </div>
+      </section>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Upload New Content
+      <div className="row">
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Upload new content
           </h2>
           <UploadContentForm
             courses={courses}
             modules={modules}
             subModules={subModules.map((sm) => ({ id: sm.id, title: sm.title, courseModuleId: sm.courseModuleId }))}
           />
-        </div>
+        </section>
 
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Your Content ({content.length})
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Your content ({content.length})
           </h2>
-          <div className="max-h-[700px] space-y-3 overflow-y-auto">
-            {content.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nothing uploaded yet.</p>
-            ) : (
-              content.map((item) => (
-                <div key={item.id} className="flex items-start justify-between gap-3 rounded-xl border border-border bg-white p-4">
-                  <div>
-                    <a
-                      href={item.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-semibold text-indigo underline"
-                    >
+          {content.length === 0 ? (
+            <div className="empty">
+              <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+                <Icon name="file" size={22} />
+              </span>
+              <div className="h3" style={{ color: "var(--text)" }}>
+                Nothing uploaded yet.
+              </div>
+              <p className="small muted" style={{ marginTop: 6 }}>
+                Uploads show here with status: Pending review → Sent to students.
+              </p>
+            </div>
+          ) : (
+            <ul className="list">
+              {content.map((item) => (
+                <li key={item.id} className="list-row" style={{ alignItems: "flex-start" }}>
+                  <div className="grow">
+                    <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" className="strong">
                       {item.title}
                     </a>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="small muted">
                       {item.course?.name} — {item.courseModule?.title}
-                      {item.courseSubModule && ` — ${item.courseSubModule.title}`} &middot;{" "}
-                      {format(item.uploadedAt, "MMM d, yyyy")}
-                    </p>
-                    {item.description && (
-                      <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
-                    )}
-                    <p className={`mt-1 text-xs font-medium ${item.sharedWithStudents ? "text-green-700" : "text-muted-foreground"}`}>
-                      {item.sharedWithStudents ? "Sent to students who attended" : "Awaiting admin review"}
-                    </p>
+                      {item.courseSubModule && ` — ${item.courseSubModule.title}`} · {format(item.uploadedAt, "MMM d, yyyy")}
+                    </div>
+                    {item.description && <div className="small muted">{item.description}</div>}
+                    <span className={`pill ${item.sharedWithStudents ? "success" : "warning"}`} style={{ marginTop: 6 }}>
+                      {item.sharedWithStudents ? "Sent to students" : "Awaiting admin review"}
+                    </span>
                   </div>
                   <DeleteButton action={deleteSessionContent.bind(null, item.id)} />
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    </DashboardShell>
+    </AppShell>
   );
 }

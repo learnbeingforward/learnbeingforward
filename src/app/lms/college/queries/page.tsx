@@ -1,14 +1,15 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { AppShell } from "@/components/lbf/AppShell";
+import { COLLEGE_NAV } from "@/components/lbf/nav-config";
 import { getCollegeStudentRows } from "@/lib/college-data";
-import { Badge } from "@/components/ui/badge";
 import { ExceptionRequestList } from "@/components/lms/ExceptionRequestList";
 
 export default async function CollegeQueriesPage() {
   const session = await auth();
   const collegeId = session!.user.collegeId;
+  const college = await prisma.college.findUnique({ where: { id: collegeId! }, select: { name: true } });
+  const shellUser = { name: college?.name ?? "College", subtitle: "College admin" };
 
   const { rows } = await getCollegeStudentRows(collegeId);
   const ineligibleRows = rows.filter((r) => !r.eligible);
@@ -22,60 +23,56 @@ export default async function CollegeQueriesPage() {
     : [];
 
   return (
-    <DashboardShell title="Query from Student" subtitle="Attendance exception requests" navLinks={navLinks}>
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        If a student couldn&apos;t meet the attendance requirement for a genuine reason, request
-        that the company make an exception so they can still become certificate-eligible.
-      </p>
-
-      {ineligibleRows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
-          All your students currently meet the attendance requirement — nothing to request.
-        </div>
-      ) : (
-        <ExceptionRequestList
-          rows={ineligibleRows.map((row) => ({
-            enrollmentId: row.enrollmentId,
-            studentName: row.studentName,
-            studentEmail: row.studentEmail,
-            studentUsn: row.studentUsn,
-            courseName: row.courseName,
-            pct: row.pct,
-          }))}
-        />
-      )}
+    <AppShell
+      nav={COLLEGE_NAV}
+      active="queries"
+      user={shellUser}
+      crumb="Query from Student"
+      title="Attendance exception requests"
+      subtitle="Ask the company to make a student certificate-eligible when they missed classes for a genuine reason."
+    >
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>
+          Students below the attendance requirement ({ineligibleRows.length})
+        </h2>
+        {ineligibleRows.length === 0 ? (
+          <p className="empty">All your students currently meet the attendance requirement — nothing to request.</p>
+        ) : (
+          <ExceptionRequestList
+            rows={ineligibleRows.map((row) => ({
+              enrollmentId: row.enrollmentId,
+              studentName: row.studentName,
+              studentEmail: row.studentEmail,
+              studentUsn: row.studentUsn,
+              courseName: row.courseName,
+              pct: row.pct,
+            }))}
+          />
+        )}
+      </section>
 
       {pastRequests.length > 0 && (
-        <div className="rounded-xl border border-border bg-white p-6">
-          <p className="mb-4 text-sm font-semibold text-indigo">Your Requests</p>
-          <div className="space-y-3">
+        <section className="card">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Your requests
+          </h2>
+          <ul className="list">
             {pastRequests.map((req) => (
-              <div
-                key={req.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-cream px-4 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-indigo">
+              <li key={req.id} className="list-row">
+                <div className="grow">
+                  <div className="strong">
                     {req.enrollment.student.name} — {req.enrollment.course.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{req.reason}</p>
+                  </div>
+                  <div className="small muted">{req.reason}</div>
                 </div>
-                <Badge
-                  className={
-                    req.status === "APPROVED"
-                      ? "bg-green-100 text-green-700 hover:bg-green-100"
-                      : req.status === "REJECTED"
-                        ? "bg-red-100 text-red-700 hover:bg-red-100"
-                        : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                  }
-                >
+                <span className={`pill ${req.status === "APPROVED" ? "success" : req.status === "REJECTED" ? "danger" : "warning"}`}>
                   {req.status === "PENDING" ? "Pending" : req.status === "APPROVED" ? "Approved" : "Rejected"}
-                </Badge>
-              </div>
+                </span>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

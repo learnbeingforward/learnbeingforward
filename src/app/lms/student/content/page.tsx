@@ -1,10 +1,8 @@
-import Link from "next/link";
-import { Download, Clock, BookOpen } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/lbf/AppShell";
+import { STUDENT_NAV } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { BackLink } from "@/components/lms/BackLink";
 import { getUnlockedContentForStudent, getCourseBooksForStudent, getSharedTrainerContentForStudent } from "@/lib/content-access";
 import { requestContentAccess, requestModulePdfAccess } from "@/lib/actions/content-access";
@@ -18,6 +16,12 @@ export default async function StudentContentPage({
   const session = await auth();
   const studentId = session!.user.id;
 
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: { name: true, college: { select: { name: true } } },
+  });
+  const shellUser = { name: student?.name ?? "Student", subtitle: student?.college?.name ?? "Student" };
+
   const [unlocked, courseBooks, myRequests, trainerContent] = await Promise.all([
     getUnlockedContentForStudent(studentId),
     getCourseBooksForStudent(studentId),
@@ -28,18 +32,21 @@ export default async function StudentContentPage({
   const requestByContentId = new Map(myRequests.map((r) => [r.courseContentId, r]));
   const requestByModuleId = new Map(myRequests.map((r) => [r.courseModuleId, r]));
 
+  const shell = (title: string, subtitle: string, children: React.ReactNode) => (
+    <AppShell nav={STUDENT_NAV} active="content" user={shellUser} crumb="Course materials" title={title} subtitle={subtitle}>
+      {children}
+    </AppShell>
+  );
+
   if (unlocked.length === 0 && courseBooks.length === 0 && trainerContent.length === 0) {
-    return (
-      <DashboardShell title="Content" subtitle="Course materials" navLinks={navLinks}>
-        <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          Content unlocks here once your trainer has taken a class on that module and marked
-          attendance. Nothing&apos;s unlocked yet.
-        </div>
-      </DashboardShell>
+    return shell(
+      "Content",
+      "Modules unlock after your batch has had that class.",
+      <div className="empty">Content unlocks here once your trainer has taken a class on that module and marked attendance. Nothing&apos;s unlocked yet.</div>
     );
   }
 
-  // Level 3: a specific module's sub-modules (or flat items, for legacy module-level content)
+  // Level 3: a specific module's items
   if (courseId && moduleId) {
     const courseBook = courseBooks.find((m) => m.id === moduleId);
     const course = unlocked.find((i) => i.courseId === courseId)?.course ?? courseBook?.course;
@@ -47,103 +54,82 @@ export default async function StudentContentPage({
     const items = unlocked.filter((i) => i.courseId === courseId && i.courseModuleId === moduleId);
     const bookRequest = requestByModuleId.get(moduleId);
 
-    return (
-      <DashboardShell title={courseModule?.title ?? "Module"} subtitle={course?.name ?? "Content"} navLinks={navLinks}>
+    return shell(
+      courseModule?.title ?? "Module",
+      course?.name ?? "Content",
+      <>
         <BackLink href={`/lms/student/content?courseId=${courseId}`} label={`Back to ${course?.name ?? "course"}`} />
-        <div className="space-y-3">
-          {courseBook && (
-            <div className="rounded-xl border border-indigo/20 bg-indigo/5 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="size-4 text-indigo" />
-                  <div>
-                    <p className="text-sm font-semibold text-indigo">{courseBook.mainPdfTitle}</p>
-                    <p className="text-xs text-muted-foreground">Whole course book</p>
-                  </div>
+        <section className="card">
+          <ul className="list">
+            {courseBook && (
+              <li className="list-row">
+                <span className="icon-box gold">
+                  <Icon name="book" size={18} />
+                </span>
+                <div className="grow">
+                  <div className="strong">{courseBook.mainPdfTitle}</div>
+                  <div className="small muted">Whole course book</div>
                 </div>
                 {bookRequest?.status === "APPROVED" ? (
-                  <Button
-                    render={<a href={courseBook.mainPdfUrl!} target="_blank" rel="noopener noreferrer" />}
-                    nativeButton={false}
-                    size="sm"
-                    className="bg-indigo text-white hover:bg-indigo/90"
-                  >
-                    <Download className="size-3.5" />
+                  <a className="btn btn-sm" href={courseBook.mainPdfUrl!} target="_blank" rel="noopener noreferrer">
+                    <Icon name="download" size={16} />
                     Download
-                  </Button>
+                  </a>
                 ) : bookRequest?.status === "PENDING" ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-xs font-semibold text-indigo">
-                    <Clock className="size-3.5" /> Request pending
-                  </span>
+                  <span className="pill warning">Request sent</span>
                 ) : (
                   <form action={requestModulePdfAccess.bind(null, moduleId)}>
-                    <Button type="submit" size="sm" variant="outline" className="border-indigo/30 text-indigo">
-                      Request Access
-                    </Button>
+                    <button className="btn btn-primary btn-sm" type="submit">
+                      Request access
+                    </button>
                   </form>
                 )}
-              </div>
-            </div>
-          )}
-          {items.map((item) => {
-            const request = requestByContentId.get(item.id);
-            return (
-              <div key={item.id} className="rounded-xl border border-border bg-white p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-indigo">
-                      {item.courseSubModule ? item.courseSubModule.title : item.title}
-                    </p>
-                    {item.courseSubModule && (
-                      <p className="text-xs text-muted-foreground">Complete learning guide</p>
+              </li>
+            )}
+            {items.map((item) => {
+              const request = requestByContentId.get(item.id);
+              return (
+                <li key={item.id} className="list-row" style={{ alignItems: "flex-start" }}>
+                  <span className="icon-box gold">
+                    <Icon name="file" size={18} />
+                  </span>
+                  <div className="grow">
+                    <div className="strong">{item.courseSubModule ? item.courseSubModule.title : item.title}</div>
+                    <div className="small muted">
+                      {item.courseSubModule ? "Complete learning guide" : "PDF"}
+                      {item.links.length > 0 && ` · + ${item.links.length} learn-more link${item.links.length !== 1 ? "s" : ""}`}
+                    </div>
+                    {item.links.length > 0 && (
+                      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                        {item.links.map((l) => (
+                          <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="small">
+                            {l.label}
+                          </a>
+                        ))}
+                      </div>
                     )}
                   </div>
                   {request?.status === "APPROVED" ? (
-                    <Button
-                      render={<a href={item.fileUrl} target="_blank" rel="noopener noreferrer" />}
-                      nativeButton={false}
-                      size="sm"
-                      className="bg-indigo text-white hover:bg-indigo/90"
-                    >
-                      <Download className="size-3.5" />
+                    <a className="btn btn-sm" href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                      <Icon name="download" size={16} />
                       Download
-                    </Button>
+                    </a>
                   ) : request?.status === "PENDING" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-xs font-semibold text-indigo">
-                      <Clock className="size-3.5" /> Request pending
-                    </span>
+                    <span className="pill warning">Request sent</span>
                   ) : (
                     <form action={requestContentAccess.bind(null, item.id)}>
-                      <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                        Request Access
-                      </Button>
+                      <button className="btn btn-sm" type="submit">
+                        Request access
+                      </button>
                     </form>
                   )}
-                </div>
-                {item.links.length > 0 && (
-                  <div className="mt-3 space-y-1 border-t border-border pt-3">
-                    <p className="text-xs font-medium text-muted-foreground">Learn more:</p>
-                    {item.links.map((l) => (
-                      <a
-                        key={l.id}
-                        href={l.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-xs text-indigo underline"
-                      >
-                        {l.label}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {items.length === 0 && !courseBook && (
-            <p className="p-4 text-sm text-muted-foreground">Nothing unlocked for this module yet.</p>
-          )}
-        </div>
-      </DashboardShell>
+                </li>
+              );
+            })}
+            {items.length === 0 && !courseBook && <p className="muted" style={{ padding: 16 }}>Nothing unlocked for this module yet.</p>}
+          </ul>
+        </section>
+      </>
     );
   }
 
@@ -165,26 +151,30 @@ export default async function StudentContentPage({
       else byModule.set(mod.id, { title: mod.title, count: 0, hasBook: true });
     }
 
-    return (
-      <DashboardShell title={course?.name ?? "Course"} subtitle="Modules" navLinks={navLinks}>
+    return shell(
+      course?.name ?? "Course",
+      "Modules",
+      <>
         <BackLink href="/lms/student/content" label="Back to all courses" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid" style={{ ["--min" as string]: "260px" }}>
           {Array.from(byModule.entries()).map(([modId, mod]) => (
-            <Link
-              key={modId}
-              href={`/lms/student/content?courseId=${courseId}&moduleId=${modId}`}
-              className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-            >
-              <p className="font-semibold text-indigo">{mod.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {mod.count > 0 && `${mod.count} sub-module${mod.count !== 1 ? "s" : ""}`}
-                {mod.count > 0 && mod.hasBook && " · "}
-                {mod.hasBook && "Course book available"}
-              </p>
-            </Link>
+            <a key={modId} className="list-row" href={`/lms/student/content?courseId=${courseId}&moduleId=${modId}`}>
+              <span className="icon-box navy">
+                <Icon name="layers" size={18} />
+              </span>
+              <div className="grow">
+                <div className="strong">{mod.title}</div>
+                <div className="small muted">
+                  {mod.count > 0 && `${mod.count} sub-module${mod.count !== 1 ? "s" : ""}`}
+                  {mod.count > 0 && mod.hasBook && " · "}
+                  {mod.hasBook && "Course book available"}
+                </div>
+              </div>
+              <Icon name="chevR" size={16} />
+            </a>
           ))}
         </div>
-      </DashboardShell>
+      </>
     );
   }
 
@@ -196,51 +186,56 @@ export default async function StudentContentPage({
     else byCourse.set(item.courseId, { name: item.course.name, count: 1 });
   }
   for (const mod of courseBooks) {
-    if (!byCourse.has(mod.courseId)) {
-      byCourse.set(mod.courseId, { name: mod.course.name, count: 0 });
-    }
+    if (!byCourse.has(mod.courseId)) byCourse.set(mod.courseId, { name: mod.course.name, count: 0 });
   }
 
-  return (
-    <DashboardShell title="Content" subtitle="Course materials" navLinks={navLinks}>
+  return shell(
+    "Content",
+    "Modules unlock after your batch has had that class.",
+    <>
       {trainerContent.length > 0 && (
-        <div className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            From Your Trainers ({trainerContent.length})
-          </h2>
-          <div className="space-y-3">
+        <section className="card">
+          <h2 className="h2">From your trainers ({trainerContent.length})</h2>
+          <ul className="list" style={{ marginTop: 14 }}>
             {trainerContent.map((c) => (
-              <div key={c.id} className="rounded-xl border border-border bg-white p-4">
-                <a href={c.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-indigo underline">
-                  {c.title}
-                </a>
-                <p className="text-xs text-muted-foreground">
-                  {c.trainer.name} &middot; {c.course?.name} — {c.courseModule?.title}
-                  {c.courseSubModule && ` — ${c.courseSubModule.title}`}
-                </p>
-                {c.description && <p className="mt-1 text-xs text-muted-foreground">{c.description}</p>}
-              </div>
+              <li key={c.id} className="list-row" style={{ alignItems: "flex-start" }}>
+                <span className="icon-box gold">
+                  <Icon name="file" size={18} />
+                </span>
+                <div className="grow">
+                  <a href={c.fileUrl} target="_blank" rel="noopener noreferrer" className="strong">
+                    {c.title}
+                  </a>
+                  <div className="small muted">
+                    {c.trainer.name} · {c.course?.name} — {c.courseModule?.title}
+                    {c.courseSubModule && ` — ${c.courseSubModule.title}`}
+                  </div>
+                  {c.description && <div className="small muted">{c.description}</div>}
+                </div>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
 
       {byCourse.size > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from(byCourse.entries()).map(([cId, course]) => (
-            <Link
-              key={cId}
-              href={`/lms/student/content?courseId=${cId}`}
-              className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-            >
-              <p className="font-semibold text-indigo">{course.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {course.count > 0 ? `${course.count} item${course.count !== 1 ? "s" : ""} unlocked` : "Course book available"}
-              </p>
-            </Link>
-          ))}
-        </div>
+        <section className="card">
+          <div className="grid" style={{ ["--min" as string]: "260px" }}>
+            {Array.from(byCourse.entries()).map(([cId, course]) => (
+              <a key={cId} className="list-row" href={`/lms/student/content?courseId=${cId}`}>
+                <span className="icon-box navy">
+                  <Icon name="book" size={18} />
+                </span>
+                <div className="grow">
+                  <div className="strong">{course.name}</div>
+                  <div className="small muted">{course.count > 0 ? `${course.count} item${course.count !== 1 ? "s" : ""} unlocked` : "Course book available"}</div>
+                </div>
+                <Icon name="chevR" size={16} />
+              </a>
+            ))}
+          </div>
+        </section>
       )}
-    </DashboardShell>
+    </>
   );
 }

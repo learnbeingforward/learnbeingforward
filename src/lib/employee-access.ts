@@ -310,13 +310,13 @@ export async function requireCompanyPageAccess(anyOfKeys?: EmployeePageKey | Emp
     const keys = keysForRole(role);
     if (needed && !needed.some((k) => keys.includes(k))) redirect("/lms/company");
     const hasUnread = (await getUnreadNotificationCount(keys)) > 0;
-    return { session, navLinks: withNotificationBadge(getCompanyNavLinksForRole(role) as LmsNavEntry[], hasUnread), keys };
+    return { session, navLinks: withNotificationBadge(getCompanyNavLinksForRole(role) as LmsNavEntry[], hasUnread), keys, hasUnread };
   }
   if (role === "EMPLOYEE") {
     const keys = await getEmployeeKeys(session.user.id);
     if (needed && !needed.some((k) => keys.includes(k))) redirect(employeeFirstHref(keys));
     const hasUnread = (await getUnreadNotificationCount(keys)) > 0;
-    return { session, navLinks: withNotificationBadge(buildEmployeeNavLinks(keys), hasUnread), keys };
+    return { session, navLinks: withNotificationBadge(buildEmployeeNavLinks(keys), hasUnread), keys, hasUnread };
   }
 
   if (role === "COLLEGE_ADMIN") redirect("/lms/college");

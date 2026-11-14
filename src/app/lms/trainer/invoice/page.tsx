@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { trainerNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { Badge } from "@/components/ui/badge";
+import { AppShell } from "@/components/lbf/AppShell";
+import { TRAINER_NAV } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { BackLink } from "@/components/lms/BackLink";
 import { getBillableSessions } from "@/lib/actions/trainer-invoices";
 import { SubmitInvoiceForm } from "@/components/lms/SubmitInvoiceForm";
@@ -15,19 +15,11 @@ import { format } from "date-fns";
 async function loadBatchRosters(batchIds: string[]): Promise<Record<string, BatchRosterEntry[]>> {
   const uniqueIds = [...new Set(batchIds)];
   if (uniqueIds.length === 0) return {};
-  const enrollments = await prisma.enrollment.findMany({
-    where: { batchId: { in: uniqueIds } },
-    include: { student: true },
-  });
+  const enrollments = await prisma.enrollment.findMany({ where: { batchId: { in: uniqueIds } }, include: { student: true } });
   const rosters: Record<string, BatchRosterEntry[]> = {};
   for (const e of enrollments) {
     if (!e.batchId) continue;
-    (rosters[e.batchId] ??= []).push({
-      id: e.student.id,
-      name: e.student.name,
-      branch: e.student.branch,
-      semester: e.student.semester,
-    });
+    (rosters[e.batchId] ??= []).push({ id: e.student.id, name: e.student.name, branch: e.student.branch, semester: e.student.semester });
   }
   return rosters;
 }
@@ -40,55 +32,54 @@ export default async function TrainerInvoicePage({
   const { invoiceId } = await searchParams;
   const session = await auth();
   const trainerId = session!.user.trainerId!;
+  const trainer = await prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } });
+  const shellUser = { name: trainer.name, subtitle: "Trainer" };
 
   if (invoiceId) {
     const invoice = await prisma.trainerInvoice.findUnique({
       where: { id: invoiceId },
-      include: {
-        trainer: true,
-        lineItems: { include: { trainingSession: { include: { batch: { include: { college: true } } } } } },
-      },
+      include: { trainer: true, lineItems: { include: { trainingSession: { include: { batch: { include: { college: true } } } } } } },
     });
-    const rosters = invoice
-      ? await loadBatchRosters(invoice.lineItems.map((li) => li.trainingSession.batchId))
-      : {};
+    const rosters = invoice ? await loadBatchRosters(invoice.lineItems.map((li) => li.trainingSession.batchId)) : {};
 
     return (
-      <DashboardShell title="Invoice" subtitle="Invoice detail" navLinks={navLinks}>
+      <AppShell nav={TRAINER_NAV} active="invoice" user={shellUser} crumb="Invoice" title="Invoice" subtitle="Invoice detail">
         <BackLink href="/lms/trainer/invoice" label="Back to Invoice" />
         {!invoice || invoice.trainerId !== trainerId ? (
-          <p className="text-sm text-muted-foreground">This invoice doesn&apos;t belong to you.</p>
+          <p className="muted">This invoice doesn&apos;t belong to you.</p>
         ) : (
           <>
             {!invoice.submitted && (
-              <div className="mb-6 max-w-2xl rounded-xl border border-gold/40 bg-gold/10 p-4">
-                <p className="mb-3 text-sm text-indigo">
+              <div className="alert gold">
+                <span>
                   This invoice is still a draft — the company can&apos;t see it until you submit it.
-                </p>
-                <SubmitDraftInvoiceButton invoiceId={invoice.id} />
+                  <div style={{ marginTop: 10 }}>
+                    <SubmitDraftInvoiceButton invoiceId={invoice.id} />
+                  </div>
+                </span>
               </div>
             )}
             <TrainerInvoiceDetailView
               invoice={{
-              trainerName: invoice.trainer.name,
-              status: invoice.status,
-              sessionCount: invoice.sessionCount,
-              hours: invoice.hours,
-              hourlyRate: invoice.hourlyRate,
-              totalAmount: invoice.totalAmount,
-              approvedAmount: invoice.approvedAmount,
-              deductionAmount: invoice.deductionAmount,
-              deductionReason: invoice.deductionReason,
-              paymentTimelineDays: invoice.paymentTimelineDays,
-              notes: invoice.notes,
-              submittedAt: invoice.submittedAt,
-              decidedAt: invoice.decidedAt,
-              pdfUrl: invoice.pdfUrl,
-              approvalPdfUrl: invoice.approvalPdfUrl,
-              bankAccountName: invoice.trainer.bankAccountName,
-              bankAccountNumber: invoice.trainer.bankAccountNumber,
-              bankIfsc: invoice.trainer.bankIfsc,
-              bankName: invoice.trainer.bankName,
+                trainerName: invoice.trainer.name,
+                status: invoice.status,
+                sessionCount: invoice.sessionCount,
+                hours: invoice.hours,
+                hourlyRate: invoice.hourlyRate,
+                totalAmount: invoice.totalAmount,
+                approvedAmount: invoice.approvedAmount,
+                deductionAmount: invoice.deductionAmount,
+                deductionReason: invoice.deductionReason,
+                paymentTimelineDays: invoice.paymentTimelineDays,
+                notes: invoice.notes,
+                submittedAt: invoice.submittedAt,
+                decidedAt: invoice.decidedAt,
+                pdfUrl: invoice.pdfUrl,
+                approvalPdfUrl: invoice.approvalPdfUrl,
+                bankAccountName: invoice.trainer.bankAccountName,
+                bankAccountNumber: invoice.trainer.bankAccountNumber,
+                bankIfsc: invoice.trainer.bankIfsc,
+                bankName: invoice.trainer.bankName,
                 lineItems: invoice.lineItems.map((li) => ({
                   id: li.id,
                   date: li.trainingSession.sessionDate,
@@ -102,115 +93,150 @@ export default async function TrainerInvoicePage({
             />
           </>
         )}
-      </DashboardShell>
+      </AppShell>
     );
   }
 
-  const [trainer, billable, pastInvoices] = await Promise.all([
-    prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } }),
+  const [billable, pastInvoices] = await Promise.all([
     getBillableSessions(trainerId),
-    prisma.trainerInvoice.findMany({
-      where: { trainerId },
-      orderBy: { submittedAt: "desc" },
-    }),
+    prisma.trainerInvoice.findMany({ where: { trainerId }, orderBy: { submittedAt: "desc" } }),
   ]);
-
   const hours = billable.length * 2;
   const total = hours * trainer.hourlyRate;
 
   return (
-    <DashboardShell title="Invoice" subtitle="Your training payments" navLinks={navLinks}>
-      <div className="mb-8 rounded-xl border border-border bg-white p-6">
-        <p className="mb-4 text-sm font-semibold text-indigo">
-          Ready to invoice ({billable.length} session{billable.length !== 1 ? "s" : ""})
-        </p>
-        {billable.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No completed sessions are ready to invoice yet — this fills up as you mark attendance for
-            your classes.
-          </p>
-        ) : (
-          <div className="mb-4 divide-y divide-border rounded-lg border border-border">
-            {billable.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
-                <span className="text-indigo">
-                  {format(s.sessionDate, "MMM d, yyyy")} &middot; {s.batch.college.name} — {s.batch.name}
-                </span>
-                <span className="text-muted-foreground">
-                  {s.courseModule?.title ?? s.topic ?? "—"} &middot; 2 hrs
-                </span>
-              </div>
-            ))}
+    <AppShell nav={TRAINER_NAV} active="invoice" user={shellUser} crumb="Invoice" title="Invoice" subtitle="Your training payments.">
+      <section className="card">
+        <div className="grid" style={{ ["--min" as string]: "180px" }}>
+          <div className="tile gold">
+            <div className="label">Sessions ready</div>
+            <div className="value">{billable.length}</div>
           </div>
-        )}
-
-        <div className="mb-4 flex flex-wrap gap-6 rounded-lg bg-cream px-4 py-3 text-sm">
-          <span>
-            <span className="text-muted-foreground">Total hours:</span>{" "}
-            <span className="font-semibold text-indigo">{hours}</span>
-          </span>
-          <span>
-            <span className="text-muted-foreground">Rate:</span>{" "}
-            <span className="font-semibold text-indigo">₹{trainer.hourlyRate}/hr</span>
-          </span>
-          <span>
-            <span className="text-muted-foreground">Total:</span>{" "}
-            <span className="font-semibold text-indigo">₹{total}</span>
-          </span>
+          <div className="tile">
+            <div className="label">Total hours</div>
+            <div className="value">{hours}</div>
+          </div>
+          <div className="tile">
+            <div className="label">Rate</div>
+            <div className="value">₹{trainer.hourlyRate}/hr</div>
+          </div>
+          <div className="tile success">
+            <div className="label">Total</div>
+            <div className="value">₹{total}</div>
+          </div>
         </div>
+      </section>
 
-        <SubmitInvoiceForm disabled={billable.length === 0} />
+      <div className="row">
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Ready to invoice ({billable.length} session{billable.length !== 1 ? "s" : ""})
+          </h2>
+          {billable.length === 0 ? (
+            <div className="empty">
+              <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+                <Icon name="clock" size={22} />
+              </span>
+              <div className="h3" style={{ color: "var(--text)" }}>
+                No completed sessions are ready to invoice yet.
+              </div>
+              <p className="small muted" style={{ marginTop: 6 }}>
+                This fills up as you mark attendance for your classes.
+              </p>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table className="table" style={{ minWidth: 560 }}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Module</th>
+                    <th>Hours</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {billable.map((s) => (
+                    <tr key={s.id}>
+                      <td>{format(s.sessionDate, "MMM d")}</td>
+                      <td>
+                        {s.batch.college.name} — {s.batch.name}
+                      </td>
+                      <td>{s.courseModule?.title ?? s.topic ?? "—"}</td>
+                      <td>2</td>
+                      <td>₹{2 * trainer.hourlyRate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Generate invoice
+          </h2>
+          <div className="stack" style={{ gap: 14 }}>
+            <div className="list-row">
+              <span className="grow">Total hours</span>
+              <strong>{hours}</strong>
+            </div>
+            <div className="list-row">
+              <span className="grow">Rate</span>
+              <strong>₹{trainer.hourlyRate}/hr</strong>
+            </div>
+            <div className="list-row" style={{ background: "var(--gold-soft)" }}>
+              <span className="grow strong">Total</span>
+              <strong style={{ fontSize: 20 }}>₹{total}</strong>
+            </div>
+            <SubmitInvoiceForm disabled={billable.length === 0} />
+            <span className="hint">Needs at least 1 completed session and your bank details.</span>
+          </div>
+        </section>
       </div>
 
       {pastInvoices.length > 0 && (
-        <div className="rounded-xl border border-border bg-white">
-          <div className="border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">Past Invoices</p>
+        <section className="card">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Past invoices
+          </h2>
+          <div className="table-wrap">
+            <table className="table" style={{ minWidth: 520 }}>
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Period</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pastInvoices.map((inv) => (
+                  <tr key={inv.id}>
+                    <td>
+                      <Link href={`/lms/trainer/invoice?invoiceId=${inv.id}`} className="strong">
+                        INV-{inv.id.slice(-6).toUpperCase()}
+                      </Link>
+                    </td>
+                    <td>{format(inv.submittedAt, "MMM yyyy")}</td>
+                    <td>₹{inv.totalAmount}</td>
+                    <td>
+                      <span
+                        className={`pill ${
+                          !inv.submitted ? "" : inv.status === "APPROVED" ? "success" : inv.status === "REJECTED" ? "danger" : "warning"
+                        }`}
+                      >
+                        {!inv.submitted ? "Draft" : inv.status === "APPROVED" ? "Approved" : inv.status === "REJECTED" ? "Rejected" : "Pending"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="divide-y divide-border">
-            {pastInvoices.map((inv) => (
-              <Link
-                key={inv.id}
-                href={`/lms/trainer/invoice?invoiceId=${inv.id}`}
-                className="flex flex-wrap items-start justify-between gap-3 p-4 text-sm hover:bg-cream"
-              >
-                <div>
-                  <span className="text-indigo">
-                    {format(inv.submittedAt, "MMM d, yyyy")} &middot; {inv.sessionCount} sessions &middot;{" "}
-                    {inv.hours} hrs &middot; ₹{inv.totalAmount}
-                  </span>
-                  {inv.status === "APPROVED" && inv.approvedAmount !== null && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Approved for ₹{inv.approvedAmount}
-                      {inv.deductionAmount ? ` (₹${inv.deductionAmount} deducted — ${inv.deductionReason})` : ""}
-                      {inv.paymentTimelineDays ? ` · payment within ${inv.paymentTimelineDays} days` : ""}
-                    </p>
-                  )}
-                </div>
-                <Badge
-                  className={
-                    !inv.submitted
-                      ? "bg-cream text-muted-foreground hover:bg-cream"
-                      : inv.status === "APPROVED"
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : inv.status === "REJECTED"
-                          ? "bg-red-100 text-red-700 hover:bg-red-100"
-                          : "bg-gold/20 text-indigo hover:bg-gold/20"
-                  }
-                >
-                  {!inv.submitted
-                    ? "Draft"
-                    : inv.status === "APPROVED"
-                      ? "Approved"
-                      : inv.status === "REJECTED"
-                        ? "Rejected"
-                        : "Pending"}
-                </Badge>
-              </Link>
-            ))}
-          </div>
-        </div>
+        </section>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

@@ -1,13 +1,14 @@
-import { CheckCircle2, Clock } from "lucide-react";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { trainerNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { format } from "date-fns";
+import { AppShell } from "@/components/lbf/AppShell";
+import { TRAINER_NAV } from "@/components/lbf/nav-config";
+import { format, isSameDay } from "date-fns";
 
 export default async function TrainerSchedulePage() {
   const session = await auth();
   const trainerId = session!.user.trainerId!;
+  const trainer = await prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } });
 
   const sessions = await prisma.trainingSession.findMany({
     where: { trainerId },
@@ -15,50 +16,76 @@ export default async function TrainerSchedulePage() {
     orderBy: [{ sessionDate: "asc" }, { slotNumber: "asc" }],
   });
 
+  const byDate: { date: Date; sessions: typeof sessions }[] = [];
+  for (const s of sessions) {
+    const group = byDate.find((g) => isSameDay(g.date, s.sessionDate));
+    if (group) group.sessions.push(s);
+    else byDate.push({ date: s.sessionDate, sessions: [s] });
+  }
+  const upcoming = sessions.filter((s) => !s.attendanceTaken).slice(0, 6);
+
   return (
-    <DashboardShell title="Schedule" subtitle="Your assigned classes" navLinks={navLinks}>
+    <AppShell nav={TRAINER_NAV} active="schedule" user={{ name: trainer.name, subtitle: "Trainer" }} crumb="Schedule" title="Your schedule" subtitle="All classes assigned to you.">
       {sessions.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          No classes scheduled yet.
-        </div>
+        <div className="empty">No classes scheduled yet.</div>
       ) : (
-        <div className="rounded-xl border border-border bg-white">
-          <div className="divide-y divide-border">
-            {sessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-5">
-                <div>
-                  <p className="font-medium text-indigo">
-                    {s.batch.college.name} — {s.batch.name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {s.batch.course.name} &middot; {s.courseModule?.title ?? s.topic ?? "Topic TBD"}
-                  </p>
+        <div className="row">
+          <section className="card grow">
+            <h2 className="h2" style={{ marginBottom: 18 }}>
+              Upcoming &amp; pending
+            </h2>
+            {byDate.map((group) => (
+              <div key={group.date.toISOString()} style={{ marginBottom: 16 }}>
+                <div className="label" style={{ marginBottom: 10 }}>
+                  {format(group.date, "EEE, MMM d, yyyy")}
                 </div>
-                <div className="text-right text-sm">
-                  <p className="font-medium text-indigo">{format(s.sessionDate, "EEE, MMM d, yyyy")}</p>
-                  <p className="text-muted-foreground">
-                    Slot {s.slotNumber} &middot; {s.startTime}–{s.endTime}
-                  </p>
-                </div>
-                <span
-                  className={
-                    s.attendanceTaken
-                      ? "inline-flex items-center gap-1 text-xs font-medium text-green-700"
-                      : "inline-flex items-center gap-1 text-xs font-medium text-amber-700"
-                  }
-                >
-                  {s.attendanceTaken ? (
-                    <CheckCircle2 className="size-3.5" />
-                  ) : (
-                    <Clock className="size-3.5" />
-                  )}
-                  {s.attendanceTaken ? "Attendance taken" : "Attendance pending"}
-                </span>
+                <ul className="list">
+                  {group.sessions.map((s) => (
+                    <li key={s.id} className="list-row" style={{ flexWrap: "wrap" }}>
+                      <div style={{ textAlign: "center", minWidth: 70 }}>
+                        <div className="strong">{s.startTime}</div>
+                        <div className="small muted">Slot {s.slotNumber}</div>
+                      </div>
+                      <div className="grow">
+                        <div className="strong">{s.courseModule?.title ?? s.topic ?? "Topic TBD"}</div>
+                        <div className="small muted">
+                          {s.batch.college.name} — {s.batch.course.name} — {s.batch.name}
+                        </div>
+                      </div>
+                      {s.attendanceTaken ? (
+                        <span className="pill success">Attendance taken</span>
+                      ) : (
+                        <>
+                          <span className="pill warning">Attendance pending</span>
+                          <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
+                            Mark attendance
+                          </Link>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
-          </div>
+          </section>
+          <section className="card side">
+            <h2 className="h2" style={{ marginBottom: 18 }}>
+              Next up
+            </h2>
+            <ul className="timeline">
+              {upcoming.map((s) => (
+                <li key={s.id}>
+                  <div className="strong">{s.courseModule?.title ?? s.topic ?? "Topic TBD"}</div>
+                  <div className="small muted">
+                    {format(s.sessionDate, "MMM d")} · Slot {s.slotNumber} · {s.startTime}–{s.endTime}
+                  </div>
+                </li>
+              ))}
+              {upcoming.length === 0 && <li className="small muted">Nothing pending.</li>}
+            </ul>
+          </section>
         </div>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

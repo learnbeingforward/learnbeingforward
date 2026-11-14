@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { Badge } from "@/components/ui/badge";
+import { AppShell } from "@/components/lbf/AppShell";
+import { COLLEGE_NAV } from "@/components/lbf/nav-config";
 import { BackLink } from "@/components/lms/BackLink";
 import { SharedSnapshotGallery } from "@/components/lms/SharedSnapshotGallery";
 import { writtenAnswerBadge } from "@/lib/assessment-ui";
@@ -21,6 +20,8 @@ export default async function CollegeAssessmentDataPage({
 }) {
   const session = await auth();
   const collegeId = session!.user.collegeId;
+  const college = await prisma.college.findUnique({ where: { id: collegeId! }, select: { name: true } });
+  const shellUser = { name: college?.name ?? "College", subtitle: "College admin" };
   const { assignmentId } = await searchParams;
 
   if (assignmentId) {
@@ -36,94 +37,71 @@ export default async function CollegeAssessmentDataPage({
 
     if (!assignment || !collegeId || assignment.student.collegeId !== collegeId || !assignment.sentToCollegeAt) {
       return (
-        <DashboardShell title="Assessment Result" subtitle="Not available" navLinks={navLinks}>
+        <AppShell nav={COLLEGE_NAV} active="assessment-data" user={shellUser} crumb="Assessment Data" title="Assessment Result" subtitle="Not available">
           <BackLink href="/lms/college/assessment-data" label="Back to Assessment Data" />
-          <p className="text-sm text-muted-foreground">This result isn&apos;t available.</p>
-        </DashboardShell>
+          <p className="muted">This result isn&apos;t available.</p>
+        </AppShell>
       );
     }
 
     const sortedAnswers = [...assignment.answers].sort((a, b) => a.question.order - b.question.order);
 
     return (
-      <DashboardShell title={assignment.student.name} subtitle="Assessment result" navLinks={navLinks}>
+      <AppShell nav={COLLEGE_NAV} active="assessment-data" user={shellUser} crumb="Assessment Data" title={assignment.student.name} subtitle="Assessment result">
         <BackLink href="/lms/college/assessment-data" label="Back to Assessment Data" />
 
-        <div className="mb-6 rounded-xl border border-border bg-white p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            {assignment.assessment.title} &middot; {TYPE_LABELS[assignment.assessment.type]}
+        <section className="card" style={{ textAlign: "center" }}>
+          <p className="muted">
+            {assignment.assessment.title} · {TYPE_LABELS[assignment.assessment.type]}
           </p>
-          <p className="mt-1 text-3xl font-bold text-indigo">
+          <p className="title" style={{ marginTop: 6, fontSize: 32 }}>
             {assignment.totalMarks ?? 0} / {assignment.maxMarks ?? 0}
           </p>
-        </div>
+        </section>
 
         {assignment.snapshots.length > 0 && (
-          <div className="mb-6">
-            <SharedSnapshotGallery
-              snapshots={assignment.snapshots.map((s) => ({
-                id: s.id,
-                imageUrl: s.imageUrl,
-                capturedAt: s.capturedAt.toISOString(),
-              }))}
-            />
-          </div>
+          <SharedSnapshotGallery snapshots={assignment.snapshots.map((s) => ({ id: s.id, imageUrl: s.imageUrl, capturedAt: s.capturedAt.toISOString() }))} />
         )}
 
-        <div className="space-y-3">
+        <div className="stack" style={{ gap: 12 }}>
           {sortedAnswers.map((ans, i) => (
-            <div key={ans.id} className="rounded-xl border border-border bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-indigo">
+            <section key={ans.id} className="card">
+              <div className="split">
+                <p className="strong">
                   Q{i + 1}. {ans.question.questionText}
                 </p>
                 {ans.question.questionType === "MCQ" ? (
-                  <Badge
-                    className={
-                      ans.isCorrect
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : "bg-red-100 text-red-700 hover:bg-red-100"
-                    }
-                  >
-                    {ans.isCorrect ? "Correct" : "Wrong"} &middot; {ans.marksAwarded ?? 0}/{ans.question.marks}
-                  </Badge>
+                  <span className={`pill ${ans.isCorrect ? "success" : "danger"}`}>
+                    {ans.isCorrect ? "Correct" : "Wrong"} · {ans.marksAwarded ?? 0}/{ans.question.marks}
+                  </span>
                 ) : (
-                  <Badge className={writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className}>
+                  <span className={`pill ${writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className.includes("green") ? "success" : "warning"}`}>
                     {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
-                  </Badge>
+                  </span>
                 )}
               </div>
               {ans.question.questionType === "MCQ" ? (
-                <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                <div className="grid" style={{ ["--min" as string]: "220px", marginTop: 10, fontSize: 13 }}>
                   {(["A", "B", "C", "D"] as const).map((letter) => {
                     const text = ans.question[`option${letter}` as "optionA"];
                     const isSelected = ans.selectedOption === letter;
                     const isCorrectOption = ans.question.correctOption === letter;
                     return (
-                      <p
-                        key={letter}
-                        className={`whitespace-pre-wrap ${
-                          isCorrectOption
-                            ? "font-medium text-green-700"
-                            : isSelected
-                              ? "font-medium text-red-700"
-                              : ""
-                        }`}
-                      >
+                      <p key={letter} style={{ color: isCorrectOption ? "var(--success-text)" : isSelected ? "var(--danger)" : "var(--muted)" }}>
                         {letter}. {text} {isSelected && "(your answer)"} {isCorrectOption && "(correct)"}
                       </p>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-2 rounded-lg bg-cream p-3 text-sm text-indigo">
-                  {ans.writtenAnswer || <span className="text-muted-foreground">No answer given.</span>}
+                <p className="muted" style={{ marginTop: 10, background: "var(--surface)", borderRadius: 8, padding: 12 }}>
+                  {ans.writtenAnswer || "No answer given."}
                 </p>
               )}
-            </div>
+            </section>
           ))}
         </div>
-      </DashboardShell>
+      </AppShell>
     );
   }
 
@@ -136,48 +114,41 @@ export default async function CollegeAssessmentDataPage({
     : [];
 
   return (
-    <DashboardShell title="Assessment Data" subtitle="Results shared by Learn Being Forward" navLinks={navLinks}>
-      {assignments.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          No assessment results have been shared with your college yet.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="p-3">Student</th>
-                <th className="p-3">Assessment</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Marks</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {assignments.map((a) => (
-                <tr key={a.id} className="hover:bg-cream/50">
-                  <td className="p-0">
-                    <Link
-                      href={`/lms/college/assessment-data?assignmentId=${a.id}`}
-                      className="block p-3 font-medium text-indigo hover:underline"
-                    >
-                      {a.student.name}
-                    </Link>
-                  </td>
-                  <td className="p-3 text-muted-foreground">{a.assessment.title}</td>
-                  <td className="p-3 text-muted-foreground">{TYPE_LABELS[a.assessment.type]}</td>
-                  <td className="p-3">
-                    <Link href={`/lms/college/assessment-data?assignmentId=${a.id}`}>
-                      <Badge className="bg-indigo/10 text-indigo hover:bg-indigo/20">
-                        {a.totalMarks ?? 0} / {a.maxMarks ?? 0} — View details
-                      </Badge>
-                    </Link>
-                  </td>
+    <AppShell nav={COLLEGE_NAV} active="assessment-data" user={shellUser} crumb="Assessment Data" title="Assessment data" subtitle="Results shared with you by Learn Being Forward.">
+      <section className="card">
+        {assignments.length === 0 ? (
+          <div className="empty">No assessment results have been shared with your college yet.</div>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Assessment</th>
+                  <th>Type</th>
+                  <th>Marks</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </DashboardShell>
+              </thead>
+              <tbody>
+                {assignments.map((a) => (
+                  <tr key={a.id}>
+                    <td className="strong">
+                      <Link href={`/lms/college/assessment-data?assignmentId=${a.id}`}>{a.student.name}</Link>
+                    </td>
+                    <td>{a.assessment.title}</td>
+                    <td>{TYPE_LABELS[a.assessment.type]}</td>
+                    <td>
+                      <Link href={`/lms/college/assessment-data?assignmentId=${a.id}`} className="pill info">
+                        {a.totalMarks ?? 0} / {a.maxMarks ?? 0} — View details
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </AppShell>
   );
 }

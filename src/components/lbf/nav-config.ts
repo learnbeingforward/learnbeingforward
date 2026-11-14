@@ -8,6 +8,50 @@ export type NavPage = { key: string; label: string; href: string };
 export type NavGroup = { key: string; label: string; icon: IconName; pages: NavPage[] };
 export type NavConfig = { label: string; groups: NavGroup[] };
 
+// Maps each super-admin nav page to the Employee Access key(s) that unlock it
+// (any one of them is enough) — mirrors requireCompanyPageAccess's own gating
+// so an EMPLOYEE's nav never shows a page they'd be redirected away from.
+// "account-details" and "employee-access" have no entry: SUPER_ADMIN only.
+const PAGE_PERMISSION: Record<string, string[]> = {
+  dashboard: ["overview.requests"],
+  notifications: ["overview.notifications.student", "overview.notifications.college", "overview.notifications.trainer", "overview.notifications.admin"],
+  attendance: ["overview.attendance"],
+  "edit-site": ["overview.edit-site"],
+  "trainer-content": ["overview.trainer-content"],
+  "add-account": ["accounts.add"],
+  "manage-accounts": ["accounts.manage.students", "accounts.manage.colleges", "accounts.manage.trainers", "accounts.manage.admins"],
+  students: ["accounts.students"],
+  colleges: ["colleges.view"],
+  trainers: ["trainers.manage"],
+  registrations: ["registrations.new"],
+  "attendance-approvals": ["registrations.approvals"],
+  "password-resets": ["registrations.password-resets"],
+  assessments: ["assessments.build"],
+  submissions: ["assessments.submissions.view", "assessments.submissions.grade", "assessments.submissions.send"],
+  "course-content": ["course-content"],
+};
+
+/** Filters SUPER_ADMIN_NAV down to what this viewer can actually use — full
+ * access for SUPER_ADMIN, everything but Account Details for ADMIN2, and only
+ * matching pages (profile always included) for an EMPLOYEE. */
+export function buildSuperAdminNav(role: string | undefined, keys: string[]): NavConfig {
+  if (role === "SUPER_ADMIN") return SUPER_ADMIN_NAV;
+
+  const canSee = (pageKey: string) => {
+    if (pageKey === "profile") return true;
+    if (pageKey === "account-details" || pageKey === "employee-access") return false;
+    const required = PAGE_PERMISSION[pageKey];
+    if (!required) return true;
+    return required.some((k) => keys.includes(k));
+  };
+
+  const groups = SUPER_ADMIN_NAV.groups
+    .map((g) => ({ ...g, pages: g.pages.filter((p) => canSee(p.key)) }))
+    .filter((g) => g.pages.length > 0);
+
+  return { label: SUPER_ADMIN_NAV.label, groups };
+}
+
 export const SUPER_ADMIN_NAV: NavConfig = {
   label: "Super Admin",
   groups: [

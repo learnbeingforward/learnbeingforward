@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { collegeNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { AppShell } from "@/components/lbf/AppShell";
+import { COLLEGE_NAV } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { CollegeProfileForm } from "@/components/lms/CollegeProfileForm";
 import { ChangePasswordForm } from "@/components/lms/ChangePasswordForm";
 
@@ -20,35 +21,48 @@ export default async function CollegeProfilePage() {
     const key = s.branch || "Unspecified";
     byBranch.set(key, (byBranch.get(key) ?? 0) + 1);
   }
+  const sortedBranches = Array.from(byBranch.entries()).sort((a, b) => b[1] - a[1]);
+  const possibleDuplicates = sortedBranches
+    .map(([name]) => name)
+    .filter((name, i, arr) => arr.some((other, j) => j !== i && other.toLowerCase().includes(name.toLowerCase()) && other !== name));
 
   return (
-    <DashboardShell title="Profile" subtitle="College details" navLinks={navLinks}>
-      <div className="space-y-8">
-        <CollegeProfileForm
-          college={{ name: college.name, contactEmail: college.contactEmail, photoUrl: admin.photoUrl }}
-        />
-
-        <div className="rounded-xl border border-border bg-white p-6">
-          <p className="mb-4 text-sm font-semibold text-indigo">
-            Students ({students.length} total)
-          </p>
-          <div className="space-y-2">
-            {Array.from(byBranch.entries()).map(([branch, count]) => (
-              <div key={branch} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{branch}</span>
-                <span className="font-medium text-indigo">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Change Password
+    <AppShell nav={COLLEGE_NAV} active="profile" user={{ name: college.name, subtitle: "College admin" }} crumb="Profile" title="College profile" subtitle="College details and password.">
+      <div className="row">
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            College details
           </h2>
-          <ChangePasswordForm />
-        </div>
+          <CollegeProfileForm college={{ name: college.name, contactEmail: college.contactEmail, photoUrl: admin.photoUrl }} />
+        </section>
+
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Students ({students.length} total)
+          </h2>
+          <ul className="list">
+            {sortedBranches.map(([branch, count]) => (
+              <li key={branch} className="split small">
+                <span>{branch}</span>
+                <strong>{count}</strong>
+              </li>
+            ))}
+          </ul>
+          {possibleDuplicates.length > 0 && (
+            <div className="alert gold small" style={{ marginTop: 12 }}>
+              <Icon name="edit" size={16} className="shrink-0" />
+              <span>&quot;{possibleDuplicates.join('", "')}&quot; look like the same branch — consider merging.</span>
+            </div>
+          )}
+        </section>
       </div>
-    </DashboardShell>
+
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>
+          Change password
+        </h2>
+        <ChangePasswordForm />
+      </section>
+    </AppShell>
   );
 }

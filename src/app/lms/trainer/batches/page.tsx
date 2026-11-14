@@ -1,11 +1,11 @@
-import { CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { trainerNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { Badge } from "@/components/ui/badge";
+import { AppShell } from "@/components/lbf/AppShell";
+import { TRAINER_NAV } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { BackLink } from "@/components/lms/BackLink";
+import { DomainTabs } from "@/components/lbf/DomainTabs";
 import { format } from "date-fns";
 
 export default async function TrainerBatchesPage({
@@ -16,6 +16,8 @@ export default async function TrainerBatchesPage({
   const { batchId } = await searchParams;
   const session = await auth();
   const trainerId = session!.user.trainerId!;
+  const trainer = await prisma.trainer.findUniqueOrThrow({ where: { id: trainerId } });
+  const shellUser = { name: trainer.name, subtitle: "Trainer" };
 
   if (batchId) {
     const batch = await prisma.batch.findUnique({
@@ -28,10 +30,10 @@ export default async function TrainerBatchesPage({
     });
     if (!batch || batch.trainerId !== trainerId) {
       return (
-        <DashboardShell title="Batch" subtitle="Not found" navLinks={navLinks}>
+        <AppShell nav={TRAINER_NAV} active="batches" user={shellUser} crumb="My Batches" title="Batch" subtitle="Not found">
           <BackLink href="/lms/trainer/batches" label="Back to My Batches" />
-          <p className="text-sm text-muted-foreground">This batch isn&apos;t assigned to you.</p>
-        </DashboardShell>
+          <p className="muted">This batch isn&apos;t assigned to you.</p>
+        </AppShell>
       );
     }
 
@@ -39,96 +41,142 @@ export default async function TrainerBatchesPage({
     const upcoming = batch.trainingSessions.filter((s) => !s.attendanceTaken);
 
     return (
-      <DashboardShell title={batch.name} subtitle={`${batch.college.name} — ${batch.course.name}`} navLinks={navLinks}>
+      <AppShell nav={TRAINER_NAV} active="batches" user={shellUser} crumb="My Batches" title={batch.name} subtitle={`${batch.college.name} — ${batch.course.name}`}>
         <BackLink href="/lms/trainer/batches" label="Back to My Batches" />
-
-        <div className="space-y-6">
-          <div className="rounded-xl border border-border bg-white">
-            <div className="border-b border-border p-4">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-green-700">
-                <CheckCircle2 className="size-4" /> Completed Sessions ({completed.length})
-              </p>
-            </div>
-            {completed.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">No sessions completed yet.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {completed.map((s) => (
-                  <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-                    <p className="text-indigo">{s.courseModule?.title ?? s.topic ?? "—"}</p>
-                    <p className="text-muted-foreground">
-                      {format(s.sessionDate, "MMM d, yyyy")} &middot; Slot {s.slotNumber} ({s.startTime}–{s.endTime})
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border bg-white">
-            <div className="border-b border-border p-4">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-700">
-                <Clock className="size-4" /> Upcoming Sessions ({upcoming.length})
-              </p>
-            </div>
-            {upcoming.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Nothing scheduled yet.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {upcoming.map((s) => (
-                  <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-                    <p className="text-indigo">{s.courseModule?.title ?? s.topic ?? "—"}</p>
-                    <p className="text-muted-foreground">
-                      {format(s.sessionDate, "MMM d, yyyy")} &middot; Slot {s.slotNumber} ({s.startTime}–{s.endTime})
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </DashboardShell>
+        <section className="card">
+          <h2 className="h2" style={{ color: "var(--success-text)" }}>
+            Completed sessions ({completed.length})
+          </h2>
+          {completed.length === 0 ? (
+            <p className="muted" style={{ marginTop: 12 }}>No sessions completed yet.</p>
+          ) : (
+            <ul className="list" style={{ marginTop: 12 }}>
+              {completed.map((s) => (
+                <li key={s.id} className="list-row">
+                  <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
+                  <span className="small muted">
+                    {format(s.sessionDate, "MMM d, yyyy")} · Slot {s.slotNumber} ({s.startTime}–{s.endTime})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className="card">
+          <h2 className="h2" style={{ color: "var(--warning-text)" }}>
+            Upcoming sessions ({upcoming.length})
+          </h2>
+          {upcoming.length === 0 ? (
+            <p className="muted" style={{ marginTop: 12 }}>Nothing scheduled yet.</p>
+          ) : (
+            <ul className="list" style={{ marginTop: 12 }}>
+              {upcoming.map((s) => (
+                <li key={s.id} className="list-row">
+                  <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
+                  <span className="small muted">
+                    {format(s.sessionDate, "MMM d, yyyy")} · Slot {s.slotNumber} ({s.startTime}–{s.endTime})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </AppShell>
     );
   }
 
   const batches = await prisma.batch.findMany({
     where: { trainerId },
-    include: { college: true, course: true, trainingSessions: true },
+    include: { college: true, course: { include: { modules: true } }, trainingSessions: true, enrollments: true },
     orderBy: [{ completed: "asc" }, { createdAt: "desc" }],
   });
+  const active = batches.filter((b) => !b.completed);
+  const done = batches.filter((b) => b.completed);
+
+  const card = (b: (typeof batches)[number]) => {
+    const completedCount = b.trainingSessions.filter((s) => s.attendanceTaken).length;
+    const upcomingCount = b.trainingSessions.length - completedCount;
+    const totalModules = b.course.modules.length;
+    const modulesCovered = new Set(b.trainingSessions.filter((s) => s.attendanceTaken).map((s) => s.courseModuleId)).size;
+    const pct = totalModules > 0 ? Math.round((modulesCovered / totalModules) * 100) : 0;
+    return (
+      <article key={b.id} className="box stack" style={{ gap: 12 }}>
+        <div className="split">
+          <span className="icon-box navy">
+            <Icon name="users" size={20} />
+          </span>
+          <span className={`pill ${b.completed ? "" : "success"}`}>{b.completed ? "Completed" : "Active"}</span>
+        </div>
+        <div>
+          <h3 className="h3">{b.name}</h3>
+          <div className="small muted">{b.college.name}</div>
+        </div>
+        <div className="grid" style={{ ["--min" as string]: "90px", gap: 8 }}>
+          <div className="tile" style={{ padding: 12 }}>
+            <div className="label">Students</div>
+            <div className="value" style={{ fontSize: 20 }}>
+              {b.enrollments.length}
+            </div>
+          </div>
+          <div className="tile" style={{ padding: 12 }}>
+            <div className="label">Done</div>
+            <div className="value" style={{ fontSize: 20 }}>
+              {completedCount}
+            </div>
+          </div>
+          <div className="tile gold" style={{ padding: 12 }}>
+            <div className="label">Upcoming</div>
+            <div className="value" style={{ fontSize: 20 }}>
+              {upcomingCount}
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="split small">
+            <span className="muted">Course progress</span>
+            <span>
+              {modulesCovered} / {totalModules} modules
+            </span>
+          </div>
+          <div className="progress gold" style={{ marginTop: 6 }}>
+            <span style={{ width: `${Math.max(pct, 4)}%` }} />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link className="btn btn-sm" href="/lms/trainer/schedule">
+            <Icon name="calendar" size={16} />
+            Schedule
+          </Link>
+          <Link className="btn btn-sm" href={`/lms/trainer/batches?batchId=${b.id}`}>
+            <Icon name="users" size={16} />
+            Students
+          </Link>
+          <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
+            Mark attendance
+          </Link>
+        </div>
+      </article>
+    );
+  };
 
   return (
-    <DashboardShell title="My Batches" subtitle="Every batch assigned to you, including completed ones" navLinks={navLinks}>
+    <AppShell nav={TRAINER_NAV} active="batches" user={shellUser} crumb="My Batches" title="My batches" subtitle="Every batch assigned to you, including completed ones.">
       {batches.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          No batches assigned yet.
-        </div>
+        <div className="empty">No batches assigned yet.</div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {batches.map((b) => {
-            const completedCount = b.trainingSessions.filter((s) => s.attendanceTaken).length;
-            const upcomingCount = b.trainingSessions.length - completedCount;
-            return (
-              <Link
-                key={b.id}
-                href={`/lms/trainer/batches?batchId=${b.id}`}
-                className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-indigo">{b.name}</p>
-                  {b.completed && <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Completed</Badge>}
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {b.college.name} — {b.course.name}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {completedCount} completed &middot; {upcomingCount} upcoming
-                </p>
-              </Link>
-            );
-          })}
-        </div>
+        <section className="card">
+          <DomainTabs
+            tabs={[
+              { key: "active", label: `Active (${active.length})` },
+              { key: "done", label: `Completed (${done.length})` },
+            ]}
+            panels={{
+              active: <div className="grid" style={{ ["--min" as string]: "340px" }}>{active.map(card)}</div>,
+              done: <div className="grid" style={{ ["--min" as string]: "340px" }}>{done.map(card)}</div>,
+            }}
+          />
+        </section>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

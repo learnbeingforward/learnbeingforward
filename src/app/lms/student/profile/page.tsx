@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
+import { AppShell } from "@/components/lbf/AppShell";
+import { STUDENT_NAV } from "@/components/lbf/nav-config";
 import { StudentProfileForm } from "@/components/lms/StudentProfileForm";
 import { ChangePasswordForm } from "@/components/lms/ChangePasswordForm";
 
@@ -11,31 +11,36 @@ export default async function StudentProfilePage() {
     where: { id: session!.user.id },
     include: { college: true },
   });
+  const shellUser = { name: student.name, subtitle: student.college?.name ?? "Student" };
 
   return (
-    <DashboardShell title="Profile" subtitle="Your details" navLinks={navLinks}>
-      <div className="space-y-8">
-        <StudentProfileForm
-          student={{
-            name: student.name,
-            email: student.email,
-            collegeName: student.college?.name ?? null,
-            usn: student.usn,
-            fatherName: student.fatherName,
-            branch: student.branch,
-            semester: student.semester,
-            photoUrl: student.photoUrl,
-            cvUrl: student.cvUrl,
-          }}
-        />
-
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Change Password
+    <AppShell nav={STUDENT_NAV} active="profile" user={shellUser} crumb="Your details" title="Profile" subtitle="Keep your details and CV up to date for placements.">
+      <div className="row">
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Your details
+          </h2>
+          <StudentProfileForm
+            student={{
+              name: student.name,
+              email: student.email,
+              collegeName: student.college?.name ?? null,
+              usn: student.usn,
+              fatherName: student.fatherName,
+              branch: student.branch,
+              semester: student.semester,
+              photoUrl: student.photoUrl,
+              cvUrl: student.cvUrl,
+            }}
+          />
+        </section>
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Change password
           </h2>
           <ChangePasswordForm />
-        </div>
+        </section>
       </div>
-    </DashboardShell>
+    </AppShell>
   );
 }
