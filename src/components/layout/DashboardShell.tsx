@@ -8,11 +8,15 @@ export function DashboardShell({
   subtitle,
   navLinks,
   children,
+  hideTitleBlock,
 }: {
   title: string;
   subtitle: string;
   navLinks?: LmsNavEntry[];
   children: React.ReactNode;
+  // The assessment-builder screens render their own header band (BuilderHeader)
+  // instead of this shell's default title block, to match the design spec.
+  hideTitleBlock?: boolean;
 }) {
   return (
     <div className="min-h-screen bg-cream">
@@ -27,10 +31,12 @@ export function DashboardShell({
       {navLinks && navLinks.length > 0 && <LmsNav links={navLinks} />}
 
       <div className="container-page py-10">
-        <div className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-wide text-indigo">{subtitle}</p>
-          <h1 className="mt-1 text-2xl font-bold text-indigo sm:text-3xl">{title}</h1>
-        </div>
+        {!hideTitleBlock && (
+          <div className="mb-8">
+            <p className="text-sm font-semibold uppercase tracking-wide text-indigo">{subtitle}</p>
+            <h1 className="mt-1 text-2xl font-bold text-indigo sm:text-3xl">{title}</h1>
+          </div>
+        )}
         {children}
       </div>
     </div>

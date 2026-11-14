@@ -54,10 +54,14 @@ type Question = {
   questionType: "MCQ" | "WRITTEN" | "CODING";
   questionText: string;
   marks: number;
+  sectionName: string | null;
+  snippetLanguage: string | null;
+  snippetCode: string | null;
   optionA: string | null;
   optionB: string | null;
   optionC: string | null;
   optionD: string | null;
+  answerType: string | null;
   savedAnswer: string | null;
   starterCode: string | null;
   timeLimitSeconds: number | null;
@@ -121,6 +125,7 @@ export function TakeAssessmentClient({
   initialMcqPhaseSubmitted,
   alreadySubmitted,
   wasAutoSubmitted,
+  blockCopyPaste = false,
 }: {
   assignmentId: string;
   assessmentTitle: string;
@@ -135,6 +140,7 @@ export function TakeAssessmentClient({
   initialMcqPhaseSubmitted: boolean;
   alreadySubmitted: boolean;
   wasAutoSubmitted: boolean;
+  blockCopyPaste?: boolean;
 }) {
   const router = useRouter();
   // Mixed assessments run in two one-way phases: every MCQ/written question first,
@@ -230,6 +236,22 @@ export function TakeAssessmentClient({
   // an explicit pixel position anywhere on screen instead.
   const [pipPos, setPipPos] = useState<{ top: number; left: number } | null>(null);
   const pipDragRef = useRef<{ startX: number; startY: number; startTop: number; startLeft: number } | null>(null);
+
+  // Blocks copy/cut/paste for the whole exam window when the admin turned it on
+  // for this assessment — independent of proctoring, so it applies even to a
+  // non-proctored assessment if the admin wants it.
+  useEffect(() => {
+    if (!started || !blockCopyPaste) return;
+    const block = (e: ClipboardEvent) => e.preventDefault();
+    document.addEventListener("copy", block);
+    document.addEventListener("cut", block);
+    document.addEventListener("paste", block);
+    return () => {
+      document.removeEventListener("copy", block);
+      document.removeEventListener("cut", block);
+      document.removeEventListener("paste", block);
+    };
+  }, [started, blockCopyPaste]);
 
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const leaveHandled = useRef(false);
@@ -959,7 +981,12 @@ export function TakeAssessmentClient({
           {sq.questionType === "MCQ" ? (
             answered ? (
               <p className="mt-2 whitespace-pre-wrap text-sm text-indigo">
-                {value}. {sq[`option${value}` as "optionA"]}
+                {sq.answerType === "NUMERIC"
+                  ? value
+                  : value
+                      .split(",")
+                      .map((letter) => `${letter}. ${sq[`option${letter}` as "optionA"] ?? ""}`)
+                      .join("; ")}
               </p>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">No option selected.</p>
@@ -1754,7 +1781,16 @@ export function TakeAssessmentClient({
                 </div>
                 <p className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span className="rounded bg-cream px-1.5 py-0.5 font-medium">{q.questionType === "MCQ" ? "MCQ" : "Written"}</span>
+                  {q.sectionName && <span className="rounded bg-indigo/5 px-1.5 py-0.5 font-medium text-indigo">{q.sectionName}</span>}
                 </p>
+                {q.snippetCode && (
+                  <div className="mb-3">
+                    {q.snippetLanguage && (
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{q.snippetLanguage}</p>
+                    )}
+                    <pre className="overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-white select-none">{q.snippetCode}</pre>
+                  </div>
+                )}
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Description</p>
                 <div className="max-h-[50vh] overflow-y-auto pr-1">
                   <p className="whitespace-pre-wrap text-base leading-relaxed text-indigo">{q.questionText}</p>
@@ -1779,11 +1815,22 @@ export function TakeAssessmentClient({
                 </div>
                 <p className="mb-4 text-xs text-muted-foreground">Please choose a correct answer.</p>
 
-                {q.questionType === "MCQ" ? (
+                {q.questionType === "MCQ" && q.answerType === "NUMERIC" ? (
+                  <input
+                    type="number"
+                    step="any"
+                    value={answers[q.id] ?? ""}
+                    onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                    placeholder="Enter your numeric answer"
+                    className="h-11 w-full max-w-xs rounded-lg border border-border px-3 text-base text-indigo outline-none focus-visible:border-indigo"
+                  />
+                ) : q.questionType === "MCQ" ? (
                   <div className="space-y-2">
                     {(["A", "B", "C", "D"] as const).map((letter) => {
                       const text = q[`option${letter}` as "optionA"];
-                      const selected = answers[q.id] === letter;
+                      const isMultiple = q.answerType === "MULTIPLE";
+                      const selectedLetters = (answers[q.id] ?? "").split(",").filter(Boolean);
+                      const selected = isMultiple ? selectedLetters.includes(letter) : answers[q.id] === letter;
                       return (
                         <label
                           key={letter}
@@ -1792,11 +1839,18 @@ export function TakeAssessmentClient({
                           }`}
                         >
                           <input
-                            type="radio"
+                            type={isMultiple ? "checkbox" : "radio"}
                             name={`q-${q.id}`}
                             value={letter}
                             checked={selected}
-                            onChange={() => handleAnswerChange(q.id, letter)}
+                            onChange={() => {
+                              if (!isMultiple) {
+                                handleAnswerChange(q.id, letter);
+                                return;
+                              }
+                              const next = selected ? selectedLetters.filter((l) => l !== letter) : [...selectedLetters, letter];
+                              handleAnswerChange(q.id, next.sort().join(","));
+                            }}
                             className="mt-1 shrink-0 accent-indigo"
                           />
                           <span className="whitespace-pre-wrap">

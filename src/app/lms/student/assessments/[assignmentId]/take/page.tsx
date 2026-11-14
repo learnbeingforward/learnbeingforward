@@ -56,10 +56,14 @@ export default async function TakeAssessmentPage({
       questionType: q.questionType,
       questionText: q.questionText,
       marks: q.marks,
+      sectionName: q.sectionName,
+      snippetLanguage: q.snippetLanguage,
+      snippetCode: q.snippetCode,
       optionA: q.optionA,
       optionB: q.optionB,
       optionC: q.optionC,
       optionD: q.optionD,
+      answerType: q.answerType,
       savedAnswer:
         q.questionType === "MCQ" ? (existing?.selectedOption ?? null) : (existing?.writtenAnswer ?? null),
       starterCode: q.starterCode,
@@ -89,6 +93,7 @@ export default async function TakeAssessmentPage({
       initialMcqPhaseSubmitted={!!assignment.mcqPhaseSubmittedAt}
       alreadySubmitted={alreadySubmitted}
       wasAutoSubmitted={assignment.autoSubmitted}
+      blockCopyPaste={assignment.assessment.blockCopyPaste}
     />
   );
 }

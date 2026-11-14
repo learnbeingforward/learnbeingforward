@@ -11,11 +11,17 @@ export type ReviewAnswer = {
   questionText: string;
   marks: number;
   marksAwarded: number | null;
+  sectionName?: string | null;
+  snippetLanguage?: string | null;
+  snippetCode?: string | null;
+  answerType?: string | null;
   optionA: string | null;
   optionB: string | null;
   optionC: string | null;
   optionD: string | null;
   correctOption: string | null;
+  correctOptions?: string | null;
+  numericAnswer?: string | null;
   selectedOption: string | null;
   writtenAnswer: string | null;
   codeSubmission: string | null;
@@ -69,13 +75,32 @@ function QuestionDetail({ answer, index, editable }: { answer: ReviewAnswer; ind
           {answer.marksAwarded ?? 0}/{answer.marks} marks
         </span>
       </div>
+      {answer.snippetCode && (
+        <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-white">{answer.snippetCode}</pre>
+      )}
 
-      {answer.questionType === "MCQ" ? (
+      {answer.questionType === "MCQ" && answer.answerType === "NUMERIC" ? (
+        <div className="mt-3 grid gap-1.5 text-sm sm:grid-cols-2">
+          <p className="rounded-lg bg-cream px-2.5 py-1.5 text-indigo">
+            Student answered: <strong>{answer.selectedOption || "—"}</strong>
+          </p>
+          <p className="rounded-lg bg-green-50 px-2.5 py-1.5 font-medium text-green-700">
+            Correct value: {answer.numericAnswer ?? "—"}
+          </p>
+        </div>
+      ) : answer.questionType === "MCQ" ? (
         <div className="mt-3 grid gap-1.5 text-sm sm:grid-cols-2">
           {(["A", "B", "C", "D"] as const).map((letter) => {
             const text = answer[`option${letter}` as "optionA"];
-            const isSelected = answer.selectedOption === letter;
-            const isCorrectOption = answer.correctOption === letter;
+            const selectedLetters = (answer.selectedOption ?? "").split(",").filter(Boolean);
+            const correctLetters =
+              answer.answerType === "MULTIPLE"
+                ? (answer.correctOptions ?? "").split(",").filter(Boolean)
+                : answer.correctOption
+                  ? [answer.correctOption]
+                  : [];
+            const isSelected = selectedLetters.includes(letter);
+            const isCorrectOption = correctLetters.includes(letter);
             return (
               <p
                 key={letter}

@@ -644,6 +644,31 @@ model Assessment {
   published          Boolean        @default(false)
   createdAt          DateTime       @default(now())
 
+  // ---- Creator-wizard fields (Screen 1: Create Assessment) ----
+  // Short internal code shown next to the title (e.g. "APT-2026-R1"). Display-only.
+  assessmentCode     String?
+  passMark           Int?
+  // How many tab-switch/full-screen-exit violations are allowed before the
+  // attempt auto-submits. Replaces the formerly hardcoded 3-strike limit.
+  tabSwitchLimit     Int            @default(3)
+  // Optional overrides for student-facing proctoring copy. Null = the app's
+  // existing built-in instructions/summary text (unchanged behaviour).
+  instructionsTemplate String?      @db.Text
+  submissionMessage    String?      @db.Text
+  // Block copy/paste inside the exam window. Independent of proctoringEnabled.
+  blockCopyPaste        Boolean      @default(false)
+  // Shown as checkbox tiles in Proctoring & Rules; not all are enforced yet —
+  // screen-share and face-match need capabilities this app doesn't have.
+  requireFaceMatch      Boolean      @default(false)
+  requireScreenShare    Boolean      @default(false)
+  // JSON map of sectionName -> boolean ("shuffle this section's question order
+  // per student"). Null/missing = no shuffling, same as before this existed.
+  shuffleSections       String?      @db.Text
+  // JSON map of sectionName -> "APTITUDE" | "TECHNICAL" | "CODING" — which of the
+  // 3 "Add Question" screens a section's "+ CREATE QUESTION" button opens. Set
+  // once, when the section is created.
+  sectionKinds          String?      @db.Text
+
   questions   AssessmentQuestion[]
   assignments AssessmentAssignment[]
 
@@ -658,12 +683,23 @@ model AssessmentQuestion {
   questionType  AssessmentQuestionType
   questionText  String                 @db.Text
   marks         Int                    @default(1)
+  // Free-text grouping label an admin can give each question (e.g. "Aptitude",
+  // "Technical", "Coding", or any custom name) so one assessment can mix several
+  // named sections instead of being locked to its category. Null/blank just means
+  // "ungrouped" — an assessment where nobody bothered to name sections behaves
+  // exactly as a single flat list, same as before this existed.
+  sectionName   String?
 
   optionA       String?  @db.Text
   optionB       String?  @db.Text
   optionC       String?  @db.Text
   optionD       String?  @db.Text
   correctOption String?
+  // MCQ/WRITTEN-only, optional: a read-only code block shown to the student above
+  // the options — the "Technical question with a snippet" pattern (predict the
+  // output / find the error), without needing a separate question type.
+  snippetLanguage String?
+  snippetCode     String? @db.Text
 
   // CODING-only: a JSON map of language -> starter code, e.g. {"python": "...",
   // "java": "...", "c": "...", "cpp": "..."}. Null/missing entries just start blank.
@@ -674,6 +710,50 @@ model AssessmentQuestion {
   // an admin fail a brute-force solution that's functionally correct but too slow
   // — the intended algorithm finishes in time, a naive one times out.
   timeLimitSeconds Int?
+
+  // ---- Screen 2/3 fields (Add Aptitude / Add Technical question) ----
+  // Aptitude: topic = "Logical reasoning"/"Quantitative"/"Verbal". Technical:
+  // topic = subject ("OOP"/"DBMS-SQL"/...), subTopic = "Concept".
+  topic            String?
+  subTopic         String?
+  // Technical only: "predict_output" | "find_error" | "concept_mcq" | "fill_blank".
+  questionStyle    String?
+  // MCQ only: "SINGLE" | "MULTIPLE" | "NUMERIC".
+  answerType       String?  @default("SINGLE")
+  // MULTIPLE: comma-separated letters, e.g. "A,C". NUMERIC: correctOption/options unused.
+  correctOptions   String?
+  numericAnswer    String?
+  numericTolerance String?
+  difficulty       String?  @default("MEDIUM")
+  tags             String?
+  negativeMarks    Int?     @default(0)
+  // Admin-only solution/explanation, never shown to the student.
+  explanation      String?  @db.Text
+
+  // ---- Screen 4 fields (Add Coding question builder) ----
+  // Short title shown in the question table and the student's problem header —
+  // separate from questionText, which on CODING questions holds the full
+  // problem statement (Basics > Question title vs. Problem statement).
+  title                     String?
+  inputFormat               String? @db.Text
+  outputFormat              String? @db.Text
+  constraints               String? @db.Text
+  sampleInput               String? @db.Text
+  sampleOutput              String? @db.Text
+  sampleExplanation         String? @db.Text
+  // JSON map of language -> "startLine-endLine" (the student-editable range).
+  editableRanges            String? @db.Text
+  referenceSolutionLanguage String?
+  referenceSolution         String? @db.Text
+  // Admin-only note on why these test cases were chosen.
+  adminNote                 String? @db.Text
+  // "PARTIAL" (marks split by test weight) | "ALL_OR_NOTHING".
+  scoringMode               String? @default("PARTIAL")
+  // "UNLIMITED_LAST" | "UNLIMITED_BEST" | "LIMITED".
+  submissionsMode           String? @default("UNLIMITED_LAST")
+  submissionsLimit          Int?
+  // "DRAFT" | "VALIDATED" — set by the Validate & Run Rules panel.
+  status                    String? @default("DRAFT")
 
   answers       AssessmentAnswer[]
 
@@ -692,6 +772,8 @@ model CodingTestCase {
   expectedOutput String             @db.Text
   isHidden       Boolean            @default(false)
   order          Int                @default(0)
+  label          String?
+  weight         Int?               @default(0)
 
   @@index([questionId])
 }
@@ -800,6 +882,9 @@ model AssessmentAnswer {
   codeLanguage    String?
   testCasesPassed Int?
   testCasesTotal  Int?
+  // How many times Submit Code has actually run (compile errors don't count) —
+  // only used when the question's submissionsMode is "LIMITED".
+  submissionCount Int     @default(0)
 
   @@unique([assignmentId, questionId])
   @@index([questionId])

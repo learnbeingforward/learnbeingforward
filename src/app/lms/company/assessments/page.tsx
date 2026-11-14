@@ -5,11 +5,15 @@ import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { Badge } from "@/components/ui/badge";
 import { CreateAssessmentForm } from "@/components/lms/CreateAssessmentForm";
-import { AssessmentQuestionBuilder } from "@/components/lms/AssessmentQuestionBuilder";
 import { AssignAssessmentForm } from "@/components/lms/AssignAssessmentForm";
-import { EditAssessmentSettingsForm } from "@/components/lms/EditAssessmentSettingsForm";
-import { deleteAssessment } from "@/lib/actions/assessments";
+import { deleteAssessment, type SectionKind } from "@/lib/actions/assessments";
 import { DeleteButton } from "@/components/lms/DeleteButton";
+import { CreateAssessmentWizard } from "@/components/lms/builder/CreateAssessmentWizard";
+import { ReviewPublishScreen } from "@/components/lms/builder/ReviewPublishScreen";
+import { McqQuestionBuilder } from "@/components/lms/builder/McqQuestionBuilder";
+import { CodingQuestionBuilder } from "@/components/lms/builder/CodingQuestionBuilder";
+import type { SectionInfo } from "@/components/lms/builder/SectionsAndQuestionsBlock";
+import type { TableQuestion } from "@/components/lms/builder/QuestionTable";
 
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude Assessment",
@@ -69,17 +73,26 @@ function AssessmentCard({ assessment }: { assessment: { id: string; title: strin
 export default async function CompanyAssessmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ assessmentId?: string; mode?: string; category?: string; view?: string }>;
+  searchParams: Promise<{
+    assessmentId?: string;
+    mode?: string;
+    category?: string;
+    view?: string;
+    step?: string;
+    screen?: string;
+    sectionName?: string;
+    questionId?: string;
+  }>;
 }) {
   const { navLinks } = await requireCompanyPageAccess("assessments.build");
 
-  const { assessmentId, mode, category, view } = await searchParams;
+  const { assessmentId, mode, category, view, step, screen, sectionName, questionId } = await searchParams;
 
   if (assessmentId) {
     const assessment = await prisma.assessment.findUnique({
       where: { id: assessmentId },
       include: {
-        questions: { orderBy: { order: "asc" }, include: { _count: { select: { testCases: true } } } },
+        questions: { orderBy: { order: "asc" }, include: { testCases: true } },
         assignments: true,
       },
     });
@@ -93,7 +106,7 @@ export default async function CompanyAssessmentsPage({
       );
     }
 
-    const categoryListHref = `/lms/company/assessments?category=${assessment.type}&view=list`;
+    const backHref = `/lms/company/assessments?assessmentId=${assessmentId}`;
 
     if (mode === "send") {
       const students = await prisma.user.findMany({
@@ -114,40 +127,130 @@ export default async function CompanyAssessmentsPage({
 
       return (
         <DashboardShell title={assessment.title} subtitle="Send to students" navLinks={navLinks}>
-          <BackLink href={`/lms/company/assessments?assessmentId=${assessmentId}`} label="Back to Assessment" />
+          <BackLink href={backHref} label="Back to Assessment" />
           <AssignAssessmentForm assessmentId={assessmentId} students={assignable} />
         </DashboardShell>
       );
     }
 
+    // ---------- Screens 2/3/4: Add/Edit a question ----------
+    if (screen === "add-aptitude" || screen === "add-technical") {
+      const kind = screen === "add-aptitude" ? "aptitude" : "technical";
+      const existingQ = questionId ? assessment.questions.find((q) => q.id === questionId) : undefined;
+      return (
+        <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
+          <McqQuestionBuilder
+            assessmentId={assessmentId}
+            assessmentTitle={assessment.title}
+            sectionName={sectionName ?? "Aptitude"}
+            kind={kind}
+            backHref={backHref}
+            progressLabel={`${assessment.questions.length} question${assessment.questions.length !== 1 ? "s" : ""} added`}
+            existing={existingQ}
+          />
+        </DashboardShell>
+      );
+    }
+
+    if (screen === "add-coding") {
+      const existingQ = questionId ? assessment.questions.find((q) => q.id === questionId) : undefined;
+      return (
+        <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
+          <CodingQuestionBuilder
+            assessmentId={assessmentId}
+            assessmentTitle={assessment.title}
+            sectionName={sectionName ?? "Coding"}
+            backHref={backHref}
+            progressLabel={`${assessment.questions.length} question${assessment.questions.length !== 1 ? "s" : ""} added`}
+            existing={
+              existingQ
+                ? {
+                    ...existingQ,
+                    testCases: existingQ.testCases.map((tc) => ({ ...tc, label: tc.label, weight: tc.weight })),
+                  }
+                : undefined
+            }
+          />
+        </DashboardShell>
+      );
+    }
+
+    // ---------- Shared: group questions by section ----------
+    const sectionKinds = JSON.parse(assessment.sectionKinds || "{}") as Record<string, SectionKind>;
+    const shuffleMap = JSON.parse(assessment.shuffleSections || "{}") as Record<string, boolean>;
+    const bySection = new Map<string, typeof assessment.questions>();
+    for (const q of assessment.questions) {
+      const key = q.sectionName ?? "Ungrouped";
+      if (!bySection.has(key)) bySection.set(key, []);
+      bySection.get(key)!.push(q);
+    }
+    // Every known section (even empty ones) gets a card; anything with questions
+    // but no recorded kind (legacy data from before sections existed) still shows.
+    const sectionNames = new Set([...Object.keys(sectionKinds), ...bySection.keys()]);
+    const sections: SectionInfo[] = Array.from(sectionNames).map((name) => {
+      const kind = sectionKinds[name] ?? "APTITUDE";
+      const questions: TableQuestion[] = (bySection.get(name) ?? []).map((q) => ({
+        id: q.id,
+        order: q.order,
+        questionType: q.questionType,
+        questionText: q.questionText,
+        title: q.title,
+        marks: q.marks,
+        difficulty: q.difficulty,
+        status: q.status,
+        testCaseCount: q.testCases.length,
+        hiddenTestCaseCount: q.testCases.filter((tc) => tc.isHidden).length,
+      }));
+      return { name, kind, shuffleEnabled: !!shuffleMap[name], questions };
+    });
+
+    // ---------- Step 4: Review & Publish ----------
+    if (step === "4") {
+      const draftCodingQuestions = assessment.questions.filter((q) => q.questionType === "CODING" && q.status !== "VALIDATED");
+      return (
+        <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
+          <ReviewPublishScreen
+            assessment={assessment}
+            backHref={backHref}
+            sections={sections.map((s) => ({
+              name: s.name,
+              questionCount: s.questions.length,
+              totalMarks: s.questions.reduce((m, q) => m + q.marks, 0),
+            }))}
+            draftCodingQuestions={draftCodingQuestions.map((q) => ({ id: q.id, questionText: q.title || q.questionText, sectionName: q.sectionName }))}
+          />
+        </DashboardShell>
+      );
+    }
+
+    // ---------- Default: Screen 1 (Details + Sections & Questions + Proctoring & Rules) ----------
     return (
-      <DashboardShell title={assessment.title} subtitle={TYPE_LABELS[assessment.type]} navLinks={navLinks}>
-        <BackLink href={categoryListHref} label={`Back to ${TYPE_LABELS[assessment.type]}s`} />
-        <EditAssessmentSettingsForm
-          assessmentId={assessmentId}
-          title={assessment.title}
-          description={assessment.description}
-          durationMinutes={assessment.durationMinutes}
-          proctoringEnabled={assessment.proctoringEnabled}
-          availableFrom={assessment.availableFrom?.toISOString() ?? null}
-          availableUntil={assessment.availableUntil?.toISOString() ?? null}
-        />
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          {assessment.questions.length > 0 && (
-            <Link
-              href={`/lms/company/assessments?assessmentId=${assessmentId}&mode=send`}
-              className="rounded-lg bg-indigo px-4 py-2 text-sm font-semibold text-white hover:bg-indigo/90"
-            >
-              Finish &amp; Send to Students
-            </Link>
-          )}
-          {assessment.published && (
+      <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
+        {assessment.published && (
+          <div className="mx-auto mb-3 max-w-6xl">
             <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Published</Badge>
-          )}
-        </div>
-        <AssessmentQuestionBuilder
-          assessmentId={assessmentId}
-          questions={assessment.questions.map((q) => ({ ...q, testCaseCount: q._count.testCases }))}
+          </div>
+        )}
+        <CreateAssessmentWizard
+          assessment={{
+            id: assessment.id,
+            title: assessment.title,
+            description: assessment.description,
+            durationMinutes: assessment.durationMinutes,
+            assessmentCode: assessment.assessmentCode,
+            passMark: assessment.passMark,
+            availableFrom: assessment.availableFrom?.toISOString() ?? null,
+            availableUntil: assessment.availableUntil?.toISOString() ?? null,
+            proctoringEnabled: assessment.proctoringEnabled,
+            requireFaceMatch: assessment.requireFaceMatch,
+            requireScreenShare: assessment.requireScreenShare,
+            blockCopyPaste: assessment.blockCopyPaste,
+            tabSwitchLimit: assessment.tabSwitchLimit,
+            instructionsTemplate: assessment.instructionsTemplate,
+            submissionMessage: assessment.submissionMessage,
+          }}
+          sections={sections}
+          backHref={backHref}
         />
       </DashboardShell>
     );

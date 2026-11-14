@@ -166,37 +166,144 @@ export function CodingQuestionPanel({
       </div>
 
       {runResult?.error && <p className="mt-3 text-sm text-destructive">{runResult.error}</p>}
-      {runResult?.ok && runResult.results && (
-        <div className="mt-3 space-y-2">
-          {runResult.results.map((r, i) => (
-            <div key={i} className={`rounded-lg border p-3 text-xs ${r.passed ? "border-green-300 bg-green-50" : "border-red-300 bg-red-50"}`}>
-              <p className={`flex items-center gap-1.5 font-medium ${r.passed ? "text-green-700" : "text-red-700"}`}>
-                {r.passed ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
-                Example {i + 1}: {r.passed ? "Passed" : "Failed"}
-              </p>
-              {!r.passed && (
-                <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
-                  <div>
-                    <p className="font-medium text-indigo">Expected</p>
-                    <pre className="whitespace-pre-wrap font-mono">{r.expectedOutput}</pre>
-                  </div>
-                  <div>
-                    <p className="font-medium text-indigo">Your Output</p>
-                    <pre className="whitespace-pre-wrap font-mono">{r.actualOutput || "(no output)"}</pre>
-                  </div>
+      {runResult?.ok && runResult.results && (() => {
+        const compileFailure = runResult.results.find((r) => r.verdict === "compile_error" || r.verdict === "runtime_error");
+        const allPassed = runResult.results.every((r) => r.passed);
+        return (
+          <div className="mt-3">
+            {compileFailure ? (
+              <div className="rounded-lg border border-red-300 bg-red-50 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700">
+                  <XCircle className="size-4" />
+                  {compileFailure.verdict === "compile_error" ? "Compilation error" : "Runtime error"}
+                </p>
+                <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-red-200">
+                  {compileFailure.actualOutput}
+                </pre>
+                <p className="mt-2 text-xs text-red-700">Fix it and press Run again. Run is never scored.</p>
+              </div>
+            ) : (
+              <>
+                <p className="mb-2 text-xs font-semibold text-indigo">
+                  {runResult.results.filter((r) => r.passed).length} / {runResult.results.length} visible tests passed
+                </p>
+                <div className="space-y-2">
+                  {runResult.results.map((r, i) =>
+                    r.passed ? (
+                      <div key={i} className="flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+                        <CheckCircle2 className="size-3.5" /> Test {i + 1} &middot; Passed
+                      </div>
+                    ) : (
+                      <div key={i} className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs">
+                        <p className="mb-2 flex items-center gap-1.5 font-semibold text-red-700">
+                          <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Wrong Answer</span>
+                          Test {i + 1}
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <div>
+                            <p className="font-medium text-indigo">Input</p>
+                            <pre className="mt-0.5 whitespace-pre-wrap font-mono">{r.input || "(none)"}</pre>
+                          </div>
+                          <div>
+                            <p className="font-medium text-indigo">Expected</p>
+                            <pre className="mt-0.5 whitespace-pre-wrap font-mono">{r.expectedOutput}</pre>
+                          </div>
+                          <div>
+                            <p className="font-medium text-indigo">Your Output</p>
+                            <pre className="mt-0.5 whitespace-pre-wrap rounded bg-red-100 font-mono">{r.actualOutput || "(no output)"}</pre>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {allPassed
+                    ? "Looks good. Press Submit to run the hidden tests."
+                    : "Hidden tests are not run on Run. They run only when you press Submit."}
+                </p>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {submitResult?.error && !submitResult.compileErrorDetail && <p className="mt-3 text-sm text-destructive">{submitResult.error}</p>}
+      {submitResult?.compileErrorDetail && (
+        <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700">
+            <XCircle className="size-4" /> Compilation error
+          </p>
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-red-200">{submitResult.compileErrorDetail}</pre>
+          <p className="mt-2 text-xs text-red-700">This submission wasn&apos;t scored and didn&apos;t use a submission attempt.</p>
         </div>
       )}
-
-      {submitResult?.error && <p className="mt-3 text-sm text-destructive">{submitResult.error}</p>}
       {submitResult?.ok && (
-        <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-green-700">
-          <CheckCircle2 className="size-4" /> {submitResult.testCasesPassed}/{submitResult.testCasesTotal} test cases
-          passed — {submitResult.marksAwarded}/{question.marks} marks
-        </p>
+        <div className="mt-3">
+          <div
+            className={`flex flex-wrap items-center justify-between gap-2 rounded-lg p-3 ${
+              submitResult.testCasesPassed === submitResult.testCasesTotal
+                ? "bg-green-50"
+                : submitResult.testCasesPassed && submitResult.testCasesPassed > 0
+                  ? "bg-amber-50"
+                  : "bg-red-50"
+            }`}
+          >
+            <div>
+              <p
+                className={`text-sm font-bold ${
+                  submitResult.testCasesPassed === submitResult.testCasesTotal
+                    ? "text-green-700"
+                    : submitResult.testCasesPassed && submitResult.testCasesPassed > 0
+                      ? "text-amber-700"
+                      : "text-red-700"
+                }`}
+              >
+                {submitResult.testCasesPassed}/{submitResult.testCasesTotal} tests passed
+              </p>
+              {submitResult.submittedAt && (
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Submitted at {new Date(submitResult.submittedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  {submitResult.submissionNumber ? ` · Submission #${submitResult.submissionNumber}` : ""}
+                </p>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-indigo">
+              {submitResult.marksAwarded}/{question.marks} marks
+            </p>
+          </div>
+          {submitResult.tests && (
+            <div className="mt-2 space-y-1">
+              {submitResult.tests.map((t, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-xs ${
+                    t.verdict === "passed" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 font-medium">
+                    {t.verdict === "passed" ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
+                    {t.label}
+                  </span>
+                  {t.verdict !== "passed" && (
+                    <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                      {t.verdict === "wrong_answer"
+                        ? "Wrong Answer"
+                        : t.verdict === "time_limit_exceeded"
+                          ? "Time Limit Exceeded"
+                          : t.verdict === "runtime_error"
+                            ? "Runtime Error"
+                            : "Compile Error"}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Hidden inputs are never shown. You can change your code and submit again; your last submission is scored.
+          </p>
+        </div>
       )}
     </div>
   );
