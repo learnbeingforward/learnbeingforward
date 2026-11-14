@@ -1,18 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { ResetAccountForm } from "@/components/lms/ResetAccountForm";
 import { ResetStudentPasswordForm } from "@/components/lms/ResetStudentPasswordForm";
 import { ResetCollegePasswordForm } from "@/components/lms/ResetCollegePasswordForm";
 import { ResetTrainerPasswordForm } from "@/components/lms/ResetTrainerPasswordForm";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function CompanyManageAccountsPage() {
-  const { navLinks, keys } = await requireCompanyPageAccess([
+  const { session, keys, hasUnread } = await requireCompanyPageAccess([
     "accounts.manage.students",
     "accounts.manage.colleges",
     "accounts.manage.trainers",
     "accounts.manage.admins",
   ]);
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
+
   const canStudents = keys.includes("accounts.manage.students");
   const canColleges = keys.includes("accounts.manage.colleges");
   const canTrainers = keys.includes("accounts.manage.trainers");
@@ -20,45 +27,44 @@ export default async function CompanyManageAccountsPage() {
 
   const [students, collegeAdmins, trainers] = await Promise.all([
     canStudents ? prisma.user.findMany({ where: { role: "STUDENT" }, orderBy: { name: "asc" } }) : [],
-    canColleges
-      ? prisma.user.findMany({ where: { role: "COLLEGE_ADMIN" }, include: { college: true }, orderBy: { name: "asc" } })
-      : [],
+    canColleges ? prisma.user.findMany({ where: { role: "COLLEGE_ADMIN" }, include: { college: true }, orderBy: { name: "asc" } }) : [],
     canTrainers ? prisma.trainer.findMany({ where: { loginUser: { isNot: null } }, orderBy: { name: "asc" } }) : [],
   ]);
 
   return (
-    <DashboardShell title="Manage Accounts" subtitle="Directly reset any account's password" navLinks={navLinks}>
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Use this to reset a login when someone is locked out and the request didn&apos;t come through
-        the forgot-password form. The main company admin&apos;s own password can&apos;t be reset from
-        here — it can only be changed from its own Profile page.
-      </p>
-      <div className="space-y-8">
-        {canAdmins && <ResetAccountForm />}
+    <AppShell nav={nav} active="manage-accounts" user={shellUser} hasUnread={hasUnread} crumb="Accounts › Manage Accounts" title="Manage accounts" subtitle="Reset a login when someone is locked out and didn't use the forgot-password form.">
+      <div className="alert warning">
+        <Icon name="lock" size={18} />
+        <span>The main company admin&apos;s own password can&apos;t be reset here — change it from Profile.</span>
+      </div>
 
+      {canAdmins && (
+        <section className="card">
+          <h2 className="h2" style={{ marginBottom: 18 }}>Reset by email</h2>
+          <ResetAccountForm />
+        </section>
+      )}
+
+      <div className="grid" style={{ ["--min" as string]: "300px" }}>
         {canStudents && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Reset a Student&apos;s Password</h2>
+          <section className="card">
+            <h2 className="h2" style={{ marginBottom: 18 }}>Reset a student&apos;s password</h2>
             <ResetStudentPasswordForm students={students.map((s) => ({ id: s.id, name: s.name, email: s.email }))} />
-          </div>
+          </section>
         )}
-
         {canColleges && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Reset a College&apos;s Password</h2>
-            <ResetCollegePasswordForm
-              collegeAdmins={collegeAdmins.map((c) => ({ id: c.id, name: c.name, collegeName: c.college?.name ?? c.name }))}
-            />
-          </div>
+          <section className="card">
+            <h2 className="h2" style={{ marginBottom: 18 }}>Reset a college&apos;s password</h2>
+            <ResetCollegePasswordForm collegeAdmins={collegeAdmins.map((c) => ({ id: c.id, name: c.name, collegeName: c.college?.name ?? c.name }))} />
+          </section>
         )}
-
         {canTrainers && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Reset a Trainer&apos;s Password</h2>
+          <section className="card">
+            <h2 className="h2" style={{ marginBottom: 18 }}>Reset a trainer&apos;s password</h2>
             <ResetTrainerPasswordForm trainers={trainers} />
-          </div>
+          </section>
         )}
       </div>
-    </DashboardShell>
+    </AppShell>
   );
 }

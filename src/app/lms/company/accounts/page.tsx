@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { DomainTabs } from "@/components/lbf/DomainTabs";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { AddStudentSection } from "@/components/lms/AddStudentSection";
 import { AddCollegeForm } from "@/components/lms/AddCollegeForm";
@@ -7,59 +9,48 @@ import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm"
 import { CreateAdmin2AccountForm } from "@/components/lms/CreateAdmin2AccountForm";
 import { EmployeeAccessForm } from "@/components/lms/EmployeeAccessForm";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function CompanyAccountsPage() {
-  const { session, navLinks } = await requireCompanyPageAccess("accounts.add");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("accounts.add");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
   const colleges = await prisma.college.findMany({ orderBy: { name: "asc" } });
 
-  return (
-    <DashboardShell title="Add Account" subtitle="Provision access" navLinks={navLinks}>
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Create student, college, or trainer accounts directly and hand out the generated
-        credentials yourself — useful when onboarding without them signing up on their own.
-      </p>
+  const tabs = [
+    { key: "student", label: "Student" },
+    { key: "college", label: "College" },
+    { key: "trainer", label: "Trainer" },
+    ...(session!.user.role === "SUPER_ADMIN" ? [{ key: "admin2", label: "Second admin" }] : []),
+    { key: "employee", label: "Employee" },
+  ];
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            New Student Account
-          </h2>
-          <AddStudentSection colleges={colleges} />
-        </div>
-
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            New College Account
-          </h2>
-          <AddCollegeForm />
-        </div>
-
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            New Trainer Account
-          </h2>
-          <CreateTrainerLoginForm />
-        </div>
-
-        {session!.user.role === "SUPER_ADMIN" && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-              New Second Admin Account
-            </h2>
-            <CreateAdmin2AccountForm />
-          </div>
-        )}
-
-        <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            New Employee Account
-          </h2>
-          <p className="mb-3 max-w-2xl text-sm text-muted-foreground">
-            For staff who should only see specific sections — e.g. only Assessments. Check exactly
-            what they can access below.
-          </p>
-          <EmployeeAccessForm />
-        </div>
+  const panels: Record<string, React.ReactNode> = {
+    student: <AddStudentSection colleges={colleges} />,
+    college: <AddCollegeForm />,
+    trainer: <CreateTrainerLoginForm />,
+    employee: (
+      <div className="stack" style={{ gap: 12 }}>
+        <p className="small muted">For staff who should only see specific sections — e.g. only Assessments. Check exactly what they can access below.</p>
+        <EmployeeAccessForm />
       </div>
-    </DashboardShell>
+    ),
+  };
+  if (session!.user.role === "SUPER_ADMIN") panels.admin2 = <CreateAdmin2AccountForm />;
+
+  return (
+    <AppShell
+      nav={nav}
+      active="add-account"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Accounts › Add Account"
+      title="Add account"
+      subtitle="Create student, college, trainer, second-admin or employee accounts and hand out the credentials yourself."
+    >
+      <section className="card">
+        <DomainTabs tabs={tabs} panels={panels} />
+      </section>
+    </AppShell>
   );
 }

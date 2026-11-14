@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { AccountDetailView, type AccountDetail } from "@/components/lms/AccountDetailView";
@@ -12,6 +14,8 @@ import {
   type AdminRow,
 } from "@/components/lms/AccountDetailsTabs";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 async function loadAccountDetail(kind: AccountKind, id: string): Promise<AccountDetail | null> {
   if (kind === "student") {
     const s = await prisma.user.findUnique({ where: { id, role: "STUDENT" } });
@@ -21,15 +25,7 @@ async function loadAccountDetail(kind: AccountKind, id: string): Promise<Account
   if (kind === "college") {
     const a = await prisma.user.findUnique({ where: { id, role: "COLLEGE_ADMIN" }, include: { college: true } });
     if (!a || !a.college) return null;
-    return {
-      id: a.id,
-      kind,
-      name: a.name,
-      email: a.email,
-      phone: a.phone,
-      collegeName: a.college.name,
-      contactEmail: a.college.contactEmail,
-    };
+    return { id: a.id, kind, name: a.name, email: a.email, phone: a.phone, collegeName: a.college.name, contactEmail: a.college.contactEmail };
   }
   if (kind === "trainer") {
     const t = await prisma.trainer.findUnique({ where: { id }, include: { loginUser: true } });
@@ -49,46 +45,30 @@ export default async function AccountDetailsPage({
 }: {
   searchParams: Promise<{ type?: string; id?: string }>;
 }) {
-  const { navLinks } = await requireCompanyPageAccess("accounts.details");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("accounts.details");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const { type, id } = await searchParams;
   if (type && id && ["student", "college", "trainer", "admin"].includes(type)) {
     const account = await loadAccountDetail(type as AccountKind, id);
     return (
-      <DashboardShell title="Account Details" subtitle="Full profile" navLinks={navLinks}>
+      <AppShell nav={nav} active="account-details" user={shellUser} hasUnread={hasUnread} crumb="Accounts › Account Details" title="Account Details" subtitle="Full profile">
         <BackLink href="/lms/company/account-details" label="Back to Account Details" />
-        {!account ? (
-          <p className="text-sm text-muted-foreground">This account no longer exists.</p>
-        ) : (
-          <AccountDetailView account={account} />
-        )}
-      </DashboardShell>
+        {!account ? <p className="muted">This account no longer exists.</p> : <AccountDetailView account={account} />}
+      </AppShell>
     );
   }
 
   const [studentUsers, collegeAdmins, trainers, admins] = await Promise.all([
     prisma.user.findMany({
       where: { role: "STUDENT" },
-      include: {
-        college: true,
-        enrollments: { include: { course: true, attendanceRecords: true } },
-      },
+      include: { college: true, enrollments: { include: { course: true, attendanceRecords: true } } },
       orderBy: { name: "asc" },
     }),
-    prisma.user.findMany({
-      where: { role: "COLLEGE_ADMIN" },
-      include: { college: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.trainer.findMany({
-      where: { loginUser: { isNot: null } },
-      include: { loginUser: true, trainingSessions: true, invoices: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.user.findMany({
-      where: { role: { in: ["SUPER_ADMIN", "ADMIN2"] } },
-      orderBy: { name: "asc" },
-    }),
+    prisma.user.findMany({ where: { role: "COLLEGE_ADMIN" }, include: { college: true }, orderBy: { name: "asc" } }),
+    prisma.trainer.findMany({ where: { loginUser: { isNot: null } }, include: { loginUser: true, trainingSessions: true, invoices: true }, orderBy: { name: "asc" } }),
+    prisma.user.findMany({ where: { role: { in: ["SUPER_ADMIN", "ADMIN2"] } }, orderBy: { name: "asc" } }),
   ]);
 
   const students: StudentRow[] = studentUsers.map((s) => ({
@@ -107,14 +87,7 @@ export default async function AccountDetailsPage({
 
   const colleges: CollegeRow[] = collegeAdmins
     .filter((a) => a.college)
-    .map((a) => ({
-      id: a.id,
-      collegeName: a.college!.name,
-      contactEmail: a.college!.contactEmail,
-      adminName: a.name,
-      adminEmail: a.email,
-      adminPhone: a.phone,
-    }));
+    .map((a) => ({ id: a.id, collegeName: a.college!.name, contactEmail: a.college!.contactEmail, adminName: a.name, adminEmail: a.email, adminPhone: a.phone }));
 
   const trainerRows: TrainerRow[] = trainers.map((t) => {
     const daysWorked = new Set(t.trainingSessions.map((s) => s.sessionDate.toDateString())).size;
@@ -135,46 +108,30 @@ export default async function AccountDetailsPage({
     };
   });
 
-  const adminRows: AdminRow[] = admins.map((a) => ({
-    id: a.id,
-    name: a.name,
-    email: a.email,
-    phone: a.phone,
-    role: a.role,
-  }));
-
+  const adminRows: AdminRow[] = admins.map((a) => ({ id: a.id, name: a.name, email: a.email, phone: a.phone, role: a.role }));
   const totalPendingDue = trainerRows.reduce((sum, t) => sum + t.pendingAmount, 0);
 
   return (
-    <DashboardShell
-      title="Account Details"
-      subtitle="Every account on the platform, in one place"
-      navLinks={navLinks}
-    >
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        A single directory of every student, college, trainer, and admin account — so you don&apos;t need
-        to open the database to check a contact detail. Passwords are stored as one-way hashes and can
-        never be read back — &quot;Generate New Password&quot; sets a brand-new one and shows it once, which
-        also overwrites any password set elsewhere (Manage Accounts, a self-service reset, or an earlier
-        click here). Only use it when you actually need to hand the account a new password.
-      </p>
+    <AppShell nav={nav} active="account-details" user={shellUser} hasUnread={hasUnread} crumb="Accounts › Account Details" title="Account details" subtitle="One directory of every student, college, trainer and admin account.">
+      <section className="card">
+        <div className="grid" style={{ ["--min" as string]: "160px" }}>
+          <div className="tile"><div className="label">Students</div><div className="value">{students.length}</div></div>
+          <div className="tile"><div className="label">Colleges</div><div className="value">{colleges.length}</div></div>
+          <div className="tile"><div className="label">Trainers</div><div className="value">{trainerRows.length}</div></div>
+          <div className="tile"><div className="label">Admins</div><div className="value">{adminRows.length}</div></div>
+          <div className="tile gold"><div className="label">Trainer dues</div><div className="value">₹{totalPendingDue}</div></div>
+        </div>
+      </section>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {[
-          { label: "Students", value: students.length },
-          { label: "Colleges", value: colleges.length },
-          { label: "Trainers", value: trainerRows.length },
-          { label: "Admins", value: adminRows.length },
-          { label: "Trainer Dues", value: `₹${totalPendingDue}` },
-        ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-border bg-white p-4 text-center">
-            <p className="text-xl font-bold text-indigo">{stat.value}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <AccountDetailsTabs students={students} colleges={colleges} trainers={trainerRows} admins={adminRows} />
-    </DashboardShell>
+      <section className="card">
+        <div className="alert info" style={{ marginBottom: 16 }}>
+          <Icon name="lock" size={18} />
+          <span>
+            Passwords are one-way hashes and can never be read back. <strong>Generate new password</strong> sets a new one, shows it once, and overwrites any password set elsewhere.
+          </span>
+        </div>
+        <AccountDetailsTabs students={students} colleges={colleges} trainers={trainerRows} admins={adminRows} />
+      </section>
+    </AppShell>
   );
 }

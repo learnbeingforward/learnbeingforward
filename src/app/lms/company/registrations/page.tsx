@@ -1,12 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { Button } from "@/components/ui/button";
 import { approveRegistration, rejectRegistration, approveAllRegistrations } from "@/lib/actions/registration";
 import { format } from "date-fns";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function CompanyRegistrationsPage() {
-  const { navLinks } = await requireCompanyPageAccess("registrations.new");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("registrations.new");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
+
   const pending = await prisma.user.findMany({
     where: { role: "STUDENT", studentStatus: "PENDING_APPROVAL" },
     include: { college: true },
@@ -14,63 +19,51 @@ export default async function CompanyRegistrationsPage() {
   });
 
   return (
-    <DashboardShell title="New Registrations" subtitle="Student sign-ups awaiting approval" navLinks={navLinks}>
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        A student appears here after they sign up and their details matched a roster entry their
-        college added. Approve to give them access to request courses, or reject to send the entry
-        back to the college&apos;s roster so the student can try signing up again.
-      </p>
-
-      <div className="rounded-xl border border-border bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Pending ({pending.length})</p>
+    <AppShell
+      nav={nav}
+      active="registrations"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Registrations & Approvals › New Registrations"
+      title="New registrations"
+      subtitle="A student appears here after they sign up and their details matched a roster entry their college added."
+    >
+      <section className="card">
+        <div className="split" style={{ marginBottom: 18 }}>
+          <h2 className="h2">Pending ({pending.length})</h2>
           {pending.length > 1 && (
             <form action={approveAllRegistrations}>
-              <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                Approve All ({pending.length})
-              </Button>
+              <button className="btn btn-primary btn-sm" type="submit">Approve All ({pending.length})</button>
             </form>
           )}
         </div>
         {pending.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">No pending registrations.</p>
+          <p className="empty">No pending registrations.</p>
         ) : (
-          <div className="divide-y divide-border">
+          <ul className="list">
             {pending.map((student) => (
-              <div key={student.id} className="flex flex-wrap items-start justify-between gap-4 p-6">
-                <div>
-                  <p className="font-medium text-indigo">
+              <li key={student.id} className="list-row" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div className="grow">
+                  <div className="strong">
                     {student.name}
-                    {student.usn && (
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        USN: {student.usn}
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {student.email} &middot; {student.college?.name ?? "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Signed up {format(student.createdAt, "MMM d, yyyy")}
-                  </p>
+                    {student.usn && <span className="small muted" style={{ marginLeft: 8 }}>USN: {student.usn}</span>}
+                  </div>
+                  <div className="small muted">{student.email} · {student.college?.name ?? "—"}</div>
+                  <div className="small muted">Signed up {format(student.createdAt, "MMM d, yyyy")}</div>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div style={{ display: "flex", gap: 8 }}>
                   <form action={approveRegistration.bind(null, student.id)}>
-                    <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                      Approve
-                    </Button>
+                    <button className="btn btn-primary btn-sm" type="submit">Approve</button>
                   </form>
                   <form action={rejectRegistration.bind(null, student.id)}>
-                    <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                      Reject
-                    </Button>
+                    <button className="btn btn-sm" type="submit">Reject</button>
                   </form>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
-    </DashboardShell>
+      </section>
+    </AppShell>
   );
 }

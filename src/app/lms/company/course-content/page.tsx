@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
 import { SetModuleMainPdfForm } from "@/components/lms/SetModuleMainPdfForm";
@@ -12,13 +12,18 @@ import { deleteCourseContent } from "@/lib/actions/course-content";
 import { decideBulkContentRequest } from "@/lib/actions/content-access";
 import { format } from "date-fns";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function CompanyCourseContentPage({
   searchParams,
 }: {
   searchParams: Promise<{ courseId?: string; moduleId?: string; bulkGroupId?: string }>;
 }) {
   const { courseId, moduleId, bulkGroupId } = await searchParams;
-  const { navLinks } = await requireCompanyPageAccess("course-content");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("course-content");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
+
   const [courses, modules, subModules, content, pendingCount, pendingBulkRows] = await Promise.all([
     prisma.course.findMany({ orderBy: { name: "asc" } }),
     prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
@@ -28,10 +33,7 @@ export default async function CompanyCourseContentPage({
       orderBy: [{ course: { name: "asc" } }, { title: "asc" }],
     }),
     prisma.contentAccessRequest.count({ where: { status: "PENDING", groupId: null } }),
-    prisma.contentAccessRequest.findMany({
-      where: { status: "PENDING", groupId: { not: null } },
-      orderBy: { requestedAt: "asc" },
-    }),
+    prisma.contentAccessRequest.findMany({ where: { status: "PENDING", groupId: { not: null } }, orderBy: { requestedAt: "asc" } }),
   ]);
 
   const bulkGroupIds = Array.from(new Set(pendingBulkRows.map((r) => r.groupId!)));
@@ -64,193 +66,146 @@ export default async function CompanyCourseContentPage({
   });
 
   return (
-    <DashboardShell title="Course Content" subtitle="Internal only — not on the public site" navLinks={navLinks}>
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        This content is only visible inside the LMS. Students can request access to a module&apos;s
-        content once their batch has had a class on it, and can download it once you approve.
-      </p>
-
+    <AppShell
+      nav={nav}
+      active="course-content"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Course Content"
+      title="Course content"
+      subtitle="Internal only — not on the public site. Students request a module once their batch has had that class."
+    >
       {bulkGroups.length > 0 && (
-        <div className="mb-8 rounded-xl border border-border bg-white">
-          <div className="border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">Trainer Bulk Content Requests ({bulkGroups.length})</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              A trainer requested to send content to a group of eligible students at once — approve or reject the
-              whole request in one go.
-            </p>
-          </div>
-          <div className="divide-y divide-border">
+        <section className="card">
+          <h2 className="h2" style={{ marginBottom: 4 }}>Trainer bulk content requests ({bulkGroups.length})</h2>
+          <p className="small muted" style={{ marginBottom: 18 }}>A trainer requested to send content to a group of eligible students at once — approve or reject the whole request in one go.</p>
+          <ul className="list">
             {bulkGroups.map((g) => (
-              <div
-                key={g.groupId}
-                className={`flex flex-wrap items-center justify-between gap-3 p-4 ${g.groupId === bulkGroupId ? "bg-gold/10" : ""}`}
-              >
-                <div>
-                  <p className="text-sm font-medium text-indigo">
-                    {g.trainerName} — {g.courseName} — {g.batchName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {g.studentCount} student{g.studentCount !== 1 ? "s" : ""} &middot; {g.contentItemCount} content
-                    item{g.contentItemCount !== 1 ? "s" : ""}
-                    {g.includesBook && " · includes course book"} &middot; {format(g.requestedAt, "MMM d, yyyy")}
-                  </p>
+              <li key={g.groupId} className="list-row" style={{ background: g.groupId === bulkGroupId ? "var(--gold-soft)" : undefined }}>
+                <div className="grow">
+                  <div className="strong">{g.trainerName} — {g.courseName} — {g.batchName}</div>
+                  <div className="small muted">
+                    {g.studentCount} student{g.studentCount !== 1 ? "s" : ""} · {g.contentItemCount} content item{g.contentItemCount !== 1 ? "s" : ""}
+                    {g.includesBook && " · includes course book"} · {format(g.requestedAt, "MMM d, yyyy")}
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div style={{ display: "flex", gap: 8 }}>
                   <form action={decideBulkContentRequest.bind(null, g.groupId, true)}>
-                    <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                      Approve All
-                    </Button>
+                    <button className="btn btn-primary btn-sm" type="submit">Approve All</button>
                   </form>
                   <form action={decideBulkContentRequest.bind(null, g.groupId, false)}>
-                    <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                      Reject All
-                    </Button>
+                    <button className="btn btn-sm" type="submit">Reject All</button>
                   </form>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
 
       {pendingCount > 0 && (
-        <Link
-          href="/lms/company/course-content/requests"
-          className="mb-8 flex items-center justify-between gap-3 rounded-xl border border-border bg-white p-6 transition-colors hover:border-indigo/40"
-        >
-          <div>
-            <p className="text-sm font-semibold text-indigo">Pending Access Requests ({pendingCount})</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Students waiting on content or a course book — click to review and approve.
-            </p>
+        <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/course-content/requests">
+          <div className="split">
+            <div>
+              <h2 className="h2">Pending access requests ({pendingCount})</h2>
+              <p className="small muted" style={{ marginTop: 4 }}>Students waiting on content or a course book — click to review and approve.</p>
+            </div>
+            <Icon name="chevR" size={20} />
           </div>
-          <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
         </Link>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Add Content
-          </h2>
+      <div className="row">
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>Add content</h2>
           <AddCourseContentForm courses={courses} modules={modules} subModules={subModules} />
-        </div>
+        </section>
 
-        <div>
+        <section className="card grow">
           {courseId && moduleId ? (
             <>
               <BackLink href={`/lms/company/course-content?courseId=${courseId}`} label="Back to modules" />
               {(() => {
                 const mod = modules.find((m) => m.id === moduleId);
-                return mod ? (
-                  <SetModuleMainPdfForm courseModuleId={mod.id} mainPdfTitle={mod.mainPdfTitle} mainPdfUrl={mod.mainPdfUrl} />
-                ) : null;
+                return mod ? <SetModuleMainPdfForm courseModuleId={mod.id} mainPdfTitle={mod.mainPdfTitle} mainPdfUrl={mod.mainPdfUrl} /> : null;
               })()}
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-                {modules.find((m) => m.id === moduleId)?.title} Content (
-                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length})
+              <h2 className="h2" style={{ margin: "18px 0" }}>
+                {modules.find((m) => m.id === moduleId)?.title} Content ({content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length})
               </h2>
-              <div className="max-h-[800px] space-y-3 overflow-y-auto">
-                {content
-                  .filter((c) => c.courseId === courseId && c.courseModuleId === moduleId)
-                  .map((item) => (
-                    <div key={item.id} className="rounded-xl border border-border bg-white p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <a
-                            href={item.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-semibold text-indigo underline"
-                          >
-                            {item.courseSubModule ? item.courseSubModule.title : item.title}
-                          </a>
-                          {item.courseSubModule && (
-                            <p className="text-xs text-muted-foreground">Sub-module PDF</p>
-                          )}
-                        </div>
-                        <DeleteButton action={deleteCourseContent.bind(null, item.id)} />
+              <div className="stack" style={{ gap: 10 }}>
+                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).map((item) => (
+                  <div key={item.id} className="box">
+                    <div className="split">
+                      <div>
+                        <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" className="strong">
+                          {item.courseSubModule ? item.courseSubModule.title : item.title}
+                        </a>
+                        {item.courseSubModule && <div className="small muted">Sub-module PDF</div>}
                       </div>
-                      {item.links.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border pt-2">
-                          {item.links.map((l) => (
-                            <span key={l.id} className="rounded-full bg-cream px-2 py-0.5 text-[10px] text-indigo/80">
-                              {l.label}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      <DeleteButton action={deleteCourseContent.bind(null, item.id)} />
                     </div>
-                  ))}
-                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length === 0 && (
-                  <p className="p-4 text-sm text-muted-foreground">Nothing added for this module yet.</p>
-                )}
+                    {item.links.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        {item.links.map((l) => <span key={l.id} className="pill">{l.label}</span>)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length === 0 && <p className="empty">Nothing added for this module yet.</p>}
               </div>
             </>
           ) : courseId ? (
             <>
               <BackLink href="/lms/company/course-content" label="Back to all courses" />
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-                {courses.find((c) => c.id === courseId)?.name} — Modules
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <h2 className="h2" style={{ marginBottom: 18 }}>{courses.find((c) => c.id === courseId)?.name} — Modules</h2>
+              <div className="grid" style={{ ["--min" as string]: "240px" }}>
                 {modules
-                  .filter(
-                    (m) =>
-                      m.courseId === courseId &&
-                      (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl)
-                  )
+                  .filter((m) => m.courseId === courseId && (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl))
                   .map((mod) => {
-                    const count = content.filter(
-                      (c) => c.courseId === courseId && c.courseModuleId === mod.id
-                    ).length;
+                    const count = content.filter((c) => c.courseId === courseId && c.courseModuleId === mod.id).length;
                     return (
-                      <Link
-                        key={mod.id}
-                        href={`/lms/company/course-content?courseId=${courseId}&moduleId=${mod.id}`}
-                        className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-                      >
-                        <p className="font-semibold text-indigo">{mod.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {count > 0 && `${count} item${count !== 1 ? "s" : ""}`}
-                          {count > 0 && mod.mainPdfUrl && " · "}
-                          {mod.mainPdfUrl && "Course book attached"}
-                          {count === 0 && !mod.mainPdfUrl && "0 items"}
-                        </p>
+                      <Link key={mod.id} className="list-row" href={`/lms/company/course-content?courseId=${courseId}&moduleId=${mod.id}`}>
+                        <span className="icon-box gold"><Icon name="book" size={18} /></span>
+                        <span className="grow">
+                          <span className="strong" style={{ display: "block" }}>{mod.title}</span>
+                          <span className="small muted">
+                            {count > 0 && `${count} item${count !== 1 ? "s" : ""}`}
+                            {count > 0 && mod.mainPdfUrl && " · "}
+                            {mod.mainPdfUrl && "Course book attached"}
+                            {count === 0 && !mod.mainPdfUrl && "0 items"}
+                          </span>
+                        </span>
+                        <Icon name="chevR" size={16} />
                       </Link>
                     );
                   })}
-                {!modules.some(
-                  (m) =>
-                    m.courseId === courseId &&
-                    (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl)
-                ) && <p className="p-4 text-sm text-muted-foreground">Nothing added for this course yet.</p>}
               </div>
+              {!modules.some((m) => m.courseId === courseId && (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl)) && (
+                <p className="empty">Nothing added for this course yet.</p>
+              )}
             </>
           ) : (
             <>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-                Browse by Course
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <h2 className="h2" style={{ marginBottom: 18 }}>Browse by course</h2>
+              <div className="grid" style={{ ["--min" as string]: "240px" }}>
                 {courses.map((course) => {
                   const count = content.filter((c) => c.courseId === course.id).length;
                   return (
-                    <Link
-                      key={course.id}
-                      href={`/lms/company/course-content?courseId=${course.id}`}
-                      className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-                    >
-                      <p className="font-semibold text-indigo">{course.name}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{count} item{count !== 1 ? "s" : ""}</p>
+                    <Link key={course.id} className="list-row" href={`/lms/company/course-content?courseId=${course.id}`}>
+                      <span className="icon-box gold"><Icon name="book" size={18} /></span>
+                      <span className="grow">
+                        <span className="strong" style={{ display: "block" }}>{course.name}</span>
+                        <span className="small muted">{count} item{count !== 1 ? "s" : ""}</span>
+                      </span>
+                      <Icon name="chevR" size={16} />
                     </Link>
                   );
                 })}
               </div>
             </>
           )}
-        </div>
+        </section>
       </div>
-    </DashboardShell>
+    </AppShell>
   );
 }

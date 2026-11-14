@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { StudentSearchTable } from "@/components/lms/StudentSearchTable";
 import { StudentDetailView } from "@/components/lms/StudentDetailView";
@@ -10,6 +11,7 @@ import { getEnrollmentProgress } from "@/lib/enrollment-progress";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
 const BASE_PATH = "/lms/company/students";
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
 export default async function CompanyAllStudentsPage({
   searchParams,
@@ -17,29 +19,27 @@ export default async function CompanyAllStudentsPage({
   searchParams: Promise<{ studentId?: string; enrollmentId?: string }>;
 }) {
   const { studentId, enrollmentId } = await searchParams;
-  const { navLinks } = await requireCompanyPageAccess("accounts.students");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("accounts.students");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   if (studentId && enrollmentId) {
     const progress = await getEnrollmentProgress(enrollmentId);
     return (
-      <DashboardShell title="Enrollment Progress" subtitle="Session-by-session detail" navLinks={navLinks}>
+      <AppShell nav={nav} active="students" user={shellUser} hasUnread={hasUnread} crumb="Accounts › All Students" title="Enrollment Progress" subtitle="Session-by-session detail">
         <BackLink href={`${BASE_PATH}?studentId=${studentId}`} label="Back to Student" />
-        {!progress ? (
-          <p className="text-sm text-muted-foreground">This enrollment no longer exists.</p>
-        ) : (
-          <EnrollmentProgressView progress={progress} />
-        )}
-      </DashboardShell>
+        {!progress ? <p className="muted">This enrollment no longer exists.</p> : <EnrollmentProgressView progress={progress} />}
+      </AppShell>
     );
   }
 
   if (studentId) {
     const detail = await getStudentDetail(studentId);
     return (
-      <DashboardShell title="Student" subtitle="Full profile" navLinks={navLinks}>
+      <AppShell nav={nav} active="students" user={shellUser} hasUnread={hasUnread} crumb="Accounts › All Students" title="Student" subtitle="Full profile">
         <BackLink href={BASE_PATH} label="Back to All Students" />
         {!detail ? (
-          <p className="text-sm text-muted-foreground">This student no longer exists.</p>
+          <p className="muted">This student no longer exists.</p>
         ) : (
           <StudentDetailView
             student={detail}
@@ -48,16 +48,13 @@ export default async function CompanyAllStudentsPage({
             canDelete
           />
         )}
-      </DashboardShell>
+      </AppShell>
     );
   }
 
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },
-    include: {
-      college: true,
-      enrollments: { include: { course: true, attendanceRecords: true, certification: true } },
-    },
+    include: { college: true, enrollments: { include: { course: true, attendanceRecords: true, certification: true } } },
     orderBy: { name: "asc" },
   });
 
@@ -101,8 +98,10 @@ export default async function CompanyAllStudentsPage({
   );
 
   return (
-    <DashboardShell title="All Students" subtitle="Every student, every college" navLinks={navLinks}>
-      <StudentSearchTable rows={rows} showCollege />
-    </DashboardShell>
+    <AppShell nav={nav} active="students" user={shellUser} hasUnread={hasUnread} crumb="Accounts › All Students" title="All students" subtitle={`${students.length} students across every college.`}>
+      <section className="card">
+        <StudentSearchTable rows={rows} showCollege />
+      </section>
+    </AppShell>
   );
 }
