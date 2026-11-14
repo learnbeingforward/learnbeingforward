@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getLucideIcon } from "@/lib/lucide-catalog";
+import { getIconByName } from "@/lib/icon-catalog";
 import { PublicShell } from "@/components/lbf/PublicShell";
 import { Icon } from "@/components/lbf/icons";
 
@@ -97,12 +98,42 @@ export default async function HomePage() {
             </div>
             <Link href="/technologies">See all technologies →</Link>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-            {techChips.map((t) => (
-              <span key={t.id} className="chip">
-                {t.name}
-              </span>
-            ))}
+          <div style={{ position: "relative", overflow: "hidden", marginTop: 20, borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: "0 auto 0 0",
+                width: 64,
+                zIndex: 1,
+                background: "linear-gradient(to right, var(--card), transparent)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: "0 0 0 auto",
+                width: 64,
+                zIndex: 1,
+                background: "linear-gradient(to left, var(--card), transparent)",
+                pointerEvents: "none",
+              }}
+            />
+            <div className="animate-marquee" style={{ display: "flex", width: "max-content", padding: "20px 0" }}>
+              {[...techChips, ...techChips].map((t, i) => {
+                const LogoIcon = getIconByName(t.iconName);
+                return (
+                  <div
+                    key={`${t.id}-${i}`}
+                    title={t.name}
+                    style={{ display: "flex", flexShrink: 0, width: 130, flexDirection: "column", alignItems: "center", gap: 8, padding: "0 16px" }}
+                  >
+                    {LogoIcon && <LogoIcon size={40} color="var(--navy)" />}
+                    <span className="small muted" style={{ textAlign: "center" }}>{t.name}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 

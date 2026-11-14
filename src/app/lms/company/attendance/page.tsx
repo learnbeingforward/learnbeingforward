@@ -1,23 +1,13 @@
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { AttendanceBarChart } from "@/components/charts/AttendanceCharts";
 import { approveCertificate } from "@/lib/actions/certifications";
 import { BackLink } from "@/components/lms/BackLink";
-import { CollapsibleSection } from "@/components/lms/CollapsibleSection";
+
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
 export default async function CompanyAttendancePage({
   searchParams,
@@ -25,18 +15,12 @@ export default async function CompanyAttendancePage({
   searchParams: Promise<{ collegeId?: string; batchId?: string }>;
 }) {
   const { collegeId, batchId } = await searchParams;
-  const { navLinks } = await requireCompanyPageAccess("overview.attendance");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("overview.attendance");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const enrollments = await prisma.enrollment.findMany({
-    include: {
-      student: true,
-      course: true,
-      college: true,
-      trainer: true,
-      batch: true,
-      attendanceRecords: true,
-      certification: true,
-    },
+    include: { student: true, course: true, college: true, trainer: true, batch: true, attendanceRecords: true, certification: true },
     orderBy: { enrolledAt: "desc" },
   });
 
@@ -56,102 +40,61 @@ export default async function CompanyAttendancePage({
       entry.totalPct += row.pct;
       byCourse.set(key, entry);
     }
-    return Array.from(byCourse.entries()).map(([name, data]) => ({
-      name,
-      pct: Math.round(data.totalPct / data.count),
-    }));
+    return Array.from(byCourse.entries()).map(([name, data]) => ({ name, pct: Math.round(data.totalPct / data.count) }));
   }
 
-  // Level 2: a specific batch within a college
   if (collegeId && batchId) {
     const batchRows = rows.filter((r) => r.enrollment.batchId === batchId);
     const batch = batchRows[0]?.enrollment.batch;
     const college = batchRows[0]?.enrollment.college;
 
     return (
-      <DashboardShell title={batch?.name ?? "Batch"} subtitle={college?.name ?? "Attendance"} navLinks={navLinks}>
+      <AppShell nav={nav} active="attendance" user={shellUser} hasUnread={hasUnread} crumb="Overview › Attendance" title={batch?.name ?? "Batch"} subtitle={college?.name ?? "Attendance"}>
         <BackLink href={`/lms/company/attendance?collegeId=${collegeId}`} label={`Back to ${college?.name ?? "college"}`} />
-        <div className="rounded-xl border border-border bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Trainer</TableHead>
-                <TableHead>Attendance</TableHead>
-                <TableHead>Certificate</TableHead>
-                <TableHead>CV</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {batchRows.map(({ enrollment, total, present, pct }) => {
-                const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
-                const status = enrollment.certification?.status ?? "NOT_ELIGIBLE";
-
-                return (
-                  <TableRow key={enrollment.id}>
-                    <TableCell className="font-medium text-indigo">{enrollment.student.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{enrollment.course.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {enrollment.trainer?.name ?? "Unassigned"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {present}/{total} ({pct}%)
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          status === "ISSUED"
-                            ? "bg-green-100 text-green-700 hover:bg-green-100"
-                            : eligible
-                              ? "bg-gold/20 text-indigo hover:bg-gold/20"
-                              : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                        }
-                      >
-                        {status === "ISSUED" ? "Issued" : eligible ? "Eligible" : "Not Yet Eligible"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {enrollment.student.cvUrl ? (
-                        <a
-                          href={enrollment.student.cvUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-indigo underline"
-                        >
-                          View CV
-                        </a>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {status === "ISSUED" ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <CheckCircle2 className="size-3.5" /> Approved
+        <section className="card">
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr><th>Student</th><th>Course</th><th>Trainer</th><th>Attendance</th><th>Certificate</th><th>CV</th><th className="actions">Action</th></tr>
+              </thead>
+              <tbody>
+                {batchRows.map(({ enrollment, total, present, pct }) => {
+                  const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
+                  const status = enrollment.certification?.status ?? "NOT_ELIGIBLE";
+                  return (
+                    <tr key={enrollment.id}>
+                      <td className="strong">{enrollment.student.name}</td>
+                      <td>{enrollment.course.name}</td>
+                      <td>{enrollment.trainer?.name ?? "Unassigned"}</td>
+                      <td>{present}/{total} ({pct}%)</td>
+                      <td>
+                        <span className={`pill ${status === "ISSUED" ? "success" : eligible ? "gold" : "warning"}`}>
+                          {status === "ISSUED" ? "Issued" : eligible ? "Eligible" : "Not yet eligible"}
                         </span>
-                      ) : eligible ? (
-                        <form action={approveCertificate.bind(null, enrollment.id)}>
-                          <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                            Approve Certificate
-                          </Button>
-                        </form>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </DashboardShell>
+                      </td>
+                      <td>{enrollment.student.cvUrl ? <a href={enrollment.student.cvUrl} target="_blank" rel="noopener noreferrer">View CV</a> : "—"}</td>
+                      <td className="actions">
+                        {status === "ISSUED" ? (
+                          <span className="small muted">Approved</span>
+                        ) : eligible ? (
+                          <form action={approveCertificate.bind(null, enrollment.id)}>
+                            <button className="btn btn-primary btn-sm" type="submit">Approve Certificate</button>
+                          </form>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </AppShell>
     );
   }
 
-  // Level 1: batches within a specific college
   if (collegeId) {
     const collegeRows = rows.filter((r) => r.enrollment.collegeId === collegeId);
     const college = collegeRows[0]?.enrollment.college;
@@ -162,111 +105,130 @@ export default async function CompanyAttendancePage({
       entry.count += 1;
       batches.set(r.enrollment.batchId, entry);
     }
+    const chart = chartFor(collegeRows);
 
     return (
-      <DashboardShell title={college?.name ?? "College"} subtitle="Attendance by batch" navLinks={navLinks}>
+      <AppShell nav={nav} active="attendance" user={shellUser} hasUnread={hasUnread} crumb="Overview › Attendance" title={college?.name ?? "College"} subtitle="Attendance by batch">
         <BackLink href="/lms/company/attendance" label="Back to all colleges" />
-
-        {collegeRows.length > 0 && (
-          <div className="mb-8 rounded-xl border border-border bg-white p-6">
-            <p className="mb-2 text-sm font-semibold text-indigo">Average Attendance by Course</p>
-            <AttendanceBarChart data={chartFor(collegeRows)} />
-          </div>
+        {chart.length > 0 && (
+          <section className="card">
+            <h2 className="h2" style={{ marginBottom: 18 }}>Average attendance by course</h2>
+            <div className="bar-chart" role="img" aria-label="Average attendance by course">
+              {chart.map((c) => (
+                <div key={c.name} className="b">
+                  <span className={c.pct >= 75 ? "gold" : ""} style={{ height: `${c.pct}%` }} />
+                  {c.name.split(" ")[0]}
+                  <strong style={{ color: "var(--text)" }}>{c.pct}%</strong>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from(batches.entries()).map(([id, b]) => (
-            <Link
-              key={id}
-              href={`/lms/company/attendance?collegeId=${collegeId}&batchId=${id}`}
-              className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-            >
-              <p className="font-semibold text-indigo">{b.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{b.count} students</p>
-            </Link>
-          ))}
-          {batches.size === 0 && (
-            <p className="text-sm text-muted-foreground">No batched enrollments for this college yet.</p>
+        <section className="card">
+          <h2 className="h2" style={{ marginBottom: 18 }}>Batches</h2>
+          {batches.size === 0 ? (
+            <p className="muted">No batched enrollments for this college yet.</p>
+          ) : (
+            <div className="grid" style={{ ["--min" as string]: "240px" }}>
+              {Array.from(batches.entries()).map(([id, b]) => (
+                <Link key={id} className="list-row" href={`/lms/company/attendance?collegeId=${collegeId}&batchId=${id}`}>
+                  <span className="grow"><span className="strong" style={{ display: "block" }}>{b.name}</span><span className="small muted">{b.count} students</span></span>
+                </Link>
+              ))}
+            </div>
           )}
-        </div>
-      </DashboardShell>
+        </section>
+      </AppShell>
     );
   }
 
-  // Level 0: all colleges
-  const colleges = new Map<string, { name: string; count: number }>();
+  const colleges = new Map<string, { name: string; count: number; totalPct: number }>();
   for (const r of rows) {
     if (!r.enrollment.collegeId || !r.enrollment.college) continue;
-    const entry = colleges.get(r.enrollment.collegeId) ?? { name: r.enrollment.college.name, count: 0 };
+    const entry = colleges.get(r.enrollment.collegeId) ?? { name: r.enrollment.college.name, count: 0, totalPct: 0 };
     entry.count += 1;
+    entry.totalPct += r.pct;
     colleges.set(r.enrollment.collegeId, entry);
   }
 
-  // Eligible-but-not-yet-issued students, across every college/batch — otherwise an
-  // admin has to drill into each batch individually to ever find these, and a
-  // student can sit "Eligible" indefinitely with nobody noticing.
   const awaitingCertificates = rows.filter(({ enrollment, pct }) => {
     const status = enrollment.certification?.status ?? "NOT_ELIGIBLE";
     const eligible = pct >= ATTENDANCE_THRESHOLD || enrollment.certification?.overrideApproved;
     return status !== "ISSUED" && eligible;
   });
+  const issuedCount = rows.filter((r) => r.enrollment.certification?.status === "ISSUED").length;
+  const avgAttendance = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.pct, 0) / rows.length) : 0;
+  const chart = chartFor(rows);
 
   return (
-    <DashboardShell title="Attendance" subtitle="Platform-wide progress" navLinks={navLinks}>
+    <AppShell nav={nav} active="attendance" user={shellUser} hasUnread={hasUnread} crumb="Overview › Attendance" title="Attendance" subtitle="Platform-wide progress and certificate eligibility.">
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          No enrollments yet.
-        </div>
+        <div className="empty">No enrollments yet.</div>
       ) : (
         <>
-          {awaitingCertificates.length > 0 && (
-            <CollapsibleSection
-              title="Eligible for Certificate, Not Yet Issued"
-              count={awaitingCertificates.length}
-              accentClassName="border-gold/40 bg-gold/10"
-            >
-              <div className="divide-y divide-gold/30">
-                {awaitingCertificates.map(({ enrollment, pct }) => (
-                  <div key={enrollment.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                    <div>
-                      <p className="text-sm font-medium text-indigo">{enrollment.student.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {enrollment.course.name} &middot; {enrollment.college?.name ?? "—"} &middot; {pct}% attendance
-                      </p>
-                    </div>
-                    <form action={approveCertificate.bind(null, enrollment.id)}>
-                      <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                        Approve Certificate
-                      </Button>
-                    </form>
+          <section className="card">
+            <div className="grid" style={{ ["--min" as string]: "200px" }}>
+              <div className="tile"><div className="label">Avg attendance</div><div className="value">{avgAttendance}%</div></div>
+              <div className="tile"><div className="label">Enrollments</div><div className="value">{rows.length}</div></div>
+              <div className="tile warning"><div className="label">Certificate-eligible, not issued</div><div className="value">{awaitingCertificates.length}</div></div>
+              <div className="tile success"><div className="label">Certificates issued</div><div className="value">{issuedCount}</div></div>
+            </div>
+          </section>
+
+          <div className="row">
+            <section className="card grow">
+              <h2 className="h2" style={{ marginBottom: 18 }}>Average attendance by course</h2>
+              <div className="bar-chart" role="img" aria-label="Average attendance by course">
+                {chart.map((c) => (
+                  <div key={c.name} className="b">
+                    <span className={c.pct >= 75 ? "gold" : ""} style={{ height: `${c.pct}%` }} />
+                    {c.name.split(" ")[0]}
+                    <strong style={{ color: "var(--text)" }}>{c.pct}%</strong>
                   </div>
                 ))}
               </div>
-            </CollapsibleSection>
+            </section>
+            <section className="card side">
+              <h2 className="h2" style={{ marginBottom: 18 }}>By college</h2>
+              <ul className="list">
+                {Array.from(colleges.entries()).map(([id, c]) => {
+                  const pct = Math.round(c.totalPct / c.count);
+                  return (
+                    <li key={id}>
+                      <Link href={`/lms/company/attendance?collegeId=${id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                        <div className="split small">
+                          <span className="strong">{c.name}</span>
+                          <span className="muted">{c.count} enrollments</span>
+                        </div>
+                        <div className="progress" style={{ marginTop: 6 }}><span style={{ width: `${pct}%` }} /></div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          </div>
+
+          {awaitingCertificates.length > 0 && (
+            <section className="card">
+              <h2 className="h2" style={{ marginBottom: 18 }}>Eligible for certificate, not yet issued ({awaitingCertificates.length})</h2>
+              <ul className="list">
+                {awaitingCertificates.map(({ enrollment, pct }) => (
+                  <li key={enrollment.id} className="list-row">
+                    <div className="grow">
+                      <div className="strong">{enrollment.student.name}</div>
+                      <div className="small muted">{enrollment.course.name} · {enrollment.college?.name ?? "—"} · {pct}% attendance</div>
+                    </div>
+                    <form action={approveCertificate.bind(null, enrollment.id)}>
+                      <button className="btn btn-primary btn-sm" type="submit">Approve Certificate</button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
-
-          <div className="mb-8 rounded-xl border border-border bg-white p-6">
-            <p className="mb-2 text-sm font-semibold text-indigo">Average Attendance by Course</p>
-            <AttendanceBarChart data={chartFor(rows)} />
-          </div>
-
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            By College
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from(colleges.entries()).map(([id, c]) => (
-              <Link
-                key={id}
-                href={`/lms/company/attendance?collegeId=${id}`}
-                className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-              >
-                <p className="font-semibold text-indigo">{c.name}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{c.count} enrollments</p>
-              </Link>
-            ))}
-          </div>
         </>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

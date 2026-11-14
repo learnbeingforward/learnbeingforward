@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { Badge } from "@/components/ui/badge";
 import { BackLink } from "@/components/lms/BackLink";
 import { RescheduleSessionRow } from "@/components/lms/RescheduleSessionRow";
 import { GenerateCollegeInvoiceButton } from "@/components/lms/GenerateCollegeInvoiceButton";
 import { format } from "date-fns";
+
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
   CSR: "CSR (Free)",
@@ -14,16 +17,14 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
   PER_DAY_FLAT: "Flat Rate Per Day",
 };
 
-function statusBadgeClass(status: string) {
-  return status === "APPROVED"
-    ? "bg-green-100 text-green-700 hover:bg-green-100"
-    : status === "REJECTED"
-      ? "bg-red-100 text-red-700 hover:bg-red-100"
-      : "bg-gold/20 text-indigo hover:bg-gold/20";
+function statusPillClass(status: string) {
+  return status === "APPROVED" ? "success" : status === "REJECTED" ? "danger" : "gold";
 }
 
 export default async function CompanyCollegeSentPage() {
-  const { navLinks } = await requireCompanyPageAccess("colleges.sent");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("colleges.sent");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const [contracts, upcomingSessions] = await Promise.all([
     prisma.collegeContract.findMany({
@@ -39,127 +40,80 @@ export default async function CompanyCollegeSentPage() {
     }),
   ]);
 
-  const approvedContractKeys = new Set(
-    contracts.filter((c) => c.status === "APPROVED").map((c) => `${c.collegeId}:${c.courseId}`)
-  );
-  const relevantSessions = upcomingSessions.filter((s) =>
-    approvedContractKeys.has(`${s.batch.collegeId}:${s.batch.courseId}`)
-  );
+  const approvedContractKeys = new Set(contracts.filter((c) => c.status === "APPROVED").map((c) => `${c.collegeId}:${c.courseId}`));
+  const relevantSessions = upcomingSessions.filter((s) => approvedContractKeys.has(`${s.batch.collegeId}:${s.batch.courseId}`));
 
   return (
-    <DashboardShell title="Sent to College" subtitle="Contracts sent, their status & invoices" navLinks={navLinks}>
+    <AppShell nav={nav} active="colleges" user={shellUser} hasUnread={hasUnread} crumb="Accounts › Colleges › Sent to College" title="Sent to college" subtitle="Every training contract sent, its status, and invoices.">
       <BackLink href="/lms/company/colleges" label="Back to Colleges" />
 
-      <div className="mb-8 rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Training Requests ({contracts.length})</p>
-        </div>
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>Training requests ({contracts.length})</h2>
         {contracts.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">No training requests yet.</p>
+          <p className="empty">No training requests yet.</p>
         ) : (
-          <div className="divide-y divide-border">
+          <ul className="list">
             {contracts.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/lms/company/colleges?contractId=${c.id}`}
-                    className="block rounded-lg transition-colors hover:bg-cream/60"
-                  >
-                    <p className="text-sm font-medium text-indigo">
-                      {c.college.name} — {c.course.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
+              <li key={c.id} className="list-row" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
+                <span className="icon-box"><Icon name="briefcase" size={18} /></span>
+                <div className="grow">
+                  <Link href={`/lms/company/colleges?contractId=${c.id}`}>
+                    <div className="strong">{c.college.name} — {c.course.name}</div>
+                    <div className="small muted">
                       {CONTRACT_TYPE_LABELS[c.contractType]}
                       {c.ratePerStudentHour && ` · ₹${c.ratePerStudentHour}/student/hr`}
-                      {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} &middot; Min {c.minStudents} students
-                      &middot; {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
+                      {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} · Min {c.minStudents} students · {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
                       {(c.targetBranch || c.targetSemester) && (
                         <>
-                          {" "}
-                          &middot;{" "}
-                          <span className="font-medium text-indigo">
-                            {[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null]
-                              .filter(Boolean)
-                              .join(" · ")}{" "}
-                            only
-                          </span>
+                          {" "}·{" "}
+                          <span className="strong">{[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null].filter(Boolean).join(" · ")} only</span>
                         </>
                       )}
-                    </p>
+                    </div>
                   </Link>
                   {c.invoices.filter((inv) => inv.submitted).length > 0 && (
-                    <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-indigo">
-                      Invoices:
-                      {c.invoices
-                        .filter((inv) => inv.submitted)
-                        .map((inv, i, arr) => (
-                          <span key={inv.id}>
-                            <Link
-                              href={`/lms/company/colleges?invoiceId=${inv.id}`}
-                              className="underline underline-offset-2 hover:text-indigo/70"
-                            >
-                              ₹{inv.totalAmount} (
-                              {inv.status === "APPROVED"
-                                ? inv.paidAt
-                                  ? "paid"
-                                  : inv.paidRequestedAt
-                                    ? "awaiting confirmation"
-                                    : "accepted"
-                                : inv.status.toLowerCase()}
-                              )
-                            </Link>
-                            {i < arr.length - 1 ? "," : ""}
+                    <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {c.invoices.filter((inv) => inv.submitted).map((inv) => (
+                        <Link key={inv.id} href={`/lms/company/colleges?invoiceId=${inv.id}`}>
+                          <span className={`pill ${statusPillClass(inv.status)}`}>
+                            ₹{inv.totalAmount} ({inv.status === "APPROVED" ? (inv.paidAt ? "paid" : inv.paidRequestedAt ? "awaiting confirmation" : "accepted") : inv.status.toLowerCase()})
                           </span>
-                        ))}
-                    </p>
+                        </Link>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge className={statusBadgeClass(c.status)}>{c.status}</Badge>
-                  {c.status === "APPROVED" && c.contractType !== "CSR" && (
-                    <GenerateCollegeInvoiceButton
-                      contractId={c.id}
-                      latestInvoice={(() => {
-                        const latest = c.invoices[0];
-                        return latest
-                          ? {
-                              invoiceId: latest.id,
-                              status: latest.status as "PENDING" | "APPROVED" | "REJECTED",
-                              submitted: latest.submitted,
-                              pdfUrl: latest.pdfUrl,
-                              rejectReason: latest.rejectReason,
-                              paidAt: latest.paidAt,
-                              paidRequestedAt: latest.paidRequestedAt,
-                            }
-                          : null;
-                      })()}
-                    />
-                  )}
-                </div>
-              </div>
+                <span className={`pill ${statusPillClass(c.status)}`}>{c.status}</span>
+                {c.status === "APPROVED" && c.contractType !== "CSR" && (
+                  <GenerateCollegeInvoiceButton
+                    contractId={c.id}
+                    latestInvoice={(() => {
+                      const latest = c.invoices[0];
+                      return latest
+                        ? { invoiceId: latest.id, status: latest.status as "PENDING" | "APPROVED" | "REJECTED", submitted: latest.submitted, pdfUrl: latest.pdfUrl, rejectReason: latest.rejectReason, paidAt: latest.paidAt, paidRequestedAt: latest.paidRequestedAt }
+                        : null;
+                    })()}
+                  />
+                )}
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
       {relevantSessions.length > 0 && (
-        <div className="rounded-xl border border-border bg-white">
-          <div className="border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">Upcoming Sessions — Reschedule</p>
-          </div>
-          <div className="divide-y divide-border">
+        <section className="card">
+          <h2 className="h2" style={{ marginBottom: 18 }}>Upcoming sessions — reschedule</h2>
+          <ul className="list">
             {relevantSessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <p className="text-sm text-indigo">
-                  {s.batch.college.name} — {s.batch.name} &middot; Slot {s.slotNumber} &middot;{" "}
-                  {format(s.sessionDate, "MMM d, yyyy")}
-                </p>
+              <li key={s.id} className="list-row">
+                <span className="grow">{s.batch.college.name} — {s.batch.name} · Slot {s.slotNumber} · {format(s.sessionDate, "MMM d, yyyy")}</span>
                 <RescheduleSessionRow sessionId={s.id} currentDate={s.sessionDate.toISOString().slice(0, 10)} />
-              </div>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

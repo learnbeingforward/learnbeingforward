@@ -1,18 +1,9 @@
 import Link from "next/link";
 import { format } from "date-fns";
-import { Building2, BookOpenCheck, Clock3 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { BackLink } from "@/components/lms/BackLink";
 import {
   approveEnrollmentRequest,
@@ -22,153 +13,101 @@ import {
 } from "@/lib/actions/enrollment-requests";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function CompanyDashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ requestId?: string; collegeId?: string }>;
 }) {
   const { requestId, collegeId } = await searchParams;
-  const { navLinks } = await requireCompanyPageAccess("overview.requests");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("overview.requests");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   if (requestId) {
-    const request = await prisma.enrollmentRequest.findUnique({
-      where: { id: requestId },
-      include: { student: true, course: true, college: true },
-    });
-
+    const request = await prisma.enrollmentRequest.findUnique({ where: { id: requestId }, include: { student: true, course: true, college: true } });
     return (
-      <DashboardShell title="Enrollment Request" subtitle="Decision detail" navLinks={navLinks}>
+      <AppShell nav={nav} active="dashboard" user={shellUser} hasUnread={hasUnread} crumb="Overview › Requests" title="Enrollment Request" subtitle="Decision detail">
         <BackLink href="/lms/company" label="Back to Requests" />
         {!request ? (
-          <p className="text-sm text-muted-foreground">This request no longer exists.</p>
+          <p className="muted">This request no longer exists.</p>
         ) : (
-          <div className="max-w-lg rounded-xl border border-border bg-white p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-indigo">{request.student.name}</h2>
-              <Badge
-                className={
-                  request.status === "APPROVED"
-                    ? "bg-green-100 text-green-700 hover:bg-green-100"
-                    : request.status === "REJECTED"
-                      ? "bg-red-100 text-red-700 hover:bg-red-100"
-                      : "bg-gold/20 text-indigo hover:bg-gold/20"
-                }
-              >
-                {request.status}
-              </Badge>
+          <section className="card" style={{ maxWidth: 520 }}>
+            <div className="split" style={{ marginBottom: 16 }}>
+              <h2 className="h2">{request.student.name}</h2>
+              <span className={`pill ${request.status === "APPROVED" ? "success" : request.status === "REJECTED" ? "danger" : "gold"}`}>{request.status}</span>
             </div>
-            <dl className="space-y-3 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Email</dt>
-                <dd className="text-indigo">{request.student.email}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">College</dt>
-                <dd className="text-indigo">{request.college?.name ?? "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Course</dt>
-                <dd className="text-indigo">{request.course.name}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Requested</dt>
-                <dd className="text-indigo">{format(request.requestedAt, "MMM d, yyyy")}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Decided</dt>
-                <dd className="text-indigo">
-                  {request.decidedAt ? format(request.decidedAt, "MMM d, yyyy") : "—"}
-                </dd>
-              </div>
+            <dl className="stack" style={{ gap: 10, fontSize: 14 }}>
+              <div className="split"><dt className="muted">Email</dt><dd>{request.student.email}</dd></div>
+              <div className="split"><dt className="muted">College</dt><dd>{request.college?.name ?? "—"}</dd></div>
+              <div className="split"><dt className="muted">Course</dt><dd>{request.course.name}</dd></div>
+              <div className="split"><dt className="muted">Requested</dt><dd>{format(request.requestedAt, "MMM d, yyyy")}</dd></div>
+              <div className="split"><dt className="muted">Decided</dt><dd>{request.decidedAt ? format(request.decidedAt, "MMM d, yyyy") : "—"}</dd></div>
             </dl>
-          </div>
+          </section>
         )}
-      </DashboardShell>
+      </AppShell>
     );
   }
 
-  // Drill-down: one college's full pending list, with individual actions plus its
-  // own "Approve All" — the detail view reached by clicking into a college below.
   if (collegeId) {
     const [college, pendingForCollege] = await Promise.all([
       prisma.college.findUnique({ where: { id: collegeId } }),
-      prisma.enrollmentRequest.findMany({
-        where: { status: "PENDING", collegeId },
-        include: { student: true, course: true },
-        orderBy: { requestedAt: "asc" },
-      }),
+      prisma.enrollmentRequest.findMany({ where: { status: "PENDING", collegeId }, include: { student: true, course: true }, orderBy: { requestedAt: "asc" } }),
     ]);
 
     return (
-      <DashboardShell title={college?.name ?? "College"} subtitle="Pending enrollment requests" navLinks={navLinks}>
+      <AppShell nav={nav} active="dashboard" user={shellUser} hasUnread={hasUnread} crumb="Overview › Requests" title={college?.name ?? "College"} subtitle="Pending enrollment requests">
         <BackLink href="/lms/company" label="Back to Requests" />
-        <div className="rounded-xl border border-border bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-6">
-            <p className="text-sm font-semibold text-indigo">Pending ({pendingForCollege.length})</p>
+        <section className="card">
+          <div className="split" style={{ marginBottom: 18 }}>
+            <h2 className="h2">Pending ({pendingForCollege.length})</h2>
             {pendingForCollege.length > 1 && (
               <form action={approveEnrollmentRequests.bind(null, pendingForCollege.map((r) => r.id))}>
-                <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                  Approve All ({pendingForCollege.length})
-                </Button>
+                <button className="btn btn-primary btn-sm" type="submit">Approve All ({pendingForCollege.length})</button>
               </form>
             )}
           </div>
           {pendingForCollege.length === 0 ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">No pending requests for this college.</p>
+            <p className="muted">No pending requests for this college.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Requested</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingForCollege.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell className="font-medium text-indigo">{req.student.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{req.course.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(req.requestedAt, "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <form action={approveEnrollmentRequest.bind(null, req.id)}>
-                          <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                            Approve
-                          </Button>
-                        </form>
-                        <form action={rejectEnrollmentRequest.bind(null, req.id)}>
-                          <Button type="submit" size="sm" variant="outline" className="border-border text-muted-foreground">
-                            Reject
-                          </Button>
-                        </form>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr><th>Student</th><th>Course</th><th>Requested</th><th className="actions">Action</th></tr></thead>
+                <tbody>
+                  {pendingForCollege.map((req) => (
+                    <tr key={req.id}>
+                      <td className="strong">{req.student.name}</td>
+                      <td>{req.course.name}</td>
+                      <td>{format(req.requestedAt, "MMM d, yyyy")}</td>
+                      <td className="actions">
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                          <form action={approveEnrollmentRequest.bind(null, req.id)}>
+                            <button className="btn btn-primary btn-sm" type="submit">Approve</button>
+                          </form>
+                          <form action={rejectEnrollmentRequest.bind(null, req.id)}>
+                            <button className="btn btn-sm" type="submit">Reject</button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </div>
-      </DashboardShell>
+        </section>
+      </AppShell>
     );
   }
 
-  const [pending, recentDecided] = await Promise.all([
-    prisma.enrollmentRequest.findMany({
-      where: { status: "PENDING" },
-      include: { student: true, course: true, college: true },
-      orderBy: { requestedAt: "asc" },
-    }),
-    prisma.enrollmentRequest.findMany({
-      where: { status: { in: ["APPROVED", "REJECTED"] } },
-      include: { student: true, course: true, college: true },
-      orderBy: { decidedAt: "desc" },
-      take: 10,
-    }),
+  const [pending, recentDecided, studentCount, collegeCount, certsToIssue] = await Promise.all([
+    prisma.enrollmentRequest.findMany({ where: { status: "PENDING" }, include: { student: true, course: true, college: true }, orderBy: { requestedAt: "asc" } }),
+    prisma.enrollmentRequest.findMany({ where: { status: { in: ["APPROVED", "REJECTED"] } }, include: { student: true, course: true, college: true }, orderBy: { decidedAt: "desc" }, take: 6 }),
+    prisma.user.count({ where: { role: "STUDENT" } }),
+    prisma.college.count(),
+    prisma.certification.count({ where: { OR: [{ status: "ELIGIBLE" }, { overrideApproved: true, status: { not: "ISSUED" } }] } }),
   ]);
 
   const collegeGroups = new Map<string, { collegeId: string | null; collegeName: string; count: number }>();
@@ -181,121 +120,143 @@ export default async function CompanyDashboardPage({
   const groups = Array.from(collegeGroups.values()).sort((a, b) => b.count - a.count);
 
   return (
-    <DashboardShell title="Company Dashboard" subtitle="Enrollment requests" navLinks={navLinks}>
-      <div className="mb-8 grid gap-5 sm:grid-cols-3">
-        <div className="flex items-center gap-4 rounded-xl border border-border bg-white p-5">
-          <div className="flex size-11 items-center justify-center rounded-lg bg-indigo/10 text-indigo">
-            <Clock3 className="size-5.5" />
+    <AppShell
+      nav={nav}
+      active="dashboard"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Overview › Requests"
+      title="Company Dashboard"
+      subtitle="Course enrollment requests from students, grouped by college."
+      actions={
+        <Link className="btn btn-ghost-light" href="/lms/company/notifications">
+          <Icon name="bell" size={16} />
+          Notifications
+        </Link>
+      }
+    >
+      <section className="card">
+        <div className="grid" style={{ ["--min" as string]: "180px" }}>
+          <div className="tile gold">
+            <div className="label">Pending requests</div>
+            <div className="value">{pending.length}</div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-indigo">{pending.length}</p>
-            <p className="text-xs text-muted-foreground">Pending Requests</p>
+          <div className="tile">
+            <div className="label">Colleges represented</div>
+            <div className="value">{groups.length}</div>
+          </div>
+          <div className="tile">
+            <div className="label">Courses requested</div>
+            <div className="value">{new Set(pending.map((r) => r.courseId)).size}</div>
+          </div>
+          <div className="tile">
+            <div className="label">Students</div>
+            <div className="value">{studentCount}</div>
+            <div className="delta">across {collegeCount} colleges</div>
+          </div>
+          <div className="tile warning">
+            <div className="label">Certificates to issue</div>
+            <div className="value">{certsToIssue}</div>
+            <div className="delta">eligible, not issued</div>
           </div>
         </div>
+      </section>
 
-        <div className="flex items-center gap-4 rounded-xl border border-border bg-white p-5">
-          <div className="flex size-11 items-center justify-center rounded-lg bg-indigo/10 text-indigo">
-            <Building2 className="size-5.5" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-indigo">{groups.length}</p>
-            <p className="text-xs text-muted-foreground">Colleges Represented</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 rounded-xl border border-border bg-white p-5">
-          <div className="flex size-11 items-center justify-center rounded-lg bg-indigo/10 text-indigo">
-            <BookOpenCheck className="size-5.5" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-indigo">{new Set(pending.map((r) => r.courseId)).size}</p>
-            <p className="text-xs text-muted-foreground">Courses Requested</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-border bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Pending Approval, by College</p>
-          {pending.length > 1 && (
-            <form action={approveAllEnrollmentRequests}>
-              <Button type="submit" size="sm" className="bg-indigo text-white hover:bg-indigo/90">
-                Approve All Colleges ({pending.length})
-              </Button>
-            </form>
-          )}
-        </div>
-
-        {groups.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">
-            No pending enrollment requests right now.
-          </p>
-        ) : (
-          <div className="divide-y divide-border">
-            {groups.map((g) => (
-              <div key={g.collegeId ?? "none"} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <Link
-                  href={g.collegeId ? `/lms/company?collegeId=${g.collegeId}` : "/lms/company"}
-                  className="text-sm font-medium text-indigo underline underline-offset-2"
-                >
-                  {g.collegeName}
-                </Link>
-                <div className="flex items-center gap-3">
-                  <Badge className="bg-gold/20 text-indigo hover:bg-gold/20">
-                    {g.count} pending
-                  </Badge>
-                  {g.count > 1 && (
-                    <form
-                      action={approveEnrollmentRequests.bind(
-                        null,
-                        pending.filter((r) => (r.collegeId ?? "none") === (g.collegeId ?? "none")).map((r) => r.id)
-                      )}
-                    >
-                      <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
-                        Approve All
-                      </Button>
-                    </form>
-                  )}
-                </div>
+      <div className="row">
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Pending approval, by college
+          </h2>
+          {groups.length === 0 ? (
+            <div className="empty">
+              <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+                <Icon name="check" size={22} />
+              </span>
+              <div className="h3" style={{ color: "var(--text)" }}>
+                No pending enrollment requests right now.
               </div>
-            ))}
+              <p className="small muted" style={{ marginTop: 6 }}>
+                New requests appear here grouped by college, with Approve / Reject on each.
+              </p>
+            </div>
+          ) : (
+            <>
+              {pending.length > 1 && (
+                <form action={approveAllEnrollmentRequests} style={{ marginBottom: 12 }}>
+                  <button className="btn btn-primary btn-sm" type="submit">Approve All Colleges ({pending.length})</button>
+                </form>
+              )}
+              <ul className="list">
+                {groups.map((g) => (
+                  <li key={g.collegeId ?? "none"} className="list-row">
+                    <Link className="grow strong" href={g.collegeId ? `/lms/company?collegeId=${g.collegeId}` : "/lms/company"}>
+                      {g.collegeName}
+                    </Link>
+                    <span className="pill gold">{g.count} pending</span>
+                    {g.count > 1 && (
+                      <form action={approveEnrollmentRequests.bind(null, pending.filter((r) => (r.collegeId ?? "none") === (g.collegeId ?? "none")).map((r) => r.id))}>
+                        <button className="btn btn-sm" type="submit">Approve All</button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+
+        <section className="card side">
+          <div className="split" style={{ marginBottom: 18 }}>
+            <h2 className="h2">Recent decisions</h2>
           </div>
-        )}
+          <ul className="list">
+            {recentDecided.map((req) => (
+              <li key={req.id} className="list-row">
+                <div className="grow">
+                  <div className="stat-inline">
+                    <span className="avatar sm">{req.student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
+                    <div>
+                      <div className="strong">{req.student.name}</div>
+                      <div className="small muted">{req.course.name} · {req.college?.name ?? "—"}</div>
+                    </div>
+                  </div>
+                </div>
+                <span className={`pill ${req.status === "APPROVED" ? "success" : "danger"}`}>{req.status === "APPROVED" ? "Approved" : "Rejected"}</span>
+                <span className="small muted">{req.decidedAt ? format(req.decidedAt, "MMM d") : "—"}</span>
+              </li>
+            ))}
+            {recentDecided.length === 0 && <p className="muted">Nothing decided yet.</p>}
+          </ul>
+        </section>
       </div>
 
-      {recentDecided.length > 0 && (
-        <div className="mt-8">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Recent Decisions</p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {recentDecided.map((req) => (
-              <Link
-                key={req.id}
-                href={`/lms/company?requestId=${req.id}`}
-                className="rounded-xl border border-border bg-white p-5 transition-colors hover:border-indigo/40"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-indigo">{req.student.name}</p>
-                  <Badge
-                    className={
-                      req.status === "APPROVED"
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : "bg-red-100 text-red-700 hover:bg-red-100"
-                    }
-                  >
-                    {req.status === "APPROVED" ? "Approved" : "Rejected"}
-                  </Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {req.course.name} &middot; {req.college?.name ?? "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {req.decidedAt ? format(req.decidedAt, "MMM d, yyyy") : "—"}
-                </p>
-              </Link>
-            ))}
-          </div>
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>
+          Quick actions
+        </h2>
+        <div className="grid" style={{ ["--min" as string]: "240px" }}>
+          <Link className="list-row" href="/lms/company/accounts">
+            <span className="icon-box gold"><Icon name="plus" size={18} /></span>
+            <span className="grow">Add an account</span>
+            <Icon name="chevR" size={16} />
+          </Link>
+          <Link className="list-row" href="/lms/company/trainers?view=schedule">
+            <span className="icon-box gold"><Icon name="calendar" size={18} /></span>
+            <span className="grow">Schedule training</span>
+            <Icon name="chevR" size={16} />
+          </Link>
+          <Link className="list-row" href="/lms/company/assessments">
+            <span className="icon-box gold"><Icon name="code" size={18} /></span>
+            <span className="grow">Build an assessment</span>
+            <Icon name="chevR" size={16} />
+          </Link>
+          <Link className="list-row" href="/lms/company/course-content">
+            <span className="icon-box gold"><Icon name="upload" size={18} /></span>
+            <span className="grow">Upload course content</span>
+            <Icon name="chevR" size={16} />
+          </Link>
         </div>
-      )}
-    </DashboardShell>
+      </section>
+    </AppShell>
   );
 }

@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { ApproveContractRateForm } from "@/components/lms/ApproveContractRateForm";
 import { format } from "date-fns";
+
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
   CSR: "CSR (Free)",
@@ -12,7 +16,9 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function CompanyCollegeApprovalsPage() {
-  const { navLinks } = await requireCompanyPageAccess("colleges.approvals");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("colleges.approvals");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const pendingRateContracts = await prisma.collegeContract.findMany({
     where: { status: "PENDING_RATE" },
@@ -21,49 +27,47 @@ export default async function CompanyCollegeApprovalsPage() {
   });
 
   return (
-    <DashboardShell title="Approvals" subtitle="Contracts requested by the second admin" navLinks={navLinks}>
+    <AppShell
+      nav={nav}
+      active="colleges"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Accounts › Colleges › Approvals"
+      title="Approvals"
+      subtitle="The second admin can request training without a rate. Set the rate and send it to the college."
+    >
       <BackLink href="/lms/company/colleges" label="Back to Colleges" />
-      <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        The second admin can request training without setting a rate. Set the rate (if paid) and
-        send each one to the college here.
-      </p>
-      <div className="rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Pending Approvals ({pendingRateContracts.length})</p>
-        </div>
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>Pending approvals ({pendingRateContracts.length})</h2>
         {pendingRateContracts.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Nothing waiting on a rate right now.</p>
+          <div className="empty">
+            <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+              <Icon name="check" size={22} />
+            </span>
+            <div className="h3" style={{ color: "var(--text)" }}>Nothing waiting on a rate right now.</div>
+          </div>
         ) : (
-          <div className="divide-y divide-border">
+          <ul className="list">
             {pendingRateContracts.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="text-sm font-medium text-indigo">
-                    {c.college.name} — {c.course.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {CONTRACT_TYPE_LABELS[c.contractType]} &middot; Min {c.minStudents} students &middot;{" "}
-                    {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
+              <li key={c.id} className="list-row" style={{ flexWrap: "wrap" }}>
+                <div className="grow">
+                  <div className="strong">{c.college.name} — {c.course.name}</div>
+                  <div className="small muted">
+                    {CONTRACT_TYPE_LABELS[c.contractType]} · Min {c.minStudents} students · {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
                     {(c.targetBranch || c.targetSemester) && (
                       <>
-                        {" "}
-                        &middot;{" "}
-                        <span className="font-medium text-indigo">
-                          {[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null]
-                            .filter(Boolean)
-                            .join(" · ")}{" "}
-                          only
-                        </span>
+                        {" "}·{" "}
+                        <span className="strong">{[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null].filter(Boolean).join(" · ")} only</span>
                       </>
                     )}
-                  </p>
+                  </div>
                 </div>
                 <ApproveContractRateForm contractId={c.id} contractType={c.contractType} />
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
-    </DashboardShell>
+      </section>
+    </AppShell>
   );
 }

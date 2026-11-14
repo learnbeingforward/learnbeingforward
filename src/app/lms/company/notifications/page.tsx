@@ -1,23 +1,24 @@
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
+import { DomainTabs } from "@/components/lbf/DomainTabs";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { NotificationRow } from "@/components/lms/NotificationRow";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
 import { NOTIFICATION_SECTIONS, NOTIFICATION_CATEGORY_KEY, notificationVisibleTo } from "@/lib/notifications";
 
-const PREVIEW_COUNT = 2;
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
 export default async function NotificationsPage() {
-  const { navLinks, keys } = await requireCompanyPageAccess([
+  const { session, keys, hasUnread } = await requireCompanyPageAccess([
     "overview.notifications.student",
     "overview.notifications.college",
     "overview.notifications.trainer",
     "overview.notifications.admin",
   ]);
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const visibleSections = NOTIFICATION_SECTIONS.filter((s) => keys.includes(NOTIFICATION_CATEGORY_KEY[s.category]));
 
@@ -29,86 +30,66 @@ export default async function NotificationsPage() {
         select: { id: true, title: true, message: true, href: true, read: true, createdAt: true, category: true, requiredKey: true },
       });
       const visible = all.filter((n) => notificationVisibleTo(n, keys));
-      return {
-        ...section,
-        total: visible.length,
-        unread: visible.filter((n) => !n.read).length,
-        recent: visible.slice(0, PREVIEW_COUNT),
-      };
+      return { ...section, items: visible };
     })
   );
 
-  const totalUnread = sections.reduce((sum, s) => sum + s.unread, 0);
+  const totalUnread = sections.reduce((sum, s) => sum + s.items.filter((n) => !n.read).length, 0);
+  const allItems = sections.flatMap((s) => s.items).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  function renderList(items: typeof allItems) {
+    if (items.length === 0) {
+      return (
+        <div className="empty">
+          <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+            <Icon name="bell" size={22} />
+          </span>
+          <div className="h3" style={{ color: "var(--text)" }}>
+            Nothing here yet.
+          </div>
+        </div>
+      );
+    }
+    return (
+      <ul className="list">
+        {items.map((n) => (
+          <NotificationRow key={n.id} id={n.id} title={n.title} message={n.message} href={n.href} read={n.read} createdAt={n.createdAt.toISOString()} />
+        ))}
+      </ul>
+    );
+  }
+
+  const panels: Record<string, React.ReactNode> = { all: renderList(allItems) };
+  for (const s of sections) panels[s.category] = renderList(s.items);
+  const tabs = [{ key: "all", label: `All (${allItems.length})` }, ...sections.map((s) => ({ key: s.category, label: `${s.label} (${s.items.length})` }))];
 
   return (
-    <DashboardShell
+    <AppShell
+      nav={nav}
+      active="notifications"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Overview › Notifications"
       title="Notifications"
-      subtitle="Activity across the student, college, and trainer portals"
-      navLinks={navLinks}
-    >
-      <div className="mb-6 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {totalUnread > 0 ? `${totalUnread} unread across all sections` : "You're all caught up."}
-        </p>
-        {totalUnread > 0 && (
+      subtitle="Activity across the student, college and trainer portals."
+      actions={
+        totalUnread > 0 ? (
           <form
             action={async () => {
               "use server";
               await markAllNotificationsRead();
             }}
           >
-            <Button type="submit" size="sm" variant="outline" className="border-border text-indigo">
+            <button className="btn btn-ghost-light" type="submit">
               Mark all as read
-            </Button>
+            </button>
           </form>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <div key={section.category} className="rounded-xl border border-border bg-white">
-            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-              <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-indigo">
-                {section.label}
-                <Badge className="bg-indigo/10 text-indigo hover:bg-indigo/10">{section.total} total</Badge>
-                {section.unread > 0 && (
-                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100">{section.unread} unread</Badge>
-                )}
-              </p>
-              {section.total > PREVIEW_COUNT && (
-                <Link
-                  href={`/lms/company/notifications/${section.slug}`}
-                  className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-indigo underline underline-offset-2"
-                >
-                  View all {section.total} <ChevronRight className="size-3.5" />
-                </Link>
-              )}
-            </div>
-            {section.recent.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Nothing here yet.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {section.recent.map((n) => (
-                  <NotificationRow
-                    key={n.id}
-                    id={n.id}
-                    title={n.title}
-                    message={n.message}
-                    href={n.href}
-                    read={n.read}
-                    createdAt={n.createdAt.toISOString()}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        {sections.length === 0 && (
-          <p className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-            You haven&apos;t been granted any notification categories yet.
-          </p>
-        )}
-      </div>
-    </DashboardShell>
+        ) : null
+      }
+    >
+      <section className="card">
+        {sections.length === 0 ? <p className="empty">You haven&apos;t been granted any notification categories yet.</p> : <DomainTabs tabs={tabs} panels={panels} />}
+      </section>
+    </AppShell>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { getIconByName } from "@/lib/icon-catalog";
 import { PublicShell } from "@/components/lbf/PublicShell";
 
 export const metadata: Metadata = { title: "Technologies" };
@@ -50,12 +51,18 @@ export default async function TechnologiesPage() {
                   <h2 className="h3">{CATEGORY_LABELS[cat]}</h2>
                   <span className={`pill${GOLD_PILLS.has(cat) ? " gold" : ""}`}>{items.length}</span>
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
-                  {items.map((t) => (
-                    <span key={t.id} className="chip">
-                      {t.name}
-                    </span>
-                  ))}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 14 }}>
+                  {items.map((t) => {
+                    const LogoIcon = getIconByName(t.iconName);
+                    return (
+                      <div key={t.id} title={t.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 76 }}>
+                        <span className="icon-box" style={{ width: 44, height: 44 }}>
+                          {LogoIcon && <LogoIcon size={22} />}
+                        </span>
+                        <span className="small muted" style={{ textAlign: "center" }}>{t.name}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
