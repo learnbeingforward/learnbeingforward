@@ -169,7 +169,7 @@ export default async function CompanyCollegesPage({
           {myContracts.length === 0 ? (
             <p className="empty">No training requests yet.</p>
           ) : (
-            <ul className="list">
+            <ul className="list" style={{ maxHeight: 280, overflowY: "auto" }}>
               {myContracts.map((c) => (
                 <li key={c.id} className="list-row">
                   <Link className="grow" href={`/lms/company/colleges?contractId=${c.id}`}>

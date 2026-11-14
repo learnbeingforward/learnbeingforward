@@ -116,9 +116,14 @@ export default async function CompanyAttendancePage({
             <div className="bar-chart" role="img" aria-label="Average attendance by course">
               {chart.map((c) => (
                 <div key={c.name} className="b">
-                  <span className={c.pct >= 75 ? "gold" : ""} style={{ height: `${c.pct}%` }} />
-                  {c.name.split(" ")[0]}
-                  <strong style={{ color: "var(--text)" }}>{c.pct}%</strong>
+                  <div className="track">
+                    <span className={c.pct >= 75 ? "gold" : ""} style={{ height: `${c.pct}%` }} />
+                  </div>
+                  <div className="label">
+                    {c.name.split(" ")[0]}
+                    <br />
+                    <strong style={{ color: "var(--text)" }}>{c.pct}%</strong>
+                  </div>
                 </div>
               ))}
             </div>
@@ -181,16 +186,21 @@ export default async function CompanyAttendancePage({
               <div className="bar-chart" role="img" aria-label="Average attendance by course">
                 {chart.map((c) => (
                   <div key={c.name} className="b">
-                    <span className={c.pct >= 75 ? "gold" : ""} style={{ height: `${c.pct}%` }} />
-                    {c.name.split(" ")[0]}
-                    <strong style={{ color: "var(--text)" }}>{c.pct}%</strong>
+                    <div className="track">
+                      <span className={c.pct >= 75 ? "gold" : ""} style={{ height: `${c.pct}%` }} />
+                    </div>
+                    <div className="label">
+                      {c.name.split(" ")[0]}
+                      <br />
+                      <strong style={{ color: "var(--text)" }}>{c.pct}%</strong>
+                    </div>
                   </div>
                 ))}
               </div>
             </section>
             <section className="card side">
               <h2 className="h2" style={{ marginBottom: 18 }}>By college</h2>
-              <ul className="list">
+              <ul className="list" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {Array.from(colleges.entries()).map(([id, c]) => {
                   const pct = Math.round(c.totalPct / c.count);
                   return (
@@ -212,7 +222,7 @@ export default async function CompanyAttendancePage({
           {awaitingCertificates.length > 0 && (
             <section className="card">
               <h2 className="h2" style={{ marginBottom: 18 }}>Eligible for certificate, not yet issued ({awaitingCertificates.length})</h2>
-              <ul className="list">
+              <ul className="list" style={{ maxHeight: 280, overflowY: "auto" }}>
                 {awaitingCertificates.map(({ enrollment, pct }) => (
                   <li key={enrollment.id} className="list-row">
                     <div className="grow">

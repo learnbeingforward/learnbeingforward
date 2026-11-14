@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
@@ -37,7 +38,9 @@ export default async function NotificationsPage() {
   const totalUnread = sections.reduce((sum, s) => sum + s.items.filter((n) => !n.read).length, 0);
   const allItems = sections.flatMap((s) => s.items).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  function renderList(items: typeof allItems) {
+  const CAP = 3;
+
+  function renderList(items: typeof allItems, viewAllHref: string) {
     if (items.length === 0) {
       return (
         <div className="empty">
@@ -51,16 +54,24 @@ export default async function NotificationsPage() {
       );
     }
     return (
-      <ul className="list">
-        {items.map((n) => (
-          <NotificationRow key={n.id} id={n.id} title={n.title} message={n.message} href={n.href} read={n.read} createdAt={n.createdAt.toISOString()} />
-        ))}
-      </ul>
+      <>
+        <ul className="list">
+          {items.slice(0, CAP).map((n) => (
+            <NotificationRow key={n.id} id={n.id} title={n.title} message={n.message} href={n.href} read={n.read} createdAt={n.createdAt.toISOString()} />
+          ))}
+        </ul>
+        {items.length > CAP && (
+          <Link className="list-row" href={viewAllHref} style={{ marginTop: 8, justifyContent: "center", fontWeight: 600 }}>
+            View all {items.length}
+            <Icon name="chevR" size={16} />
+          </Link>
+        )}
+      </>
     );
   }
 
-  const panels: Record<string, React.ReactNode> = { all: renderList(allItems) };
-  for (const s of sections) panels[s.category] = renderList(s.items);
+  const panels: Record<string, React.ReactNode> = { all: renderList(allItems, "/lms/company/notifications/all") };
+  for (const s of sections) panels[s.category] = renderList(s.items, `/lms/company/notifications/${s.slug}`);
   const tabs = [{ key: "all", label: `All (${allItems.length})` }, ...sections.map((s) => ({ key: s.category, label: `${s.label} (${s.items.length})` }))];
 
   return (

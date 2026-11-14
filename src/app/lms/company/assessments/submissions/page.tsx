@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AssessmentSnapshotGallery } from "@/components/lms/AssessmentSnapshotGallery";
 import { AssessmentAnswerReview, type ReviewAnswer } from "@/components/lms/AssessmentAnswerReview";
 import { sendResultToCollege, sendResultToStudent, allowAssessmentRetest } from "@/lib/actions/assessments";
+
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude",
@@ -28,11 +31,13 @@ export default async function AssessmentSubmissionsPage({
 }: {
   searchParams: Promise<{ assignmentId?: string }>;
 }) {
-  const { navLinks, keys } = await requireCompanyPageAccess([
+  const { session, keys, hasUnread } = await requireCompanyPageAccess([
     "assessments.submissions.view",
     "assessments.submissions.grade",
     "assessments.submissions.send",
   ]);
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
   const canGrade = keys.includes("assessments.submissions.grade");
   const canSend = keys.includes("assessments.submissions.send");
 
@@ -51,10 +56,10 @@ export default async function AssessmentSubmissionsPage({
 
     if (!assignment) {
       return (
-        <DashboardShell title="Submission" subtitle="Not found" navLinks={navLinks}>
+        <AppShell nav={nav} active="submissions" user={shellUser} hasUnread={hasUnread} crumb="Assessments › Submissions" title="Submission" subtitle="Not found">
           <BackLink href="/lms/company/assessments/submissions" label="Back to Submissions" />
-          <p className="text-sm text-muted-foreground">This submission no longer exists.</p>
-        </DashboardShell>
+          <p className="muted">This submission no longer exists.</p>
+        </AppShell>
       );
     }
 
@@ -89,43 +94,44 @@ export default async function AssessmentSubmissionsPage({
     });
 
     return (
-      <DashboardShell title={assignment.student.name} subtitle="Assessment submission" navLinks={navLinks}>
+      <AppShell nav={nav} active="submissions" user={shellUser} hasUnread={hasUnread} crumb="Assessments › Submissions" title={assignment.student.name} subtitle="Assessment submission">
         <BackLink href="/lms/company/assessments/submissions" label="Back to Submissions" />
 
-        <div className="mb-6 rounded-xl border border-border bg-white p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <section className="card">
+          <div className="split" style={{ alignItems: "flex-start" }}>
             <div>
-              <p className="text-lg font-semibold text-indigo">{assignment.assessment.title}</p>
-              <p className="text-sm text-muted-foreground">
-                {TYPE_LABELS[assignment.assessment.type]} &middot; {assignment.student.name} &middot;{" "}
-                {assignment.student.college?.name ?? "—"}
+              <p className="h2">{assignment.assessment.title}</p>
+              <p className="small muted" style={{ marginTop: 4 }}>
+                {TYPE_LABELS[assignment.assessment.type]} · {assignment.student.name} · {assignment.student.college?.name ?? "—"}
               </p>
             </div>
-            <Badge className="bg-indigo/10 text-lg text-indigo hover:bg-indigo/10">
+            <span className="pill gold" style={{ fontSize: 16 }}>
               {assignment.totalMarks ?? 0} / {assignment.maxMarks ?? 0}
-            </Badge>
+            </span>
           </div>
           {assignment.autoSubmitted && (
-            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-              Auto-submitted after proctoring violations — {assignment.violationCount} screen/tab violation(s),{" "}
-              {assignment.audioViolationCount} audio violation(s).
-            </p>
+            <div className="alert danger" style={{ marginTop: 14 }}>
+              <span>
+                Auto-submitted after proctoring violations — {assignment.violationCount} screen/tab violation(s), {assignment.audioViolationCount} audio violation(s).
+              </span>
+            </div>
           )}
           {assignment.assessment.proctoringEnabled && assignment.snapshots.some((s) => s.flagReason) && (
-            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-              ⚠ The in-browser AI proctor flagged {assignment.snapshots.filter((s) => s.flagReason).length}{" "}
-              snapshot(s) during this attempt — see below. This does not auto-submit on its own.
-            </p>
+            <div className="alert danger" style={{ marginTop: 14 }}>
+              <span>
+                ⚠ The in-browser AI proctor flagged {assignment.snapshots.filter((s) => s.flagReason).length} snapshot(s) during this attempt — see below. This does not auto-submit on its own.
+              </span>
+            </div>
           )}
           {assignment.cameraPosition && (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="small muted" style={{ marginTop: 10 }}>
               Student reported camera position: {CAMERA_POSITION_LABELS[assignment.cameraPosition] ?? assignment.cameraPosition}
             </p>
           )}
           {assignment.needsGrading && (
-            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Written answers below still need marks assigned — total will update as you grade them.
-            </p>
+            <div className="alert warning" style={{ marginTop: 14 }}>
+              <span>Written answers below still need marks assigned — total will update as you grade them.</span>
+            </div>
           )}
 
           {canSend ? (
@@ -167,10 +173,10 @@ export default async function AssessmentSubmissionsPage({
               You don&apos;t have permission to send results or allow a retest for this submission.
             </p>
           )}
-        </div>
+        </section>
 
         {assignment.assessment.proctoringEnabled && (
-          <div className="mb-6">
+          <section className="card">
             <AssessmentSnapshotGallery
               assignmentId={assignmentId}
               canManage={canSend}
@@ -183,73 +189,121 @@ export default async function AssessmentSubmissionsPage({
                 flagReason: s.flagReason,
               }))}
             />
-          </div>
+          </section>
         )}
 
         <AssessmentAnswerReview answers={reviewAnswers} editable={canGrade} />
-      </DashboardShell>
+      </AppShell>
     );
   }
 
   const assignments = await prisma.assessmentAssignment.findMany({
     where: { status: { in: ["SUBMITTED", "AUTO_SUBMITTED"] } },
-    include: { student: { include: { college: true } }, assessment: true },
+    include: { student: { include: { college: true } }, assessment: true, snapshots: true },
     orderBy: { submittedAt: "desc" },
   });
 
+  const graded = assignments.filter((a) => !a.needsGrading && !a.autoSubmitted).length;
+  const flagged = assignments.filter((a) => a.snapshots.some((s) => s.flagReason)).length;
+  const scored = assignments.filter((a) => a.maxMarks && a.maxMarks > 0);
+  const avgScore = scored.length > 0 ? Math.round(scored.reduce((sum, a) => sum + ((a.totalMarks ?? 0) / a.maxMarks!) * 100, 0) / scored.length) : 0;
+
   return (
-    <DashboardShell title="Assessment Submissions" subtitle="Students who have completed an assessment" navLinks={navLinks}>
-      <BackLink href="/lms/company/assessments" label="Back to Assessments" />
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="p-3">Student</th>
-              <th className="p-3">College</th>
-              <th className="p-3">Assessment</th>
-              <th className="p-3">Marks</th>
-              <th className="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {assignments.map((a) => (
-              <tr key={a.id}>
-                <td className="p-3">
-                  <Link
-                    href={`/lms/company/assessments/submissions?assignmentId=${a.id}`}
-                    className="font-medium text-indigo underline underline-offset-2"
-                  >
-                    {a.student.name}
-                  </Link>
-                </td>
-                <td className="p-3 text-muted-foreground">{a.student.college?.name ?? "—"}</td>
-                <td className="p-3 text-muted-foreground">
-                  {a.assessment.title} <span className="text-xs">({TYPE_LABELS[a.assessment.type]})</span>
-                </td>
-                <td className="p-3 text-muted-foreground">
-                  {a.totalMarks ?? 0} / {a.maxMarks ?? 0}
-                </td>
-                <td className="p-3">
-                  {a.needsGrading ? (
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Needs Grading</Badge>
-                  ) : a.autoSubmitted ? (
-                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Auto-Submitted</Badge>
-                  ) : (
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Graded</Badge>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {assignments.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-6 text-center text-sm text-muted-foreground">
-                  No submissions yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </DashboardShell>
+    <AppShell
+      nav={nav}
+      active="submissions"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Assessments › Submissions"
+      title="Submissions"
+      subtitle="Scores, status and proctoring flags for every attempt."
+      actions={
+        <Link className="btn btn-ghost-light" href="/lms/company/assessments">
+          <Icon name="arrowL" size={16} />
+          Back to Assessments
+        </Link>
+      }
+    >
+      <section className="card">
+        <div className="grid" style={{ ["--min" as string]: "180px" }}>
+          <div className="tile">
+            <div className="label">Submissions</div>
+            <div className="value">{assignments.length}</div>
+          </div>
+          <div className="tile">
+            <div className="label">Average score</div>
+            <div className="value">{avgScore}%</div>
+          </div>
+          <div className="tile success">
+            <div className="label">Graded</div>
+            <div className="value">{graded}</div>
+          </div>
+          <div className="tile warning">
+            <div className="label">Flagged</div>
+            <div className="value">{flagged}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card">
+        {assignments.length === 0 ? (
+          <p className="empty">No submissions yet.</p>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>College</th>
+                  <th>Assessment</th>
+                  <th>Marks</th>
+                  <th>Proctoring</th>
+                  <th>Status</th>
+                  <th className="actions">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.map((a) => (
+                  <tr key={a.id}>
+                    <td>
+                      <div className="stat-inline">
+                        <span className="avatar sm">{a.student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
+                        <div>
+                          <div className="strong">{a.student.name}</div>
+                          <div className="small muted">{a.student.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{a.student.college?.name ?? "—"}</td>
+                    <td>
+                      {a.assessment.title} <span className="pill" style={{ marginLeft: 4 }}>{TYPE_LABELS[a.assessment.type]}</span>
+                    </td>
+                    <td><strong>{a.totalMarks ?? 0}</strong> / {a.maxMarks ?? 0}</td>
+                    <td>
+                      {a.snapshots.some((s) => s.flagReason) ? <span className="pill danger">Flagged</span> : <span className="pill success">Clean</span>}
+                    </td>
+                    <td>
+                      {a.needsGrading ? (
+                        <span className="pill warning">Needs Grading</span>
+                      ) : a.autoSubmitted ? (
+                        <span className="pill danger">Auto-Submitted</span>
+                      ) : (
+                        <span className="pill success">Graded</span>
+                      )}
+                    </td>
+                    <td className="actions">
+                      <Link className="btn btn-sm" href={`/lms/company/assessments/submissions?assignmentId=${a.id}`}>
+                        <Icon name="eye" size={14} />
+                        View attempt
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </AppShell>
   );
 }

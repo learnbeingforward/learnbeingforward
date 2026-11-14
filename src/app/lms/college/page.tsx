@@ -72,9 +72,14 @@ export default async function CollegeDashboardPage() {
                 const pct = Math.round(data.totalPct / data.count);
                 return (
                   <div key={name} className="b">
-                    <span className={pct >= 75 ? "gold" : ""} style={{ height: `${pct}%` }} />
-                    {name.split(" ")[0]}
-                    <strong style={{ color: "var(--text)" }}>{pct}%</strong>
+                    <div className="track">
+                      <span className={pct >= 75 ? "gold" : ""} style={{ height: `${pct}%` }} />
+                    </div>
+                    <div className="label">
+                      {name.split(" ")[0]}
+                      <br />
+                      <strong style={{ color: "var(--text)" }}>{pct}%</strong>
+                    </div>
                   </div>
                 );
               })}
@@ -88,7 +93,7 @@ export default async function CollegeDashboardPage() {
               Breakdown by course
             </h2>
             <ul className="list">
-              {courseEntries.map(([name, data]) => (
+              {courseEntries.slice(0, 3).map(([name, data]) => (
                 <li key={name}>
                   <Link className="list-row" href="/lms/college/courses">
                     <span className="grow">
@@ -104,6 +109,12 @@ export default async function CollegeDashboardPage() {
                 </li>
               ))}
             </ul>
+            {courseEntries.length > 3 && (
+              <Link className="list-row" href="/lms/college/courses" style={{ marginTop: 8, justifyContent: "center", fontWeight: 600 }}>
+                View all {courseEntries.length} courses
+                <Icon name="chevR" size={16} />
+              </Link>
+            )}
           </section>
         </div>
       )}

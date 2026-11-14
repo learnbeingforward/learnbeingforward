@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon, type IconName } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +19,8 @@ import { CodingQuestionBuilder } from "@/components/lms/builder/CodingQuestionBu
 import type { SectionInfo } from "@/components/lms/builder/SectionsAndQuestionsBlock";
 import type { TableQuestion } from "@/components/lms/builder/QuestionTable";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 const TYPE_LABELS: Record<string, string> = {
   APTITUDE: "Aptitude Assessment",
   TECHNICAL_APTITUDE: "Technical Aptitude Assessment",
@@ -27,6 +33,12 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
   CODING: "Hands-on coding problems with a real compiler.",
 };
 
+const TYPE_ICON: Record<string, IconName> = {
+  APTITUDE: "target",
+  TECHNICAL_APTITUDE: "layers",
+  CODING: "code",
+};
+
 const TYPES = ["APTITUDE", "TECHNICAL_APTITUDE", "CODING"] as const;
 type AssessmentTypeValue = (typeof TYPES)[number];
 
@@ -34,39 +46,37 @@ function isAssessmentType(value: string | undefined): value is AssessmentTypeVal
   return !!value && (TYPES as readonly string[]).includes(value);
 }
 
-function AssessmentCard({ assessment }: { assessment: { id: string; title: string; questions: unknown[]; assignments: unknown[]; durationMinutes: number; proctoringEnabled: boolean; availableFrom: Date | null; availableUntil: Date | null } }) {
+function AssessmentBox({ assessment, sentHref }: { assessment: { id: string; title: string; questions: unknown[]; assignments: unknown[]; durationMinutes: number; proctoringEnabled: boolean; availableFrom: Date | null; availableUntil: Date | null }; sentHref: string }) {
   const a = assessment;
   return (
-    <div className="rounded-xl border border-border bg-white p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <Link href={`/lms/company/assessments?assessmentId=${a.id}`} className="font-medium text-indigo underline underline-offset-2">
-            {a.title}
-          </Link>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {a.questions.length} question{a.questions.length !== 1 ? "s" : ""} &middot; {a.assignments.length} sent &middot;{" "}
-            {a.durationMinutes} min
-            {a.proctoringEnabled && " · Proctored"}
-          </p>
-          {a.availableFrom && a.availableUntil && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {a.availableFrom.toLocaleString()} – {a.availableUntil.toLocaleString()}
-            </p>
-          )}
-        </div>
-        <DeleteButton action={deleteAssessment.bind(null, a.id)} />
+    <li className="box stack" style={{ gap: 8 }}>
+      <div className="split">
+        <Link className="strong" href={`/lms/company/assessments?assessmentId=${a.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+          {a.title}
+        </Link>
+        {a.proctoringEnabled && <span className="pill info">Proctored</span>}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Link href={`/lms/company/assessments?assessmentId=${a.id}`} className="text-xs text-indigo underline">
-          Edit Questions
+      <div className="small muted">
+        {a.questions.length} question{a.questions.length !== 1 ? "s" : ""} · {a.assignments.length} sent · {a.durationMinutes} min
+      </div>
+      {a.availableFrom && a.availableUntil && (
+        <div className="small">
+          {format(a.availableFrom, "MMM d, h:mm a")} – {format(a.availableUntil, "MMM d, h:mm a")}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Link className="btn btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}`}>
+          <Icon name="edit" size={14} />
+          Edit questions
         </Link>
         {a.questions.length > 0 && (
-          <Link href={`/lms/company/assessments?assessmentId=${a.id}&mode=send`} className="text-xs text-indigo underline">
-            Send to Students
+          <Link className="btn btn-primary btn-sm" href={sentHref}>
+            {a.assignments.length > 0 ? "Results" : "Send to students"}
           </Link>
         )}
+        <DeleteButton action={deleteAssessment.bind(null, a.id)} />
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -84,7 +94,9 @@ export default async function CompanyAssessmentsPage({
     questionId?: string;
   }>;
 }) {
-  const { navLinks } = await requireCompanyPageAccess("assessments.build");
+  const { session, navLinks, keys, hasUnread } = await requireCompanyPageAccess("assessments.build");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const { assessmentId, mode, category, view, step, screen, sectionName, questionId } = await searchParams;
 
@@ -99,10 +111,10 @@ export default async function CompanyAssessmentsPage({
 
     if (!assessment) {
       return (
-        <DashboardShell title="Assessments" subtitle="Not found" navLinks={navLinks}>
+        <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title="Assessment" subtitle="Not found">
           <BackLink href="/lms/company/assessments" label="Back to Assessments" />
-          <p className="text-sm text-muted-foreground">This assessment no longer exists.</p>
-        </DashboardShell>
+          <p className="muted">This assessment no longer exists.</p>
+        </AppShell>
       );
     }
 
@@ -126,14 +138,16 @@ export default async function CompanyAssessmentsPage({
         }));
 
       return (
-        <DashboardShell title={assessment.title} subtitle="Send to students" navLinks={navLinks}>
+        <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title={assessment.title} subtitle="Send to students">
           <BackLink href={backHref} label="Back to Assessment" />
-          <AssignAssessmentForm assessmentId={assessmentId} students={assignable} />
-        </DashboardShell>
+          <section className="card">
+            <AssignAssessmentForm assessmentId={assessmentId} students={assignable} />
+          </section>
+        </AppShell>
       );
     }
 
-    // ---------- Screens 2/3/4: Add/Edit a question ----------
+    // ---------- Screens 2/3/4: Add/Edit a question (separate Assessment Portal design set — keep as-is) ----------
     if (screen === "add-aptitude" || screen === "add-technical") {
       const kind = screen === "add-aptitude" ? "aptitude" : "technical";
       const existingQ = questionId ? assessment.questions.find((q) => q.id === questionId) : undefined;
@@ -204,7 +218,7 @@ export default async function CompanyAssessmentsPage({
       return { name, kind, shuffleEnabled: !!shuffleMap[name], questions };
     });
 
-    // ---------- Step 4: Review & Publish ----------
+    // ---------- Step 4: Review & Publish (separate Assessment Portal design set — keep as-is) ----------
     if (step === "4") {
       const draftCodingQuestions = assessment.questions.filter((q) => q.questionType === "CODING" && q.status !== "VALIDATED");
       return (
@@ -223,7 +237,9 @@ export default async function CompanyAssessmentsPage({
       );
     }
 
-    // ---------- Default: Screen 1 (Details + Sections & Questions + Proctoring & Rules) ----------
+    // ---------- Default: Screen 1 (Details + Sections & Questions + Proctoring & Rules) — the
+    // assessment-builder wizard renders its own header to match the separate Assessment Portal
+    // design set, so it keeps DashboardShell as-is. ----------
     return (
       <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
         {assessment.published && (
@@ -265,19 +281,28 @@ export default async function CompanyAssessmentsPage({
     });
 
     return (
-      <DashboardShell
+      <AppShell
+        nav={nav}
+        active="assessments"
+        user={shellUser}
+        hasUnread={hasUnread}
+        crumb={`Assessments › ${TYPE_LABELS[category]}`}
         title={`${TYPE_LABELS[category]}s`}
         subtitle={`${inType.length} assessment${inType.length !== 1 ? "s" : ""} in this module`}
-        navLinks={navLinks}
       >
         <BackLink href={`/lms/company/assessments?category=${category}`} label={`Back to ${TYPE_LABELS[category]}`} />
-        <div className="grid gap-3 sm:grid-cols-2">
-          {inType.map((a) => (
-            <AssessmentCard key={a.id} assessment={a} />
-          ))}
-          {inType.length === 0 && <p className="text-sm text-muted-foreground sm:col-span-2">No {TYPE_LABELS[category].toLowerCase()}s yet.</p>}
-        </div>
-      </DashboardShell>
+        <section className="card">
+          {inType.length === 0 ? (
+            <p className="empty">No {TYPE_LABELS[category].toLowerCase()}s yet.</p>
+          ) : (
+            <ul className="list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+              {inType.map((a) => (
+                <AssessmentBox key={a.id} assessment={a} sentHref={a.assignments.length > 0 ? "/lms/company/assessments/submissions" : `/lms/company/assessments?assessmentId=${a.id}&mode=send`} />
+              ))}
+            </ul>
+          )}
+        </section>
+      </AppShell>
     );
   }
 
@@ -290,49 +315,162 @@ export default async function CompanyAssessmentsPage({
     });
 
     return (
-      <DashboardShell title={TYPE_LABELS[category]} subtitle={TYPE_DESCRIPTIONS[category]} navLinks={navLinks}>
-        <BackLink href="/lms/company/assessments" label="Back to Categories" />
+      <AppShell
+        nav={nav}
+        active="assessments"
+        user={shellUser}
+        hasUnread={hasUnread}
+        crumb={`Assessments › ${TYPE_LABELS[category]}`}
+        title={`${TYPE_LABELS[category]}s`}
+        subtitle={`${inType.length} assessment${inType.length !== 1 ? "s" : ""} created in this category.`}
+        actions={
+          <Link className="btn btn-ghost-light" href="/lms/company/assessments">
+            <Icon name="arrowL" size={16} />
+            All categories
+          </Link>
+        }
+      >
+        <div className="row">
+          <section className="card grow">
+            <h2 className="h2" style={{ marginBottom: 18 }}>
+              Create a new {TYPE_LABELS[category].toLowerCase()}
+            </h2>
+            <CreateAssessmentForm type={category} />
+          </section>
 
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white p-4">
-          <p className="text-sm text-indigo">
-            <span className="font-semibold">{inType.length}</span> assessment{inType.length !== 1 ? "s" : ""} created in this module.
-          </p>
-          {inType.length > 0 && (
-            <Link
-              href={`/lms/company/assessments?category=${category}&view=list`}
-              className="rounded-lg bg-indigo px-4 py-2 text-sm font-semibold text-white hover:bg-indigo/90"
-            >
-              View All {inType.length} Assessment{inType.length !== 1 ? "s" : ""}
-            </Link>
-          )}
+          <section className="card side">
+            <div className="split" style={{ marginBottom: 18 }}>
+              <h2 className="h2">In this category ({inType.length})</h2>
+            </div>
+            {inType.length === 0 ? (
+              <p className="empty">No assessments yet — create one to get started.</p>
+            ) : (
+              <>
+                <ul className="list" style={{ maxHeight: 520, overflowY: "auto" }}>
+                  {inType.slice(0, 3).map((a) => (
+                    <AssessmentBox key={a.id} assessment={a} sentHref={a.assignments.length > 0 ? "/lms/company/assessments/submissions" : `/lms/company/assessments?assessmentId=${a.id}&mode=send`} />
+                  ))}
+                </ul>
+                {inType.length > 3 && (
+                  <Link className="btn btn-primary" href={`/lms/company/assessments?category=${category}&view=list`} style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+                    View All {inType.length} Assessment{inType.length !== 1 ? "s" : ""}
+                  </Link>
+                )}
+              </>
+            )}
+          </section>
         </div>
-
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Create a New {TYPE_LABELS[category]}</h2>
-        <CreateAssessmentForm type={category} />
-      </DashboardShell>
+      </AppShell>
     );
   }
 
   // ---------- Landing: pick a category ----------
-  const counts = await prisma.assessment.groupBy({ by: ["type"], _count: { _all: true } });
+  const [counts, recent] = await Promise.all([
+    prisma.assessment.groupBy({ by: ["type"], _count: { _all: true } }),
+    prisma.assessment.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: { _count: { select: { questions: true, assignments: true } } },
+    }),
+  ]);
   const countByType = Object.fromEntries(counts.map((c) => [c.type, c._count._all]));
 
   return (
-    <DashboardShell title="Assessments" subtitle="Choose a category to create or manage assessments" navLinks={navLinks}>
-      <div className="grid gap-4 sm:grid-cols-3">
+    <AppShell
+      nav={nav}
+      active="assessments"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Assessments › Build & Send"
+      title="Assessments"
+      subtitle="Build tests, send them to students, and review submissions."
+      actions={
+        <Link className="btn btn-ghost-light" href="/lms/company/assessments/submissions">
+          <Icon name="clipboard" size={16} />
+          Submissions
+        </Link>
+      }
+    >
+      <div className="grid" style={{ ["--min" as string]: "280px" }}>
         {TYPES.map((type) => (
-          <Link
-            key={type}
-            href={`/lms/company/assessments?category=${type}`}
-            className="rounded-xl border border-border bg-white p-6 text-center transition-colors hover:border-indigo/40 hover:shadow-md"
-          >
-            <p className="text-lg font-semibold text-indigo">{TYPE_LABELS[type]}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{TYPE_DESCRIPTIONS[type]}</p>
-            <p className="mt-4 text-3xl font-bold text-indigo">{countByType[type] ?? 0}</p>
-            <p className="text-xs text-muted-foreground">created</p>
+          <Link key={type} className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href={`/lms/company/assessments?category=${type}`}>
+            <div className="split">
+              <span className="icon-box navy">
+                <Icon name={TYPE_ICON[type]} size={22} />
+              </span>
+              <span className="pill gold">{countByType[type] ?? 0} created</span>
+            </div>
+            <h3 className="h2" style={{ marginTop: 14 }}>
+              {TYPE_LABELS[type].replace(" Assessment", "")}
+            </h3>
+            <p className="muted" style={{ marginTop: 6 }}>
+              {TYPE_DESCRIPTIONS[type]}
+            </p>
+            <div style={{ marginTop: 16, fontWeight: 600, color: "var(--navy)" }}>Open →</div>
           </Link>
         ))}
       </div>
-    </DashboardShell>
+
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>
+          Recent assessments
+        </h2>
+        {recent.length === 0 ? (
+          <p className="empty">No assessments created yet.</p>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Assessment</th>
+                  <th>Category</th>
+                  <th>Questions</th>
+                  <th>Window</th>
+                  <th>Sent</th>
+                  <th className="actions">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((a) => (
+                  <tr key={a.id}>
+                    <td className="strong">{a.title}</td>
+                    <td>
+                      <span className="pill">{TYPE_LABELS[a.type].replace(" Assessment", "")}</span>
+                    </td>
+                    <td>{a._count.questions}</td>
+                    <td>{a.availableFrom && a.availableUntil ? `${format(a.availableFrom, "MMM d, h:mm a")} – ${format(a.availableUntil, "MMM d, h:mm a")}` : "—"}</td>
+                    <td>{a._count.assignments}</td>
+                    <td className="actions">
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                        <Link className="btn btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}`}>
+                          Edit questions
+                        </Link>
+                        {a._count.questions > 0 &&
+                          (a._count.assignments > 0 ? (
+                            <Link className="btn btn-sm" href="/lms/company/assessments/submissions">
+                              Results
+                            </Link>
+                          ) : (
+                            <Link className="btn btn-primary btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}&mode=send`}>
+                              Send
+                            </Link>
+                          ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <div className="alert gold">
+        <Icon name="code" size={18} className="shrink-0" />
+        <span>
+          Question builders (Aptitude, Technical, Coding with test cases) and the student exam screens are in the separate <strong>Assessment Portal</strong> design set.
+        </span>
+      </div>
+    </AppShell>
   );
 }

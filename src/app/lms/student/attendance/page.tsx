@@ -46,8 +46,12 @@ export default async function StudentAttendancePage() {
               <div className="bar-chart" style={{ height: 120 }} role="img" aria-label="Attendance across courses">
                 {rows.map((r, i) => (
                   <div key={r.enrollment.id} className="b">
-                    <span className={i === 0 ? "gold" : ""} style={{ height: `${Math.max(r.pct, 2)}%` }} />
-                    {r.enrollment.course.name} <strong style={{ color: "var(--text)" }}>{r.pct}%</strong>
+                    <div className="track">
+                      <span className={i === 0 ? "gold" : ""} style={{ height: `${Math.max(r.pct, 2)}%` }} />
+                    </div>
+                    <div className="label">
+                      {r.enrollment.course.name} <strong style={{ color: "var(--text)" }}>{r.pct}%</strong>
+                    </div>
                   </div>
                 ))}
               </div>

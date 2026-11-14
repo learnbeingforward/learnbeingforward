@@ -187,7 +187,7 @@ export default async function CompanyDashboardPage({
                 </form>
               )}
               <ul className="list">
-                {groups.map((g) => (
+                {groups.slice(0, 3).map((g) => (
                   <li key={g.collegeId ?? "none"} className="list-row">
                     <Link className="grow strong" href={g.collegeId ? `/lms/company?collegeId=${g.collegeId}` : "/lms/company"}>
                       {g.collegeName}
@@ -201,6 +201,12 @@ export default async function CompanyDashboardPage({
                   </li>
                 ))}
               </ul>
+              {groups.length > 3 && (
+                <Link className="list-row" href="/lms/company/requests" style={{ marginTop: 8, justifyContent: "center", fontWeight: 600 }}>
+                  View all {groups.length} colleges
+                  <Icon name="chevR" size={16} />
+                </Link>
+              )}
             </>
           )}
         </section>
@@ -210,7 +216,7 @@ export default async function CompanyDashboardPage({
             <h2 className="h2">Recent decisions</h2>
           </div>
           <ul className="list">
-            {recentDecided.map((req) => (
+            {recentDecided.slice(0, 3).map((req) => (
               <li key={req.id} className="list-row">
                 <div className="grow">
                   <div className="stat-inline">
@@ -227,6 +233,12 @@ export default async function CompanyDashboardPage({
             ))}
             {recentDecided.length === 0 && <p className="muted">Nothing decided yet.</p>}
           </ul>
+          {recentDecided.length > 3 && (
+            <Link className="list-row" href="/lms/company/requests" style={{ marginTop: 8, justifyContent: "center", fontWeight: 600 }}>
+              View all decisions
+              <Icon name="chevR" size={16} />
+            </Link>
+          )}
         </section>
       </div>
 
