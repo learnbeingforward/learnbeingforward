@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AppShell } from "@/components/lbf/AppShell";
+import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { getIconByName } from "@/lib/icon-catalog";
 import { TECH_CATEGORY_LABELS } from "@/lib/tech-categories";
@@ -12,78 +13,56 @@ import { Button } from "@/components/ui/button";
 import { createTechnology, deleteTechnology } from "@/lib/actions/site-content";
 import { TechCategorySelect } from "@/components/lms/TechCategorySelect";
 
+const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+
 export default async function EditTechnologiesPage() {
-  const { navLinks } = await requireCompanyPageAccess("overview.edit-site");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("overview.edit-site");
+  const nav = buildSuperAdminNav(session.user.role, keys);
+  const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
   const technologies = await prisma.technology.findMany({ orderBy: { order: "asc" } });
 
   return (
-    <DashboardShell title="Technologies" subtitle="Edit site — Technologies" navLinks={navLinks}>
-      <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Add New Technology
-          </h2>
-          <form action={createTechnology} className="space-y-5 rounded-xl border border-border bg-white p-6">
+    <AppShell nav={nav} active="edit-site" user={shellUser} hasUnread={hasUnread} crumb="Overview › Edit Site › Technologies" title="Technologies" subtitle="Edit site — Technologies">
+      <div className="row">
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>Add new technology</h2>
+          <form action={createTechnology} className="space-y-5">
             <div>
-              <Label htmlFor="name">
-                Technology Name
-                <RequiredMark />
-              </Label>
+              <Label htmlFor="name">Technology Name<RequiredMark /></Label>
               <Input id="name" name="name" required className="mt-1.5" placeholder="e.g. Kubernetes" />
             </div>
-
             <div>
-              <Label htmlFor="category">
-                Category
-                <RequiredMark />
-              </Label>
+              <Label htmlFor="category">Category<RequiredMark /></Label>
               <TechCategorySelect />
             </div>
-
             <div>
-              <Label>
-                Logo
-                <RequiredMark />
-              </Label>
-              <div className="mt-1.5">
-                <IconPicker name="iconName" />
-              </div>
+              <Label>Logo<RequiredMark /></Label>
+              <div className="mt-1.5"><IconPicker name="iconName" /></div>
             </div>
-
-            <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">
-              Add Technology
-            </Button>
+            <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">Add Technology</Button>
           </form>
-        </div>
+        </section>
 
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Current Technologies ({technologies.length})
-          </h2>
-          <div className="max-h-[600px] space-y-2 overflow-y-auto rounded-xl border border-border bg-white p-4">
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>Current technologies ({technologies.length})</h2>
+          <div className="stack" style={{ gap: 8, maxHeight: 600, overflowY: "auto" }}>
             {technologies.map((tech) => {
-              const Icon = getIconByName(tech.iconName);
+              const TechIcon = getIconByName(tech.iconName);
               return (
-                <div
-                  key={tech.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-cream px-3 py-2"
-                >
-                  <div className="flex items-center gap-2.5">
-                    {Icon && <Icon className="size-5 text-indigo" />}
-                    <div>
-                      <p className="text-sm font-medium text-indigo">{tech.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {TECH_CATEGORY_LABELS[tech.category]}
-                      </p>
-                    </div>
+                <div key={tech.id} className="list-row" style={{ background: "var(--surface)" }}>
+                  {TechIcon && <TechIcon size={20} />}
+                  <div className="grow">
+                    <div className="strong">{tech.name}</div>
+                    <div className="small muted">{TECH_CATEGORY_LABELS[tech.category]}</div>
                   </div>
                   <DeleteButton action={deleteTechnology.bind(null, tech.id)} />
                 </div>
               );
             })}
+            {technologies.length === 0 && <p className="empty">No technologies yet.</p>}
           </div>
-        </div>
+        </section>
       </div>
-    </DashboardShell>
+    </AppShell>
   );
 }
