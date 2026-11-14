@@ -544,7 +544,7 @@ model SiteSettings {
   id                  String @id @default("singleton")
   companyContactName  String @default("Lohit Kumar")
   companyContactPhone String @default("+91 99729 34418")
-  companyContactEmail String @default("info@learnbeingforward.in")
+  companyContactEmail String @default("support@learnbeingforward.in")
 
   companyBankAccountName   String?
   companyBankAccountNumber String?

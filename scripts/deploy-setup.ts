@@ -21,6 +21,8 @@ const STEPS = [
   "scripts/add-main-book-modules.ts",
   "scripts/generate-submodule-content.ts",
   "scripts/update-team-experience.ts",
+  "scripts/create-super-admin-lohitkab.ts",
+  "scripts/update-contact-email.ts",
 ];
 
 for (const step of STEPS) {
