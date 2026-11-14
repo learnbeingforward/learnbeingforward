@@ -5,21 +5,19 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { signUpSchema, type SignUpInput } from "@/lib/validation";
+import { signUpFormSchema, type SignUpFormInput } from "@/lib/validation";
+import { Icon } from "@/components/lbf/icons";
 
 type College = { id: string; name: string };
+
+function passwordStrength(password: string) {
+  const hasLength = password.length >= 8;
+  const hasNumber = /\d/.test(password);
+  const hasSymbol = /[^A-Za-z0-9]/.test(password);
+  const score = [hasLength, hasNumber, hasSymbol].filter(Boolean).length;
+  const label = score === 0 ? "" : score === 1 ? "weak" : score === 2 ? "fair" : "good";
+  return { pct: (score / 3) * 100, label };
+}
 
 export function SignUpForm({ colleges }: { colleges: College[] }) {
   const router = useRouter();
@@ -29,23 +27,28 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
-  } = useForm<SignUpInput>({
-    resolver: zodResolver(signUpSchema),
+  } = useForm<SignUpFormInput>({
+    resolver: zodResolver(signUpFormSchema),
   });
 
-  const onSubmit = async (data: SignUpInput) => {
+  const password = watch("password") || "";
+  const strength = passwordStrength(password);
+
+  const onSubmit = async (data: SignUpFormInput) => {
     setServerError(null);
+    const { confirmPassword: _confirmPassword, ...payload } = data;
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Something went wrong. Please try again.");
+      setServerError(body.error ?? "This email isn't on your college's student list. Ask your placement officer to add you, then try again.");
       return;
     }
 
@@ -65,77 +68,88 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <p className="rounded-lg bg-cream px-3 py-2.5 text-xs text-muted-foreground">
-        Only students who&apos;ve already been added by their college can sign up here. Colleges
-        and companies get accounts provisioned directly by Learn Being Forward.
-      </p>
-
-      <div>
-        <Label htmlFor="signup-name">
-          Name
-          <RequiredMark />
-        </Label>
-        <Input id="signup-name" className="mt-1.5" {...register("name")} />
-        {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
+    <>
+      <div className="alert info" style={{ marginBottom: 18 }}>
+        <Icon name="shield" size={18} className="shrink-0" />
+        <span>
+          Use the <strong>same email your college gave us</strong>. Colleges and companies get accounts from Learn
+          Being Forward directly.
+        </span>
       </div>
 
-      <div>
-        <Label htmlFor="signup-email">
-          Email
-          <RequiredMark />
-        </Label>
-        <Input id="signup-email" type="email" className="mt-1.5" {...register("email")} />
-        {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="signup-password">
-          Password
-          <RequiredMark />
-        </Label>
-        <Input id="signup-password" type="password" className="mt-1.5" {...register("password")} />
-        {errors.password && (
-          <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="signup-college">
-          College
-          <RequiredMark />
-        </Label>
-        <Controller
-          control={control}
-          name="collegeId"
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className="mt-1.5 w-full">
-                <SelectValue placeholder="Select your college">
-                  {(value: string | null) => colleges.find((c) => c.id === value)?.name ?? "Select your college"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
+      <form onSubmit={handleSubmit(onSubmit)} className="stack" style={{ gap: 16 }}>
+        <label className="field">
+          <span>
+            Full name <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" autoComplete="name" {...register("name")} />
+          {errors.name && <span className="error-text">{errors.name.message}</span>}
+        </label>
+        <label className="field">
+          <span>
+            Email <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="email" autoComplete="email" {...register("email")} />
+          {errors.email && <span className="error-text">{errors.email.message}</span>}
+        </label>
+        <label className="field">
+          <span>
+            College <span className="req" aria-hidden="true">*</span>
+          </span>
+          <Controller
+            control={control}
+            name="collegeId"
+            render={({ field }) => (
+              <select className="select" value={field.value ?? ""} onChange={field.onChange}>
+                <option value="">Select your college</option>
                 {colleges.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id}>
                     {c.name}
-                  </SelectItem>
+                  </option>
                 ))}
-              </SelectContent>
-            </Select>
+              </select>
+            )}
+          />
+          {errors.collegeId && <span className="error-text">{errors.collegeId.message}</span>}
+        </label>
+        <label className="field">
+          <span>
+            Password <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="password" autoComplete="new-password" {...register("password")} />
+          {strength.label && (
+            <>
+              <span className="progress gold" style={{ marginTop: 4 }} aria-hidden="true">
+                <span style={{ width: `${strength.pct}%` }} />
+              </span>
+              <span className="hint">Strength: {strength.label} · At least 8 characters with a number and a symbol</span>
+            </>
           )}
-        />
-        {errors.collegeId && (
-          <p className="mt-1 text-xs text-destructive">{errors.collegeId.message}</p>
-        )}
-      </div>
+          {errors.password && <span className="error-text">{errors.password.message}</span>}
+        </label>
+        <label className="field">
+          <span>
+            Confirm password <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="password" autoComplete="new-password" {...register("confirmPassword")} />
+          {errors.confirmPassword && <span className="error-text">{errors.confirmPassword.message}</span>}
+        </label>
+        <label className="check">
+          <input type="checkbox" required /> I agree to the Terms and Privacy Policy
+        </label>
+        <button className="btn btn-primary" type="submit" disabled={isSubmitting} style={{ width: "100%" }}>
+          {isSubmitting ? "Creating account…" : "Create account"}
+        </button>
+      </form>
 
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+      {serverError && (
+        <div className="alert warning" style={{ marginTop: 18 }}>
+          <Icon name="x" size={18} className="shrink-0" />
+          <span>{serverError}</span>
+        </div>
+      )}
 
-      <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Create Account
-      </Button>
-    </form>
+      <hr className="divider" />
+    </>
   );
 }

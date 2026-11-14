@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { PageHero } from "@/components/shared/PageHero";
-import { CourseCard } from "@/components/shared/CourseCard";
 import { prisma } from "@/lib/prisma";
+import { PublicShell } from "@/components/lbf/PublicShell";
+import { CoursesExplorer, type ExplorerCourse } from "@/components/lbf/CoursesExplorer";
 
 export const metadata: Metadata = {
   title: "Courses",
@@ -11,45 +11,33 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 export default async function CoursesPage() {
-  const [courses, technologies] = await Promise.all([
-    prisma.course.findMany({ orderBy: { order: "asc" } }),
-    prisma.technology.findMany(),
-  ]);
-  const techLookup = new Map(technologies.map((t) => [t.slug, { name: t.name, iconName: t.iconName }]));
+  const courses = await prisma.course.findMany({ orderBy: { order: "asc" } });
+
+  const explorerCourses: ExplorerCourse[] = courses.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    blurb: c.shortDescription || c.description.slice(0, 140),
+    domain: c.domain,
+    flagship: c.slug === "placement-training-program",
+  }));
 
   return (
-    <>
-      <PageHero
-        eyebrow="Courses"
-        title="Training built for placement outcomes"
-        description="From our flagship multi-track placement program to focused frontend, backend, data, and robotics courses — everything is built around what students actually need to get hired."
-      />
-
-      <section className="pb-24">
-        <div className="container-page space-y-14">
-          {DOMAIN_ORDER.map((domain) => {
-            const domainCourses = courses.filter((c) => c.domain === domain);
-            if (domainCourses.length === 0) return null;
-            return (
-              <div key={domain}>
-                <h2 className="mb-6 text-xl font-bold text-indigo">{DOMAIN_LABELS[domain]}</h2>
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {domainCourses.map((course, i) => (
-                    <CourseCard key={course.slug} course={course} techLookup={techLookup} delay={i * 0.06} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <PublicShell
+      header={{
+        active: "courses",
+        eyebrow: "Courses",
+        title: (
+          <>
+            Training built for <em>placement outcomes</em>
+          </>
+        ),
+        description:
+          "From our flagship Java & DSA program to focused frontend, backend, data and robotics courses — everything is built around what students need to get hired.",
+      }}
+    >
+      <section className="card lift">
+        <CoursesExplorer courses={explorerCourses} />
       </section>
-    </>
+    </PublicShell>
   );
 }
-
-const DOMAIN_ORDER = ["TECHNICAL", "APTITUDE", "SOFT_SKILL"] as const;
-const DOMAIN_LABELS: Record<(typeof DOMAIN_ORDER)[number], string> = {
-  TECHNICAL: "Technical Courses",
-  APTITUDE: "Aptitude Training",
-  SOFT_SKILL: "Soft Skills",
-};

@@ -9,6 +9,16 @@ export const signUpSchema = z.object({
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
 
+// Form-only (adds confirmPassword, never sent to the API) — used by SignUpForm.
+export const signUpFormSchema = signUpSchema
+  .extend({ confirmPassword: z.string().min(1, "Confirm your password") })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+export type SignUpFormInput = z.infer<typeof signUpFormSchema>;
+
 export const forgotPasswordSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
   email: z.string().trim().email("Enter a valid email address"),
@@ -39,6 +49,8 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const contactFormSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
   email: z.string().trim().email("Enter a valid email address"),
+  role: z.enum(["College / University", "Company", "Student", "Trainer"]).optional(),
+  phone: z.string().trim().optional(),
   message: z.string().trim().min(10, "Message must be at least 10 characters"),
 });
 

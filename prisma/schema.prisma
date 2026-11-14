@@ -472,6 +472,10 @@ model ContactSubmission {
   name        String
   email       String
   message     String   @db.Text
+  // "I am a" — College / University | Company | Student | Trainer. Optional
+  // since older submissions (and the API) predate this field.
+  role        String?
+  phone       String?
   submittedAt DateTime @default(now())
 }
 

@@ -3,13 +3,10 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import { Textarea } from "@/components/ui/textarea";
 import { contactFormSchema, type ContactFormInput } from "@/lib/validation";
+import { Icon } from "@/components/lbf/icons";
+
+const ROLES = ["College / University", "Company", "Student", "Trainer"] as const;
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -44,54 +41,66 @@ export function ContactForm() {
 
   if (submitted) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-white p-10 text-center">
-        <CheckCircle2 className="size-10 text-gold" />
-        <h3 className="text-lg font-semibold text-indigo">Message sent</h3>
-        <p className="text-sm text-muted-foreground">
-          Thanks for reaching out — our team will get back to you shortly.
-        </p>
-        <Button variant="outline" className="mt-2" onClick={() => setSubmitted(false)}>
+      <div className="empty stack" style={{ alignItems: "center", gap: 10 }}>
+        <h3 className="h3">Message sent</h3>
+        <p className="muted">Thanks for reaching out — our team will get back to you shortly.</p>
+        <button type="button" className="btn btn-sm" onClick={() => setSubmitted(false)}>
           Send another message
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-xl border border-border bg-white p-6 sm:p-8">
-      <div>
-        <Label htmlFor="name">
-          Name
-          <RequiredMark />
-        </Label>
-        <Input id="name" className="mt-1.5" {...register("name")} />
-        {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
+    <form onSubmit={handleSubmit(onSubmit)} className="stack" style={{ gap: 16, marginTop: 22 }}>
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          <span>
+            Name <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" {...register("name")} />
+          {errors.name && <span className="error-text">{errors.name.message}</span>}
+        </label>
+        <label className="field">
+          <span>
+            Email <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="email" {...register("email")} />
+          {errors.email && <span className="error-text">{errors.email.message}</span>}
+        </label>
       </div>
-
-      <div>
-        <Label htmlFor="email">
-          Email
-          <RequiredMark />
-        </Label>
-        <Input id="email" type="email" className="mt-1.5" {...register("email")} />
-        {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          I am a
+          <select className="select" {...register("role")}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Phone (optional)
+          <input className="input" type="tel" {...register("phone")} />
+        </label>
       </div>
+      <label className="field">
+        <span>
+          Message <span className="req" aria-hidden="true">*</span>
+        </span>
+        <textarea className="textarea" rows={5} {...register("message")} />
+        {errors.message && <span className="error-text">{errors.message.message}</span>}
+      </label>
 
-      <div>
-        <Label htmlFor="message">
-          Message
-          <RequiredMark />
-        </Label>
-        <Textarea id="message" rows={5} className="mt-1.5" {...register("message")} />
-        {errors.message && <p className="mt-1 text-xs text-destructive">{errors.message.message}</p>}
+      {serverError && <p className="error-text">{serverError}</p>}
+
+      <div className="split">
+        <span className="hint">We usually reply within one working day.</span>
+        <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Sending…" : "Send message"} <Icon name="arrowR" size={16} />
+        </button>
       </div>
-
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-
-      <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Send Message
-      </Button>
     </form>
   );
 }

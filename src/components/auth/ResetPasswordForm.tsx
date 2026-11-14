@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
 import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validation";
+import { Icon } from "@/components/lbf/icons";
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
@@ -19,11 +16,21 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { token },
   });
+
+  const password = watch("password") || "";
+  const confirmPassword = watch("confirmPassword") || "";
+  const rules = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "One number", met: /\d/.test(password) },
+    { label: "One symbol (!@#$…)", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+  const mismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   const onSubmit = async (data: ResetPasswordInput) => {
     setServerError(null);
@@ -35,7 +42,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Something went wrong. Please try again.");
+      setServerError(body.error ?? "This reset link has expired or was already used.");
       return;
     }
 
@@ -45,53 +52,77 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   if (!token) {
     return (
-      <div className="text-center">
-        <p className="text-sm text-destructive">
-          This link is missing its reset token. Request a new one from the login page.
-        </p>
-      </div>
+      <section className="card" style={{ flex: "0 1 480px", textAlign: "center" }}>
+        <p className="small muted">This reset link has expired or was already used.</p>
+        <Link href="/auth/forgot-password" className="btn btn-sm" style={{ marginTop: 10 }}>
+          Request a new link
+        </Link>
+      </section>
     );
   }
 
   if (done) {
     return (
-      <div className="flex flex-col items-center gap-3 py-4 text-center">
-        <CheckCircle2 className="size-10 text-gold" />
-        <h3 className="font-semibold text-indigo">Password updated</h3>
-        <p className="text-sm text-muted-foreground">You can now log in with your new password. Redirecting you now...</p>
-      </div>
+      <section className="card" style={{ flex: "0 1 420px", textAlign: "center" }}>
+        <span
+          className="icon-box"
+          style={{ width: 64, height: 64, borderRadius: "50%", margin: "18px auto 0", background: "var(--success-soft)", color: "var(--success)" }}
+        >
+          <Icon name="check" size={30} />
+        </span>
+        <h2 className="h2" style={{ marginTop: 14 }}>
+          Password updated
+        </h2>
+        <p className="muted" style={{ marginTop: 6 }}>
+          You can now log in with your new password. Redirecting you now…
+        </p>
+        <Link className="btn btn-primary" href="/auth" style={{ marginTop: 18 }}>
+          Go to login
+        </Link>
+      </section>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <input type="hidden" {...register("token")} />
-      <p className="text-sm text-muted-foreground">Choose a new password for your account.</p>
-
-      <div>
-        <Label htmlFor="reset-password">
-          New Password
-          <RequiredMark />
-        </Label>
-        <Input id="reset-password" type="password" className="mt-1.5" {...register("password")} />
-        {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="reset-confirm-password">
-          Confirm New Password
-          <RequiredMark />
-        </Label>
-        <Input id="reset-confirm-password" type="password" className="mt-1.5" {...register("confirmPassword")} />
-        {errors.confirmPassword && <p className="mt-1 text-xs text-destructive">{errors.confirmPassword.message}</p>}
-      </div>
-
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-
-      <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Set New Password
-      </Button>
-    </form>
+    <section className="card" style={{ flex: "0 1 480px" }}>
+      <form onSubmit={handleSubmit(onSubmit)} className="stack" style={{ gap: 16 }}>
+        <input type="hidden" {...register("token")} />
+        <label className="field">
+          <span>
+            New password <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="password" autoComplete="new-password" {...register("password")} />
+        </label>
+        <ul className="list small" aria-label="Password rules">
+          {rules.map((r) => (
+            <li key={r.label} style={{ display: "flex", gap: 8, color: r.met ? "var(--success-text)" : "var(--muted)" }}>
+              <Icon name={r.met ? "check" : "x"} size={16} />
+              {r.label}
+            </li>
+          ))}
+        </ul>
+        {errors.password && <span className="error-text">{errors.password.message}</span>}
+        <label className="field">
+          <span>
+            Confirm new password <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input
+            className={`input${mismatch ? " error" : ""}`}
+            type="password"
+            autoComplete="new-password"
+            {...register("confirmPassword")}
+          />
+          {mismatch && <span className="error-text">Passwords don&apos;t match.</span>}
+          {errors.confirmPassword && !mismatch && <span className="error-text">{errors.confirmPassword.message}</span>}
+        </label>
+        <label className="check">
+          <input type="checkbox" defaultChecked /> Log me out of all other devices
+        </label>
+        {serverError && <span className="error-text">{serverError}</span>}
+        <button className="btn btn-primary" type="submit" disabled={isSubmitting} style={{ width: "100%" }}>
+          {isSubmitting ? "Updating…" : "Update password"}
+        </button>
+      </form>
+    </section>
   );
 }

@@ -1,16 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
 import { loginSchema, type LoginInput } from "@/lib/validation";
+import { Icon } from "@/components/lbf/icons";
 
 type SessionResponse = {
   user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" | "ADMIN2" | "EMPLOYEE" };
@@ -30,7 +27,7 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
@@ -44,7 +41,7 @@ export function LoginForm() {
     });
 
     if (!result || result.error) {
-      setServerError("Invalid email or password.");
+      setServerError("Incorrect email or password.");
       return;
     }
 
@@ -55,33 +52,49 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div>
-        <Label htmlFor="login-email">
-          Email
-          <RequiredMark />
-        </Label>
-        <Input id="login-email" type="email" className="mt-1.5" {...register("email")} />
-        {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
-      </div>
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="stack" style={{ gap: 16 }}>
+        <label className="field">
+          <span>
+            Email <span className="req" aria-hidden="true">*</span>
+          </span>
+          <span className="input-group">
+            <Icon name="mail" size={16} />
+            <input className="input" type="email" autoComplete="email" placeholder="you@college.edu" {...register("email")} />
+          </span>
+        </label>
+        <label className="field">
+          <span className="split">
+            Password <span className="req" aria-hidden="true">*</span>
+            <Link href="/auth/forgot-password" className="small" style={{ marginLeft: "auto" }}>
+              Forgot password?
+            </Link>
+          </span>
+          <span className="input-group">
+            <Icon name="lock" size={16} />
+            <input className="input" type="password" autoComplete="current-password" {...register("password")} />
+          </span>
+        </label>
+        <label className="check">
+          <input type="checkbox" /> Keep me signed in on this device
+        </label>
+        <button className="btn btn-primary" type="submit" disabled={isSubmitting} style={{ width: "100%" }}>
+          {isSubmitting ? "Logging in…" : "Log in"}
+        </button>
+      </form>
 
-      <div>
-        <Label htmlFor="login-password">
-          Password
-          <RequiredMark />
-        </Label>
-        <Input id="login-password" type="password" className="mt-1.5" {...register("password")} />
-        {errors.password && (
-          <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
-        )}
-      </div>
+      {serverError && (
+        <div className="alert danger" role="alert" style={{ marginTop: 18 }}>
+          <Icon name="x" size={18} className="shrink-0" />
+          <span>{serverError}</span>
+        </div>
+      )}
 
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-
-      <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Log In
-      </Button>
-    </form>
+      <hr className="divider" />
+      <p className="small muted" style={{ textAlign: "center" }}>
+        Colleges and companies get accounts from Learn Being Forward. Students can sign up only after their college
+        adds them.
+      </p>
+    </>
   );
 }

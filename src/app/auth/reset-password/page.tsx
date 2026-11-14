@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { PublicHeader } from "@/components/lbf/PublicHeader";
+import { SiteFooter } from "@/components/lbf/SiteFooter";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export const metadata: Metadata = {
@@ -14,9 +16,24 @@ export default async function ResetPasswordPage({
   const { token } = await searchParams;
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-7 shadow-sm sm:p-9">
-      <h1 className="mb-5 text-xl font-bold text-indigo">Reset Your Password</h1>
-      <ResetPasswordForm token={token ?? ""} />
+    <div className="lbf-scope">
+      <PublicHeader
+        active=""
+        bandStyle={{ paddingBottom: 180 }}
+        eyebrow="Account recovery"
+        title={
+          <span style={{ fontSize: 34 }}>
+            Set a <em>new password</em>
+          </span>
+        }
+        description="Used from the email link, and on first login for accounts created by an admin."
+      />
+      <main className="container">
+        <div className="row" style={{ marginTop: -140, justifyContent: "center" }}>
+          <ResetPasswordForm token={token ?? ""} />
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 }

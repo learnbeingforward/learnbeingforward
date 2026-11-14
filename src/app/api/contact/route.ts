@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
-  const { name, email, message } = parsed.data;
+  const { name, email, role, phone, message } = parsed.data;
   await prisma.contactSubmission.create({ data: parsed.data });
 
   // The submission is already saved regardless of whether the email goes out —
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       to: settings.companyContactEmail,
       replyTo: email,
       subject: `New contact form message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
+      text: `Name: ${name}\nEmail: ${email}${role ? `\nI am a: ${role}` : ""}${phone ? `\nPhone: ${phone}` : ""}\n\n${message}`,
     });
   } catch (err) {
     console.error("[contact] Failed to send notification email:", err);

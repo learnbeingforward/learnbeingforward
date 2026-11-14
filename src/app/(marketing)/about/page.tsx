@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { GraduationCap, Handshake, Rocket } from "lucide-react";
-import { PageHero } from "@/components/shared/PageHero";
-import { Reveal } from "@/components/shared/Reveal";
+import { PublicShell } from "@/components/lbf/PublicShell";
+import { Icon } from "@/components/lbf/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -10,84 +9,82 @@ export const metadata: Metadata = {
   description: "Learn Being Forward's mission, pillars, and founder story.",
 };
 
-const pillars = [
-  {
-    icon: GraduationCap,
-    title: "Courses",
-    description: "Hands-on programming, full-stack, aptitude, and soft-skills training built around real placement needs.",
-  },
-  {
-    icon: Handshake,
-    title: "Campus Partnerships",
-    description: "Direct partnerships with schools, colleges, universities, and companies bring training straight to students.",
-  },
-  {
-    icon: Rocket,
-    title: "Placements",
-    description: "Structured placement support that carries students from classroom training into career outcomes.",
-  },
-];
+const PILLARS = [
+  { icon: "book", title: "Courses", description: "Hands-on programming, full-stack, aptitude and soft-skills training built around real placement needs." },
+  { icon: "building", title: "Campus partnerships", description: "Direct partnerships with schools, colleges, universities and companies bring training straight to students." },
+  { icon: "briefcase", title: "Placements", description: "Structured placement support that carries students from classroom training into career outcomes." },
+] as const;
 
 export default function AboutPage() {
   return (
-    <>
-      <PageHero
-        eyebrow="About Us"
-        title="Building job-ready talent, together"
-        description="Learn Being Forward is a skills-training company working directly with schools, colleges & universities, and companies. We build job-ready talent through hands-on programming, full-stack development, aptitude and soft-skills training — backed by direct campus partnerships and placement support from classroom to career."
-      />
+    <PublicShell
+      header={{
+        active: "about",
+        eyebrow: "About us",
+        title: (
+          <>
+            Building job-ready talent, <em>together</em>
+          </>
+        ),
+        description: "A skills-training company working directly with schools, colleges & universities and companies — from classroom to career.",
+      }}
+    >
+      <section className="card lift">
+        <p style={{ fontSize: 16, maxWidth: 900 }}>
+          Learn Being Forward builds job-ready talent through hands-on programming, full-stack development, aptitude
+          and soft-skills training — backed by direct campus partnerships and placement support.
+        </p>
 
-      <section className="py-20">
-        <div className="container-page">
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold text-indigo sm:text-3xl">Our Three Pillars</h2>
-          </Reveal>
-
-          <div className="mt-12 grid gap-6 sm:grid-cols-3">
-            {pillars.map((pillar, i) => (
-              <Reveal key={pillar.title} delay={i * 0.08}>
-                <div className="h-full rounded-xl border border-border bg-white p-7 text-center shadow-sm">
-                  <div className="mx-auto mb-4 inline-flex size-12 items-center justify-center rounded-full bg-indigo/10 text-indigo">
-                    <pillar.icon className="size-6" />
-                  </div>
-                  <h3 className="font-semibold text-indigo">{pillar.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {pillar.description}
-                  </p>
-                </div>
-              </Reveal>
+        <div className="section">
+          <div className="eyebrow">Our three pillars</div>
+          <div className="grid" style={{ ["--min" as string]: "260px", marginTop: 16 }}>
+            {PILLARS.map((p) => (
+              <div key={p.title} className="box stack" style={{ gap: 10 }}>
+                <span className="icon-box navy">
+                  <Icon name={p.icon} size={20} />
+                </span>
+                <h3 className="h3">{p.title}</h3>
+                <p className="muted">{p.description}</p>
+              </div>
             ))}
           </div>
         </div>
-      </section>
 
-      <section className="pb-24">
-        <div className="container-page">
-          <Reveal>
-            <div className="grid gap-10 rounded-2xl border border-border bg-white p-8 sm:grid-cols-[auto_1fr] sm:p-12">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/founder-lohit-kumar.webp"
-                alt="Lohit Kumar, Founder & Lead Trainer"
-                className="mx-auto size-32 shrink-0 rounded-full object-cover sm:size-40"
-              />
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-indigo">
-                  Founder &amp; Lead Trainer
-                </p>
-                <h2 className="mt-1 text-2xl font-bold text-indigo sm:text-3xl">Lohit Kumar</h2>
-                <p className="mt-4 leading-relaxed text-muted-foreground">
-                  Lohit Kumar is a technical trainer who has personally trained students across
-                  75+ colleges in programming, full-stack development, aptitude, and placement
-                  preparation. He has worked closely with students right before their campus
-                  placements, and built the Learn Being Forward curriculum around where students
-                  actually fall short.
-                </p>
-              </div>
+        <div
+          className="section box"
+          style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", background: "var(--surface)", border: 0 }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/founder-lohit-kumar.webp"
+            alt="Lohit Kumar, Founder & Lead Trainer"
+            style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", flex: "none" }}
+          />
+          <div style={{ flex: "1 1 420px" }}>
+            <div className="eyebrow" style={{ color: "var(--gold-text)" }}>
+              Founder &amp; lead trainer
             </div>
-          </Reveal>
+            <h2 className="h2" style={{ marginTop: 4 }}>
+              Lohit Kumar
+            </h2>
+            <p className="muted" style={{ marginTop: 8 }}>
+              A technical trainer who has personally trained students across 75+ colleges in programming, full-stack
+              development, aptitude and placement preparation — and built the Learn Being Forward curriculum around
+              where students actually fall short.
+            </p>
+          </div>
+          <div className="grid" style={{ ["--min" as string]: "120px", flex: "1 1 300px" }}>
+            <div className="tile" style={{ background: "#fff" }}>
+              <div className="label">Colleges</div>
+              <div className="value">75+</div>
+            </div>
+            <div className="tile" style={{ background: "#fff" }}>
+              <div className="label">Experience</div>
+              <div className="value">4+ yrs</div>
+            </div>
+          </div>
         </div>
       </section>
-    </>
+    </PublicShell>
   );
 }

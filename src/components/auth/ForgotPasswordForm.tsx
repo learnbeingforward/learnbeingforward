@@ -1,17 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validation";
+import { Icon } from "@/components/lbf/icons";
 
-export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
-  const [submitted, setSubmitted] = useState(false);
+export function ForgotPasswordForm() {
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -36,61 +33,60 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
       return;
     }
 
-    setSubmitted(true);
+    setSubmittedEmail(data.email);
   };
 
-  if (submitted) {
+  if (submittedEmail) {
+    const masked = submittedEmail.replace(/^(.{1,2}).*(@.*)$/, (_, head, tail) => `${head}***${tail}`);
     return (
-      <div className="flex flex-col items-center gap-3 py-4 text-center">
-        <CheckCircle2 className="size-10 text-gold" />
-        <h3 className="font-semibold text-indigo">Check your email</h3>
-        <p className="text-sm text-muted-foreground">
-          If an account exists for that email, we&apos;ve sent a link to reset the password — it&apos;s valid for
-          1 hour. The main company admin account can&apos;t be reset this way.
+      <section className="card" style={{ flex: "0 1 460px", textAlign: "center" }}>
+        <div className="label">Step 2 · Link sent</div>
+        <span className="icon-box gold" style={{ width: 64, height: 64, borderRadius: "50%", margin: "18px auto 0" }}>
+          <Icon name="mail" size={28} />
+        </span>
+        <h2 className="h2" style={{ marginTop: 14 }}>
+          Check your inbox
+        </h2>
+        <p className="muted" style={{ marginTop: 6 }}>
+          If an account exists for <strong style={{ color: "var(--text)" }}>{masked}</strong>, a reset link is on
+          its way. It expires in 1 hour.
         </p>
-        <button type="button" onClick={onBack} className="mt-2 text-sm text-indigo underline">
+        <Link href="/auth" className="btn" style={{ marginTop: 18 }}>
           Back to login
-        </button>
-      </div>
+        </Link>
+      </section>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div>
-        <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-indigo">
-          &larr; Back to login
+    <section className="card" style={{ flex: "0 1 460px" }}>
+      <div className="label">Step 1 · Request link</div>
+      <form onSubmit={handleSubmit(onSubmit)} className="stack" style={{ gap: 16, marginTop: 14 }}>
+        <label className="field">
+          <span>
+            Name <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" {...register("name")} />
+          {errors.name && <span className="error-text">{errors.name.message}</span>}
+        </label>
+        <label className="field">
+          <span>
+            Email <span className="req" aria-hidden="true">*</span>
+          </span>
+          <span className="input-group">
+            <Icon name="mail" size={16} />
+            <input className="input" type="email" {...register("email")} />
+          </span>
+          {errors.email && <span className="error-text">{errors.email.message}</span>}
+        </label>
+        {serverError && <span className="error-text">{serverError}</span>}
+        <button className="btn btn-primary" type="submit" disabled={isSubmitting} style={{ width: "100%" }}>
+          {isSubmitting ? "Sending…" : "Send reset link"}
         </button>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Enter your name and the email on your account — works for students, trainers, and college logins. We&apos;ll
-        email you a link to set a new password yourself.
-      </p>
-
-      <div>
-        <Label htmlFor="forgot-name">
-          Name
-          <RequiredMark />
-        </Label>
-        <Input id="forgot-name" className="mt-1.5" {...register("name")} />
-        {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="forgot-email">
-          Email
-          <RequiredMark />
-        </Label>
-        <Input id="forgot-email" type="email" className="mt-1.5" {...register("email")} />
-        {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
-      </div>
-
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-
-      <Button type="submit" disabled={isSubmitting} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        Send Reset Link
-      </Button>
-    </form>
+        <Link href="/auth" className="small" style={{ textAlign: "center" }}>
+          ← Back to login
+        </Link>
+      </form>
+    </section>
   );
 }

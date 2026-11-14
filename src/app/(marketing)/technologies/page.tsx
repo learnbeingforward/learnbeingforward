@@ -1,62 +1,67 @@
 import type { Metadata } from "next";
-import { PageHero } from "@/components/shared/PageHero";
-import { Reveal } from "@/components/shared/Reveal";
 import { prisma } from "@/lib/prisma";
-import { getIconByName } from "@/lib/icon-catalog";
-import { TECH_CATEGORY_LABELS, TECH_CATEGORY_ORDER } from "@/lib/tech-categories";
+import { PublicShell } from "@/components/lbf/PublicShell";
 
-export const metadata: Metadata = {
-  title: "Technologies",
-  description: "Every technology, language, and skill area taught across Learn Being Forward's courses.",
-};
-
+export const metadata: Metadata = { title: "Technologies" };
 export const revalidate = 0;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  LANGUAGES: "Languages",
+  FRONTEND: "Frontend",
+  BACKEND: "Backend",
+  DATABASES: "Databases",
+  TOOLS_DEVOPS: "Tools & DevOps",
+  DATA_AI: "Data & AI",
+  APTITUDE: "Aptitude",
+  SOFT_SKILLS: "Soft skills",
+  ROBOTICS: "Robotics",
+};
+const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS);
+const GOLD_PILLS = new Set(["APTITUDE", "SOFT_SKILLS"]);
 
 export default async function TechnologiesPage() {
   const technologies = await prisma.technology.findMany({ orderBy: { order: "asc" } });
+  const byCategory = new Map<string, typeof technologies>();
+  for (const t of technologies) {
+    if (!byCategory.has(t.category)) byCategory.set(t.category, []);
+    byCategory.get(t.category)!.push(t);
+  }
 
   return (
-    <>
-      <PageHero
-        eyebrow="Technologies"
-        title="Everything we teach, in one place"
-        description="A full grid of the languages, frameworks, tools, and skill areas covered across our courses."
-      />
-
-      <section className="pb-24">
-        <div className="container-page space-y-14">
-          {TECH_CATEGORY_ORDER.map((category) => {
-            const items = technologies.filter((t) => t.category === category);
-            if (items.length === 0) return null;
-
+    <PublicShell
+      header={{
+        active: "technologies",
+        eyebrow: "Technologies",
+        title: (
+          <>
+            Everything we teach, <em>in one place</em>
+          </>
+        ),
+        description: "The languages, frameworks, tools and skill areas covered across our courses.",
+      }}
+    >
+      <section className="card lift">
+        <div className="grid" style={{ ["--min" as string]: "280px" }}>
+          {CATEGORY_ORDER.filter((cat) => byCategory.has(cat)).map((cat) => {
+            const items = byCategory.get(cat)!;
             return (
-              <div key={category}>
-                <Reveal>
-                  <h2 className="mb-5 text-xl font-semibold text-indigo">
-                    {TECH_CATEGORY_LABELS[category]}
-                  </h2>
-                </Reveal>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                  {items.map((tech, i) => {
-                    const Icon = getIconByName(tech.iconName);
-                    if (!Icon) return null;
-                    return (
-                      <Reveal key={tech.slug} delay={i * 0.03}>
-                        <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-white px-3 py-5 text-center shadow-sm">
-                          <Icon className="size-9 text-indigo" aria-hidden />
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {tech.name}
-                          </span>
-                        </div>
-                      </Reveal>
-                    );
-                  })}
+              <div key={cat} className="box">
+                <div className="split">
+                  <h2 className="h3">{CATEGORY_LABELS[cat]}</h2>
+                  <span className={`pill${GOLD_PILLS.has(cat) ? " gold" : ""}`}>{items.length}</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                  {items.map((t) => (
+                    <span key={t.id} className="chip">
+                      {t.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             );
           })}
         </div>
       </section>
-    </>
+    </PublicShell>
   );
 }

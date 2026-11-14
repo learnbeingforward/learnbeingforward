@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Mail, Phone, User } from "lucide-react";
-import { PageHero } from "@/components/shared/PageHero";
-import { ContactProfileCard } from "@/components/shared/ContactProfileCard";
-import { ContactForm } from "@/components/sections/ContactForm";
-import { Reveal } from "@/components/shared/Reveal";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
+import { PublicShell } from "@/components/lbf/PublicShell";
+import { Icon } from "@/components/lbf/icons";
+import { ContactForm } from "@/components/sections/ContactForm";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -21,64 +19,69 @@ export default async function ContactPage() {
   ]);
 
   return (
-    <>
-      <PageHero
-        eyebrow="Contact"
-        title="Let's talk training"
-        description="Whether you're a college, a company, or a student — reach out and our team will get back to you."
-      />
+    <PublicShell
+      header={{
+        active: "contact",
+        eyebrow: "Contact",
+        title: (
+          <>
+            Let&apos;s talk <em>training</em>
+          </>
+        ),
+        description: "Whether you're a college, a company or a student — reach out and our team will get back to you.",
+      }}
+    >
+      <div className="row lift">
+        <section className="card grow">
+          <h2 className="title">Send us a message</h2>
+          <p className="subtitle">Tell us about courses, partnerships or placements.</p>
+          <ContactForm />
+        </section>
 
-      <section className="pb-20">
-        <div className="container-page">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {contactProfiles.map((profile, i) => (
-              <ContactProfileCard key={profile.id} profile={profile} delay={i * 0.05} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="pb-24">
-        <div className="container-page grid gap-10 lg:grid-cols-[1fr_1.1fr]">
-          <Reveal>
-            <h2 className="text-2xl font-bold text-indigo sm:text-3xl">Send us a message</h2>
-            <p className="mt-2 max-w-md text-muted-foreground">
-              Fill out the form and our team will get in touch about courses, partnerships, or
-              placements.
-            </p>
-            <div className="mt-8">
-              <ContactForm />
+        <aside className="side stack">
+          <div className="card" style={{ background: "var(--navy)", color: "#fff" }}>
+            <div className="eyebrow" style={{ color: "var(--gold)" }}>
+              Company contact
             </div>
-          </Reveal>
+            <h3 className="h3" style={{ color: "#fff", marginTop: 8 }}>
+              {settings.companyContactName}
+            </h3>
+            <ul className="list" style={{ marginTop: 14 }}>
+              <li>
+                <a href={`tel:${settings.companyContactPhone.replace(/\s+/g, "")}`} style={{ color: "#fff", display: "flex", gap: 10, alignItems: "center" }}>
+                  <Icon name="phone" size={16} />
+                  {settings.companyContactPhone}
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${settings.companyContactEmail}`} style={{ color: "#fff", display: "flex", gap: 10, alignItems: "center" }}>
+                  <Icon name="mail" size={16} />
+                  {settings.companyContactEmail}
+                </a>
+              </li>
+            </ul>
+          </div>
 
-          <Reveal delay={0.1}>
-            <div className="rounded-2xl bg-indigo p-8 text-white sm:p-10">
-              <h3 className="text-xl font-semibold">Company Contact</h3>
-              <ul className="mt-6 space-y-4 text-sm text-white/80">
-                <li className="flex items-center gap-3">
-                  <User className="size-5 text-gold-light" /> {settings.companyContactName}
-                </li>
-                <li>
-                  <a
-                    href={`tel:${settings.companyContactPhone.replace(/\s+/g, "")}`}
-                    className="flex items-center gap-3 hover:text-white"
-                  >
-                    <Phone className="size-5 text-gold-light" /> {settings.companyContactPhone}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={`mailto:${settings.companyContactEmail}`}
-                    className="flex items-center gap-3 hover:text-white"
-                  >
-                    <Mail className="size-5 text-gold-light" /> {settings.companyContactEmail}
-                  </a>
-                </li>
+          {contactProfiles.length > 0 && (
+            <div className="card">
+              <div className="label">Reach the right team</div>
+              <ul className="list" style={{ marginTop: 12 }}>
+                {contactProfiles.map((p) => (
+                  <li key={p.id} className="list-row">
+                    <div className="grow">
+                      <div className="strong">{p.name}</div>
+                      <div className="small muted">{p.role}</div>
+                    </div>
+                    <a className="btn btn-sm btn-icon" href={`mailto:${p.email}`} aria-label={`Email ${p.name}`}>
+                      <Icon name="mail" size={16} />
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
-          </Reveal>
-        </div>
-      </section>
-    </>
+          )}
+        </aside>
+      </div>
+    </PublicShell>
   );
 }
