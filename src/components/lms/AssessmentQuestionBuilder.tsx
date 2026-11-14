@@ -160,17 +160,23 @@ export function AssessmentQuestionBuilder({
                 logic. Without this, a student has to write the whole program from scratch including input parsing,
                 and will likely fail every test case through no fault of their own — like{" "}
                 <code className="rounded bg-cream px-1 text-indigo">print(a + b)</code> with <code className="rounded bg-cream px-1 text-indigo">a</code>/
-                <code className="rounded bg-cream px-1 text-indigo">b</code> never defined. Example for Python, test
-                case input &quot;4 7&quot;:
+                <code className="rounded bg-cream px-1 text-indigo">b</code> never defined.
               </p>
-              <pre className="mt-1.5 rounded-lg bg-indigo-dark p-2 font-mono text-[11px] text-white">
-{`a, b = map(int, input().split())
+              <div className="mt-1.5 rounded-lg border border-dashed border-gold bg-cream p-3">
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                  Just illustrating the idea — not editable, and not tied to any one language. Write the equivalent
+                  in whichever box below you&apos;re filling in (Python shown here only as pseudocode-style shorthand).
+                </p>
+                <pre className="overflow-x-auto font-mono text-[11px] text-indigo">
+{`read a, b from input
 
 # TODO: write your solution below
 result = 0
 
 print(result)`}
-              </pre>
+                </pre>
+                <p className="mt-1.5 text-[10px] text-muted-foreground">Test case input: &quot;4 7&quot;</p>
+              </div>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 {[
                   { name: "starterPython", label: "Python" },
