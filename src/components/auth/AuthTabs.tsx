@@ -87,7 +87,7 @@ export function AuthTabs({ colleges }: { colleges: College[] }) {
           )}
           {mode === "signup" && <SignUpForm colleges={colleges} />}
           {mode === "forgot" && (
-            <ForgotPasswordForm colleges={colleges} onBack={() => setMode("login")} />
+            <ForgotPasswordForm onBack={() => setMode("login")} />
           )}
         </motion.div>
       </AnimatePresence>

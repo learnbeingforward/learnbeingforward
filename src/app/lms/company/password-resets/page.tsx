@@ -22,11 +22,11 @@ export default async function CompanyPasswordResetsPage() {
   return (
     <DashboardShell title="Password Reset Requests" subtitle="Forgot-password requests" navLinks={navLinks}>
       <p className="mb-6 max-w-2xl text-sm text-muted-foreground">
-        Students, colleges, trainers, and second admins can all send a request here when they forget
-        their password — the main company admin&apos;s own login can never be reset this way. Type a
-        new password and send it; there&apos;s no email provider configured yet, so this simulates
-        delivery (the password is logged server-side for now). Need to reset an account directly
-        without a request? Use Manage Accounts instead.
+        Students, colleges, trainers, and second admins now reset their own password by email from the
+        login page&apos;s &quot;Forgot password?&quot; link — you&apos;ll just get a notification once
+        someone actually uses it, no action needed from you. This page only still shows older requests
+        made before that existed, kept for reference. Need to reset an account directly yourself? Use
+        Manage Accounts instead.
       </p>
 
       <div className="rounded-xl border border-border bg-white">

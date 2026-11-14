@@ -94,6 +94,7 @@ model User {
   enrollmentRequests    EnrollmentRequest[]
   contentAccessRequests ContentAccessRequest[]
   assessmentAssignments AssessmentAssignment[]
+  passwordResetTokens   PasswordResetToken[]
 }
 
 model Trainer {
@@ -520,6 +521,23 @@ model PasswordResetRequest {
   decidedAt   DateTime?
 
   @@index([status])
+}
+
+/** A single-use, time-limited link emailed to someone who said they forgot
+ * their password — they set a new one themselves at /auth/reset-password, no
+ * admin action needed. The admin is still notified once it's actually used
+ * (see /api/auth/reset-password), for visibility, not approval. */
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
 }
 
 model SiteSettings {
