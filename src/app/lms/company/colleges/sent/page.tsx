@@ -54,46 +54,53 @@ export default async function CompanyCollegeSentPage() {
         ) : (
           <ul className="list">
             {contracts.map((c) => (
-              <li key={c.id} className="list-row" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
-                <span className="icon-box"><Icon name="briefcase" size={18} /></span>
-                <div className="grow">
-                  <Link href={`/lms/company/colleges?contractId=${c.id}`}>
-                    <div className="strong">{c.college.name} — {c.course.name}</div>
-                    <div className="small muted">
-                      {CONTRACT_TYPE_LABELS[c.contractType]}
-                      {c.ratePerStudentHour && ` · ₹${c.ratePerStudentHour}/student/hr`}
-                      {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} · Min {c.minStudents} students · {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
-                      {(c.targetBranch || c.targetSemester) && (
-                        <>
-                          {" "}·{" "}
-                          <span className="strong">{[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null].filter(Boolean).join(" · ")} only</span>
-                        </>
-                      )}
-                    </div>
-                  </Link>
-                  {c.invoices.filter((inv) => inv.submitted).length > 0 && (
-                    <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {c.invoices.filter((inv) => inv.submitted).map((inv) => (
-                        <Link key={inv.id} href={`/lms/company/colleges?invoiceId=${inv.id}`}>
-                          <span className={`pill ${statusPillClass(inv.status)}`}>
-                            ₹{inv.totalAmount} ({inv.status === "APPROVED" ? (inv.paidAt ? "paid" : inv.paidRequestedAt ? "awaiting confirmation" : "accepted") : inv.status.toLowerCase()})
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+              <li key={c.id} className="list-row" style={{ alignItems: "flex-start", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14, width: "100%" }}>
+                  <span className="icon-box"><Icon name="briefcase" size={18} /></span>
+                  <div className="grow">
+                    <Link href={`/lms/company/colleges?contractId=${c.id}`}>
+                      <div className="strong">{c.college.name} — {c.course.name}</div>
+                      <div className="small muted">
+                        {CONTRACT_TYPE_LABELS[c.contractType]}
+                        {c.ratePerStudentHour && ` · ₹${c.ratePerStudentHour}/student/hr`}
+                        {c.flatRatePerDay && ` · ₹${c.flatRatePerDay}/day`} · Min {c.minStudents} students · {c.totalDays} days ({format(c.startDate, "MMM d")}–{format(c.endDate, "MMM d, yyyy")})
+                        {(c.targetBranch || c.targetSemester) && (
+                          <>
+                            {" "}·{" "}
+                            <span className="strong">{[c.targetBranch, c.targetSemester ? `Sem ${c.targetSemester}` : null].filter(Boolean).join(" · ")} only</span>
+                          </>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+                  <span className={`pill ${statusPillClass(c.status)}`}>{c.status}</span>
                 </div>
-                <span className={`pill ${statusPillClass(c.status)}`}>{c.status}</span>
-                {c.status === "APPROVED" && c.contractType !== "CSR" && (
-                  <GenerateCollegeInvoiceButton
-                    contractId={c.id}
-                    latestInvoice={(() => {
-                      const latest = c.invoices[0];
-                      return latest
-                        ? { invoiceId: latest.id, status: latest.status as "PENDING" | "APPROVED" | "REJECTED", submitted: latest.submitted, pdfUrl: latest.pdfUrl, rejectReason: latest.rejectReason, paidAt: latest.paidAt, paidRequestedAt: latest.paidRequestedAt }
-                        : null;
-                    })()}
-                  />
+
+                {(c.invoices.filter((inv) => inv.submitted).length > 0 || (c.status === "APPROVED" && c.contractType !== "CSR")) && (
+                  <div style={{ width: "100%", paddingLeft: 48, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                    {c.invoices.filter((inv) => inv.submitted).length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%", justifyContent: "flex-end" }}>
+                        {c.invoices.filter((inv) => inv.submitted).map((inv) => (
+                          <Link key={inv.id} href={`/lms/company/colleges?invoiceId=${inv.id}`}>
+                            <span className={`pill ${statusPillClass(inv.status)}`}>
+                              ₹{inv.totalAmount} ({inv.status === "APPROVED" ? (inv.paidAt ? "paid" : inv.paidRequestedAt ? "awaiting confirmation" : "accepted") : inv.status.toLowerCase()})
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {c.status === "APPROVED" && c.contractType !== "CSR" && (
+                      <GenerateCollegeInvoiceButton
+                        contractId={c.id}
+                        latestInvoice={(() => {
+                          const latest = c.invoices[0];
+                          return latest
+                            ? { invoiceId: latest.id, status: latest.status as "PENDING" | "APPROVED" | "REJECTED", submitted: latest.submitted, pdfUrl: latest.pdfUrl, rejectReason: latest.rejectReason, paidAt: latest.paidAt, paidRequestedAt: latest.paidRequestedAt }
+                            : null;
+                        })()}
+                      />
+                    )}
+                  </div>
                 )}
               </li>
             ))}

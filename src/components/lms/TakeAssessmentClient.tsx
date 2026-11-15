@@ -858,6 +858,18 @@ export function TakeAssessmentClient({
       if (!camStream || !micStream) {
         throw new Error("Camera and microphone checks must pass before you can start.");
       }
+
+      // Request full-screen FIRST, immediately off the click — before any other
+      // async work. Browsers only honor requestFullscreen() while the click's
+      // "user activation" is still live, and an intervening await (e.g. the
+      // video.play() below) can quietly burn through that window, making the
+      // browser silently reject the request even though the user did click.
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Denied by the browser — the leave-detection checks still apply either way.
+      }
+
       // Merge the already-granted tracks into one stream rather than asking for
       // camera+mic access a third time — the browser already has both open.
       const combined = new MediaStream([...camStream.getVideoTracks(), ...micStream.getAudioTracks()]);
@@ -870,13 +882,8 @@ export function TakeAssessmentClient({
       await captureVideo.play().catch(() => {});
       captureVideoRef.current = captureVideo;
 
-      try {
-        await document.documentElement.requestFullscreen();
-      } catch {
-        // Denied by the browser — the leave-detection checks still apply either way.
-      }
-
       setPreExamChecking(false);
+      setShowInstructions(false);
       if (document.fullscreenElement) {
         await beginExam();
       } else {
@@ -1109,6 +1116,7 @@ export function TakeAssessmentClient({
       // Still denied — the leave-detection checks apply regardless once the exam starts.
     }
     setNeedsFullscreenClick(false);
+    setShowInstructions(false);
     await beginExam();
   }
 

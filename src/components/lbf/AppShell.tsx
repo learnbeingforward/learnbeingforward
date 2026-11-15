@@ -37,37 +37,41 @@ export function AppShell({
     <div className="lbf-scope">
       <SessionGuard />
       <header className="app-band">
-        <div className="container">
-          <div className="app-top">
-            <Link className="brand" href="/">
-              <Icon name="cap" size={26} />
-              <span className="wm">
-                Learn Being <span>Forward</span>
-              </span>
-            </Link>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="role-pill">{nav.label}</span>
-              <button className="icon-btn-light" type="button" aria-label="Notifications">
-                <Icon name="bell" />
-                {hasUnread && <span className="badge" />}
-              </button>
-              <div className="user-chip">
-                <span className="avatar">
-                  {user.name
-                    .split(" ")
-                    .map((w) => w[0])
-                    .join("")
-                    .slice(0, 2)}
+        <div className="app-top-bar">
+          <div className="container">
+            <div className="app-top">
+              <Link className="brand" href="/">
+                <Icon name="cap" size={26} />
+                <span className="wm">
+                  Learn Being <span>Forward</span>
                 </span>
-                <span className="who">
-                  {user.name}
-                  <small>{user.subtitle}</small>
-                </span>
+              </Link>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span className="role-pill">{nav.label}</span>
+                <button className="icon-btn-light" type="button" aria-label="Notifications">
+                  <Icon name="bell" />
+                  {hasUnread && <span className="badge" />}
+                </button>
+                <div className="user-chip">
+                  <span className="avatar">
+                    {user.name
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 2)}
+                  </span>
+                  <span className="who">
+                    {user.name}
+                    <small>{user.subtitle}</small>
+                  </span>
+                </div>
+                <LogoutIconButton />
               </div>
-              <LogoutIconButton />
             </div>
           </div>
+        </div>
 
+        <div className="container app-band-body">
           <nav className="app-nav" aria-label={`${nav.label} menu`}>
             {nav.groups.map((g) => (
               <Link key={g.key} href={g.pages[0].href} className={g.key === group.key ? "active" : ""}>

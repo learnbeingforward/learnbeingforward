@@ -108,14 +108,32 @@ export async function autoBatchCollege(collegeId: string) {
   revalidateBatchPaths();
 }
 
-export async function autoBatchAll() {
+export type AutoBatchState = { ok: boolean; error?: string; count?: number } | null;
+
+export async function autoBatchCollegeCourse(_prevState: AutoBatchState, formData: FormData): Promise<AutoBatchState> {
   try {
     await requireTrainerManagement();
-  } catch {
-    throw new Error("Only the company admin can auto-batch everyone.");
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Not authorized." };
   }
-  await groupAndBatch({});
+
+  const collegeId = String(formData.get("collegeId") ?? "");
+  const courseId = String(formData.get("courseId") ?? "");
+  if (!collegeId || !courseId) {
+    return { ok: false, error: "Select a college and a course." };
+  }
+
+  const unbatched = await prisma.enrollment.findMany({
+    where: { batchId: null, courseId, student: { collegeId } },
+    select: { id: true, enrolledAt: true },
+  });
+  if (unbatched.length === 0) {
+    return { ok: false, error: "No unbatched students for that college and course." };
+  }
+
+  await createBatchesFromEnrollments(collegeId, courseId, null, unbatched);
   revalidateBatchPaths();
+  return { ok: true, count: unbatched.length };
 }
 
 export type CreateManualBatchState = { ok: boolean; error?: string } | null;

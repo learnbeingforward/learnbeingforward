@@ -6,11 +6,12 @@ import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { ManualBatchBuilder } from "@/components/lms/ManualBatchBuilder";
 import { AssignTrainerSelect } from "@/components/lms/AssignTrainerSelect";
+import { AutoBatchForm } from "@/components/lms/AutoBatchForm";
 import { BackLink } from "@/components/lms/BackLink";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddToBatchForm } from "@/components/lms/AddToBatchForm";
 import { MoveStudentForm } from "@/components/lms/MoveStudentForm";
-import { autoBatchAll, assignTrainerToBatch, removeStudentFromBatch, deleteBatch, markBatchCompleted } from "@/lib/actions/batches";
+import { assignTrainerToBatch, removeStudentFromBatch, deleteBatch, markBatchCompleted } from "@/lib/actions/batches";
 import { MANUAL_BATCH_CAP } from "@/lib/batching";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
@@ -100,11 +101,13 @@ export default async function CompanyBatchesPage({
     );
   }
 
-  const [unbatched, batches, trainers, approvedContracts] = await Promise.all([
+  const [unbatched, batches, trainers, approvedContracts, allColleges, allCourses] = await Promise.all([
     prisma.enrollment.findMany({ where: { batchId: null, collegeId: { not: null } }, include: { student: true, course: true, college: true } }),
     prisma.batch.findMany({ include: { college: true, course: true, trainer: true, enrollments: true }, orderBy: { createdAt: "desc" } }),
     prisma.trainer.findMany({ orderBy: { name: "asc" } }),
     prisma.collegeContract.findMany({ where: { status: "APPROVED" }, orderBy: { decidedAt: "desc" } }),
+    prisma.college.findMany({ orderBy: { name: "asc" } }),
+    prisma.course.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   const builderRows = unbatched.map((e) => ({
@@ -174,10 +177,8 @@ export default async function CompanyBatchesPage({
       <div className="row">
         <section className="card side">
           <h2 className="h2" style={{ marginBottom: 18 }}>Auto-create batches</h2>
-          <p className="muted">Groups every unbatched enrolled student by college, course and semester into batches of up to 50, evenly split.</p>
-          <form action={autoBatchAll} style={{ marginTop: 14 }}>
-            <button className="btn btn-gold" type="submit">Auto-batch everyone</button>
-          </form>
+          <p className="muted">Pick one college and one course — groups every unbatched student enrolled in that course at that college into batches of up to 50, evenly split.</p>
+          <AutoBatchForm colleges={allColleges} courses={allCourses} />
         </section>
 
         <section className="card grow">
