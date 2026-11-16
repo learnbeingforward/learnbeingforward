@@ -113,6 +113,13 @@
 .lbf-scope .input-group{position:relative}
 .lbf-scope .input-group .input{padding-left:40px}
 .lbf-scope .input-group svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+
+/* password show / hide — added to every native password field on the auth pages */
+.lbf-scope .pw-wrap{position:relative;display:block;width:100%}
+.lbf-scope .pw-wrap .input{padding-right:46px}
+.lbf-scope .pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:32px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.lbf-scope .pw-eye:hover{color:var(--navy);background:var(--surface)}
+.lbf-scope .pw-eye[aria-pressed=true]{color:var(--navy)}
 .lbf-scope .segmented{display:inline-flex;border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden}
 .lbf-scope .segmented button{height:38px;padding:0 16px;border:0;border-left:1px solid var(--border-strong);background:#fff;font:inherit;font-size:13px;color:#3B4252;cursor:pointer}
 .lbf-scope .segmented button:first-child{border-left:0}

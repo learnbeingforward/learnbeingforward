@@ -34,12 +34,19 @@ const PAGE_PERMISSION: Record<string, string[]> = {
 /** Filters SUPER_ADMIN_NAV down to what this viewer can actually use — full
  * access for SUPER_ADMIN, everything but Account Details for ADMIN2, and only
  * matching pages (profile always included) for an EMPLOYEE. */
-export function buildSuperAdminNav(role: string | undefined, keys: string[]): NavConfig {
+export function buildSuperAdminNav(
+  role: string | undefined,
+  keys: string[],
+  /** Site Builder pages this viewer was individually granted — only ever
+   * populated for an EMPLOYEE created purely through Site Builder, who has no
+   * legacy EmployeePageKey at all. Rendered as its own "My Pages" group. */
+  sitePages?: { id: string; name: string }[]
+): NavConfig {
   if (role === "SUPER_ADMIN") return SUPER_ADMIN_NAV;
 
   const canSee = (pageKey: string) => {
     if (pageKey === "profile") return true;
-    if (pageKey === "account-details" || pageKey === "employee-access") return false;
+    if (pageKey === "account-details" || pageKey === "employee-access" || pageKey === "site-builder") return false;
     const required = PAGE_PERMISSION[pageKey];
     if (!required) return true;
     return required.some((k) => keys.includes(k));
@@ -48,6 +55,15 @@ export function buildSuperAdminNav(role: string | undefined, keys: string[]): Na
   const groups = SUPER_ADMIN_NAV.groups
     .map((g) => ({ ...g, pages: g.pages.filter((p) => canSee(p.key)) }))
     .filter((g) => g.pages.length > 0);
+
+  if (sitePages && sitePages.length > 0) {
+    groups.push({
+      key: "my-pages",
+      label: "My Pages",
+      icon: "layers",
+      pages: sitePages.map((p) => ({ key: `site-${p.id}`, label: p.name, href: `/lms/company/site/${p.id}` })),
+    });
+  }
 
   return { label: SUPER_ADMIN_NAV.label, groups };
 }
@@ -101,6 +117,7 @@ export const SUPER_ADMIN_NAV: NavConfig = {
       ],
     },
     { key: "content", label: "Course Content", icon: "book", pages: [{ key: "course-content", label: "Course Content", href: "/lms/company/course-content" }] },
+    { key: "site-builder", label: "Site Builder", icon: "layers", pages: [{ key: "site-builder", label: "Site Builder", href: "/lms/company/site-builder" }] },
     { key: "profile", label: "Profile", icon: "user", pages: [{ key: "profile", label: "Profile", href: "/lms/company/profile" }] },
   ],
 };

@@ -22,6 +22,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return null;
+        // Site Builder's "Disable" action marks an EMPLOYEE account this way —
+        // the only account type anything in this app can disable without deleting.
+        if (user.role === "EMPLOYEE" && user.employeeKind === "DISABLED") return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;

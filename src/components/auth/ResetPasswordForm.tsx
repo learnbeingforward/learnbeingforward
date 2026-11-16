@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validation";
 import { Icon } from "@/components/lbf/icons";
+import { PasswordField } from "@/components/auth/PasswordField";
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
@@ -91,7 +92,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           <span>
             New password <span className="req" aria-hidden="true">*</span>
           </span>
-          <input className="input" type="password" autoComplete="new-password" {...register("password")} />
+          <PasswordField autoComplete="new-password" {...register("password")} />
         </label>
         <ul className="list small" aria-label="Password rules">
           {rules.map((r) => (
@@ -106,9 +107,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
           <span>
             Confirm new password <span className="req" aria-hidden="true">*</span>
           </span>
-          <input
+          <PasswordField
             className={`input${mismatch ? " error" : ""}`}
-            type="password"
             autoComplete="new-password"
             {...register("confirmPassword")}
           />

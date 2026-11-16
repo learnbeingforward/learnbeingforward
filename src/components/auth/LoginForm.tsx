@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { loginSchema, type LoginInput } from "@/lib/validation";
 import { Icon } from "@/components/lbf/icons";
+import { PasswordField } from "@/components/auth/PasswordField";
 
 type SessionResponse = {
   user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" | "ADMIN2" | "EMPLOYEE" };
@@ -72,7 +73,7 @@ export function LoginForm() {
           </span>
           <span className="input-group">
             <Icon name="lock" size={16} />
-            <input className="input" type="password" autoComplete="current-password" {...register("password")} />
+            <PasswordField autoComplete="current-password" {...register("password")} />
           </span>
         </label>
         <label className="check">

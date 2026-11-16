@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { signUpFormSchema, type SignUpFormInput } from "@/lib/validation";
 import { Icon } from "@/components/lbf/icons";
+import { PasswordField } from "@/components/auth/PasswordField";
 
 type College = { id: string; name: string };
 
@@ -116,7 +117,7 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
           <span>
             Password <span className="req" aria-hidden="true">*</span>
           </span>
-          <input className="input" type="password" autoComplete="new-password" {...register("password")} />
+          <PasswordField autoComplete="new-password" {...register("password")} />
           {strength.label && (
             <>
               <span className="progress gold" style={{ marginTop: 4 }} aria-hidden="true">
@@ -131,7 +132,7 @@ export function SignUpForm({ colleges }: { colleges: College[] }) {
           <span>
             Confirm password <span className="req" aria-hidden="true">*</span>
           </span>
-          <input className="input" type="password" autoComplete="new-password" {...register("confirmPassword")} />
+          <PasswordField autoComplete="new-password" {...register("confirmPassword")} />
           {errors.confirmPassword && <span className="error-text">{errors.confirmPassword.message}</span>}
         </label>
         <label className="check">

@@ -95,6 +95,7 @@ model User {
   contentAccessRequests ContentAccessRequest[]
   assessmentAssignments AssessmentAssignment[]
   passwordResetTokens   PasswordResetToken[]
+  siteBuilderPageAccess SiteBuilderPageAccess[]
 }
 
 model Trainer {
@@ -892,4 +893,65 @@ model AssessmentAnswer {
 
   @@unique([assignmentId, questionId])
   @@index([questionId])
+}
+
+// ---------------------------------------------------------------------------
+// Site Builder — a drag-and-drop page builder for the super admin. Portals are
+// account types (the 5 built-in ones, plus any custom type an admin defines);
+// pages are stored as data (a JSON tree of rows → columns → blocks) and
+// rendered generically, never as hand-written code. SiteBuilderPageAccess is
+// what actually grants an EMPLOYEE login visibility into a specific built
+// page — deliberately separate from EmployeePageKey (which only ever gates
+// the app's existing hand-written pages) so this dynamic system can't widen
+// access to any of those.
+model SiteBuilderPortal {
+  id        String   @id @default(cuid())
+  name      String
+  builtin   Boolean  @default(false)
+  basedOn   String?
+  scope     String
+  icon      String   @default("grid")
+  menu      Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  pages SiteBuilderPage[]
+}
+
+model SiteBuilderPage {
+  id        String   @id @default(cuid())
+  portalId  String
+  portal    SiteBuilderPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  name      String
+  subtitle  String?
+  icon      String   @default("file")
+  status    String   @default("Draft")
+  rows      Json     @default("[]")
+  records   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  access SiteBuilderPageAccess[]
+
+  @@index([portalId])
+}
+
+// Grants one employee User visibility into one SiteBuilderPage.
+model SiteBuilderPageAccess {
+  id       String          @id @default(cuid())
+  pageId   String
+  page     SiteBuilderPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readOnly Boolean         @default(false)
+
+  @@unique([pageId, userId])
+  @@index([userId])
+}
+
+model SiteBuilderActivity {
+  id        String   @id @default(cuid())
+  who       String
+  what      String
+  pageId    String?
+  createdAt DateTime @default(now())
 }

@@ -229,9 +229,17 @@ export async function getEmployeeKeys(userId: string): Promise<EmployeePageKey[]
 
 /** First granted page for this employee, used as the post-login landing page and as the
  * fallback redirect when they try to open something they weren't granted. */
-export function employeeFirstHref(keys: EmployeePageKey[]): string {
+/** `userId` is optional and only consulted when no legacy page matched — an
+ * employee created purely through Site Builder has no EmployeePageKey at
+ * all, so their landing page is whichever SiteBuilderPage they were granted. */
+export async function employeeFirstHref(keys: EmployeePageKey[], userId?: string): Promise<string> {
   const first = FLAT_PAGES.find((page) => page.permissions.some((perm) => keys.includes(perm.key)));
-  return first?.href ?? "/lms/company/profile";
+  if (first) return first.href;
+  if (userId) {
+    const granted = await prisma.siteBuilderPageAccess.findFirst({ where: { userId }, select: { pageId: true } });
+    if (granted) return `/lms/company/site/${granted.pageId}`;
+  }
+  return "/lms/company/profile";
 }
 
 export function buildEmployeeNavLinks(keys: EmployeePageKey[]): LmsNavEntry[] {
@@ -314,7 +322,7 @@ export async function requireCompanyPageAccess(anyOfKeys?: EmployeePageKey | Emp
   }
   if (role === "EMPLOYEE") {
     const keys = await getEmployeeKeys(session.user.id);
-    if (needed && !needed.some((k) => keys.includes(k))) redirect(employeeFirstHref(keys));
+    if (needed && !needed.some((k) => keys.includes(k))) redirect(await employeeFirstHref(keys, session.user.id));
     const hasUnread = (await getUnreadNotificationCount(keys)) > 0;
     return { session, navLinks: withNotificationBadge(buildEmployeeNavLinks(keys), hasUnread), keys, hasUnread };
   }
