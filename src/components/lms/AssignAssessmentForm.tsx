@@ -1,11 +1,23 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { assignAssessmentToStudents, type AssignAssessmentState } from "@/lib/actions/assessments";
+import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 
-export type AssignableStudent = { id: string; name: string; email: string; collegeName: string; alreadyAssigned: boolean };
+export type AssignableStudent = {
+  id: string;
+  name: string;
+  email: string;
+  collegeId: string;
+  collegeName: string;
+  batchId: string | null;
+  batchName: string | null;
+  courseName: string | null;
+  attendancePct: number;
+  alreadyAssigned: boolean;
+};
 
 export function AssignAssessmentForm({
   assessmentId,
@@ -18,102 +30,94 @@ export function AssignAssessmentForm({
     assignAssessmentToStudents.bind(null, assessmentId),
     null
   );
-  const [selectedCollege, setSelectedCollege] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [collegeId, setCollegeId] = useState("ALL");
+  const [batchId, setBatchId] = useState("ALL");
+  const [attendanceFilter, setAttendanceFilter] = useState(true);
 
   const colleges = useMemo(() => {
-    const names = new Set(students.map((s) => s.collegeName));
-    return Array.from(names).sort();
+    const map = new Map<string, string>();
+    for (const s of students) map.set(s.collegeId, s.collegeName);
+    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [students]);
 
-  const studentsInCollege = useMemo(
-    () => students.filter((s) => s.collegeName === selectedCollege),
-    [students, selectedCollege]
+  const batches = useMemo(() => {
+    const map = new Map<string, { id: string; label: string; collegeId: string }>();
+    for (const s of students) {
+      if (!s.batchId) continue;
+      if (collegeId !== "ALL" && s.collegeId !== collegeId) continue;
+      map.set(s.batchId, { id: s.batchId, label: `${s.batchName}${s.courseName ? ` (${s.courseName})` : ""}`, collegeId: s.collegeId });
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [students, collegeId]);
+
+  const matching = useMemo(
+    () =>
+      students.filter((s) => {
+        if (s.alreadyAssigned) return false;
+        if (collegeId !== "ALL" && s.collegeId !== collegeId) return false;
+        if (batchId !== "ALL" && s.batchId !== batchId) return false;
+        if (attendanceFilter && s.attendancePct < ATTENDANCE_THRESHOLD) return false;
+        return true;
+      }),
+    [students, collegeId, batchId, attendanceFilter]
   );
 
-  function toggleStudent(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  if (!selectedCollege) {
-    return (
-      <div className="rounded-xl border border-border bg-white p-6">
-        <p className="mb-4 text-sm font-semibold text-indigo">Choose a College</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {colleges.map((name) => {
-            const count = students.filter((s) => s.collegeName === name).length;
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setSelectedCollege(name)}
-                className="rounded-lg border border-border p-4 text-left transition-colors hover:border-indigo/40"
-              >
-                <p className="font-medium text-indigo">{name}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{count} student{count !== 1 ? "s" : ""}</p>
-              </button>
-            );
-          })}
-          {colleges.length === 0 && <p className="text-sm text-muted-foreground">No students found.</p>}
-        </div>
-      </div>
-    );
-  }
+  const alreadySentCount = students.filter((s) => s.alreadyAssigned).length;
 
   return (
-    <form action={formAction} className="rounded-xl border border-border bg-white p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm font-semibold text-indigo">{selectedCollege} — Select Students</p>
-        <button type="button" onClick={() => setSelectedCollege(null)} className="text-xs text-indigo underline">
-          Change college
-        </button>
-      </div>
-      <div className="max-h-80 space-y-2 overflow-y-auto">
-        {studentsInCollege.map((s) => (
-          <label
-            key={s.id}
-            className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${
-              s.alreadyAssigned ? "border-border bg-cream/60 text-muted-foreground" : "border-border hover:border-indigo/40"
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                name="studentIds"
-                value={s.id}
-                checked={selected.has(s.id) || s.alreadyAssigned}
-                disabled={s.alreadyAssigned}
-                onChange={() => toggleStudent(s.id)}
-                className="accent-indigo"
-              />
-              {s.name} <span className="text-xs text-muted-foreground">({s.email})</span>
-            </span>
-            {s.alreadyAssigned && <span className="text-xs text-muted-foreground">Already sent</span>}
-          </label>
-        ))}
-        {studentsInCollege.length === 0 && <p className="text-sm text-muted-foreground">No students in this college.</p>}
+    <form action={formAction} className="stack" style={{ gap: 14, maxWidth: 480 }}>
+      {matching.map((s) => (
+        <input key={s.id} type="hidden" name="studentIds" value={s.id} />
+      ))}
+
+      <label className="field">
+        <span>College</span>
+        <select className="select" value={collegeId} onChange={(e) => { setCollegeId(e.target.value); setBatchId("ALL"); }}>
+          <option value="ALL">All colleges</option>
+          {colleges.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Course / batch</span>
+        <select className="select" value={batchId} onChange={(e) => setBatchId(e.target.value)}>
+          <option value="ALL">All</option>
+          {batches.map((b) => (
+            <option key={b.id} value={b.id}>{b.label}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="check">
+        <input type="checkbox" checked={attendanceFilter} onChange={(e) => setAttendanceFilter(e.target.checked)} />
+        Only students with &ge; {ATTENDANCE_THRESHOLD}% attendance
+      </label>
+
+      <div className="alert info small">
+        <Users className="size-4 shrink-0" />
+        <span>
+          {matching.length} student{matching.length !== 1 ? "s" : ""} will receive this.
+          {alreadySentCount > 0 && ` ${alreadySentCount} already sent.`}
+        </span>
       </div>
 
-      {state?.error && <p className="mt-3 text-sm text-destructive">{state.error}</p>}
+      {state?.error && <p className="small" style={{ color: "var(--danger)" }}>{state.error}</p>}
       {state?.ok && (
-        <p className="mt-3 flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Sent to {state.assignedCount} new student
-          {state.assignedCount !== 1 ? "s" : ""}.
-          {!!state.updatedCount && (
-            <> Updated the question set for {state.updatedCount} already-assigned student{state.updatedCount !== 1 ? "s" : ""} who hadn&apos;t started yet.</>
-          )}
+        <p className="small" style={{ color: "var(--success-text)", display: "flex", alignItems: "center", gap: 6 }}>
+          <CheckCircle2 className="size-4" /> Sent to {state.assignedCount} new student{state.assignedCount !== 1 ? "s" : ""}.
+          {!!state.updatedCount && <> Updated {state.updatedCount} already-assigned student{state.updatedCount !== 1 ? "s" : ""} who hadn&apos;t started yet.</>}
         </p>
       )}
 
-      <Button type="submit" disabled={isPending || selected.size === 0} className="mt-4 bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Send Assessment ({selected.size})
-      </Button>
+      <div className="split">
+        <span />
+        <Button type="submit" disabled={isPending || matching.length === 0} className="btn btn-primary">
+          {isPending && <Loader2 className="size-4 animate-spin" />}
+          Send to {matching.length} student{matching.length !== 1 ? "s" : ""}
+        </Button>
+      </div>
     </form>
   );
 }

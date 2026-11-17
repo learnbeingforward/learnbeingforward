@@ -123,19 +123,33 @@ export default async function CompanyAssessmentsPage({
     if (mode === "send") {
       const students = await prisma.user.findMany({
         where: { role: "STUDENT" },
-        include: { college: true },
+        include: {
+          college: true,
+          enrollments: { include: { batch: { include: { course: true } }, attendanceRecords: true, certification: true } },
+        },
         orderBy: { name: "asc" },
       });
       const assignedIds = new Set(assessment.assignments.map((a) => a.studentId));
       const assignable = students
         .filter((s) => s.college)
-        .map((s) => ({
-          id: s.id,
-          name: s.name,
-          email: s.email,
-          collegeName: s.college!.name,
-          alreadyAssigned: assignedIds.has(s.id),
-        }));
+        .map((s) => {
+          const enrollment = s.enrollments.find((e) => e.batchId) ?? s.enrollments[0];
+          const total = enrollment ? enrollment.attendanceRecords.length || enrollment.totalClasses : 0;
+          const present = enrollment ? enrollment.attendanceRecords.filter((r) => r.present).length : 0;
+          const attendancePct = total > 0 ? Math.round((present / total) * 100) : 0;
+          return {
+            id: s.id,
+            name: s.name,
+            email: s.email,
+            collegeId: s.college!.id,
+            collegeName: s.college!.name,
+            batchId: enrollment?.batchId ?? null,
+            batchName: enrollment?.batch?.name ?? null,
+            courseName: enrollment?.batch?.course.name ?? null,
+            attendancePct,
+            alreadyAssigned: assignedIds.has(s.id),
+          };
+        });
 
       return (
         <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title={assessment.title} subtitle="Send to students">
