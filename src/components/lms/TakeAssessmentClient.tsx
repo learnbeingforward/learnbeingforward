@@ -180,6 +180,11 @@ export function TakeAssessmentClient({
   });
   const [cameraPositionValue, setCameraPositionValue] = useState<string | null>(null);
   const [mirrorPreview, setMirrorPreview] = useState(true);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [micDevices, setMicDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("");
+  const [selectedMicId, setSelectedMicId] = useState<string>("");
+  const [micLevel, setMicLevel] = useState(0);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // Shown after all system checks pass, before the exam actually starts — reading
   // this (and agreeing to it) is what triggers full-screen + the timer, not the
@@ -473,6 +478,39 @@ export function TakeAssessmentClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preExamChecking]);
 
+  // Live mic-level meter shown on the system-check screen once the microphone
+  // check has passed — purely visual feedback that the mic is actually picking
+  // up sound, separate from the audio-calibration baseline capture.
+  useEffect(() => {
+    if (checkStatus.microphone !== "passed" || !preExamChecking) return;
+    const stream = micStreamRef.current;
+    if (!stream) return;
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const audioCtx = new AudioCtx();
+    const source = audioCtx.createMediaStreamSource(stream);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    const data = new Uint8Array(analyser.fftSize);
+    let raf = 0;
+    function tick() {
+      analyser.getByteTimeDomainData(data);
+      let sumSquares = 0;
+      for (const v of data) {
+        const centered = v - 128;
+        sumSquares += centered * centered;
+      }
+      const rms = Math.sqrt(sumSquares / data.length);
+      setMicLevel(Math.min(1, rms / 40));
+      raf = requestAnimationFrame(tick);
+    }
+    tick();
+    return () => {
+      cancelAnimationFrame(raf);
+      audioCtx.close().catch(() => {});
+    };
+  }, [checkStatus.microphone, preExamChecking]);
+
   // ---------- Proctoring: webcam snapshots ----------
 
   /** Grabs one frame from the live camera and uploads it — the only thing ever
@@ -762,13 +800,29 @@ export function TakeAssessmentClient({
     }
   }
 
-  async function handleCheckCamera() {
+  async function refreshDeviceLists() {
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      setCameraDevices(all.filter((d) => d.kind === "videoinput"));
+      setMicDevices(all.filter((d) => d.kind === "audioinput"));
+    } catch {
+      // Device labels just won't be populated — not fatal.
+    }
+  }
+
+  async function handleCheckCamera(deviceId?: string) {
     setCheckStatus((s) => ({ ...s, camera: "checking" }));
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      camStreamRef.current?.getTracks().forEach((t) => t.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
       camStreamRef.current = stream;
+      const track = stream.getVideoTracks()[0];
+      if (track) setSelectedCameraId(track.getSettings().deviceId ?? "");
       setCheckStatus((s) => ({ ...s, camera: "passed" }));
       void loadAiModels();
+      void refreshDeviceLists();
     } catch {
       setCheckStatus((s) => ({ ...s, camera: "failed" }));
     }
@@ -780,19 +834,28 @@ export function TakeAssessmentClient({
     void setCameraPosition(assignmentId, position).catch(() => {});
   }
 
-  async function handleCheckMicrophone() {
+  async function handleCheckMicrophone(deviceId?: string) {
     setCheckStatus((s) => ({ ...s, microphone: "checking" }));
     try {
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
       // autoGainControl/noiseSuppression/echoCancellation are all enabled by default
       // and actively fight the live violation detector: AGC in particular
       // renormalizes the input level within a second or two of a loud burst, so
       // sustained shouting reads as loud only briefly. Disabling them keeps the raw
       // mic level the RMS check actually relies on.
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { autoGainControl: false, noiseSuppression: false, echoCancellation: false },
+        audio: {
+          autoGainControl: false,
+          noiseSuppression: false,
+          echoCancellation: false,
+          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+        },
       });
       micStreamRef.current = stream;
+      const track = stream.getAudioTracks()[0];
+      if (track) setSelectedMicId(track.getSettings().deviceId ?? "");
       setCheckStatus((s) => ({ ...s, microphone: "passed" }));
+      void refreshDeviceLists();
     } catch {
       setCheckStatus((s) => ({ ...s, microphone: "failed" }));
     }
@@ -1366,30 +1429,60 @@ export function TakeAssessmentClient({
       <div className="lbf-scope">
         <header className="app-band">
           <div className="container" style={{ paddingTop: 16 }}>
-            <div className="split">
-              <div>
-                <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>{assessmentTitle}</h1>
-                <p className="small" style={{ color: "var(--on-navy-muted)", marginTop: 2 }}>Step 1 of 3 · System check</p>
-              </div>
+            <div className="split" style={{ marginBottom: 14 }}>
+              <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>{assessmentTitle}</h1>
               <span className={`pill ${allPassed ? "success" : "gold"}`} style={{ background: allPassed ? undefined : "var(--navy-3)", color: allPassed ? undefined : "#fff" }}>
                 {allPassed && <CheckCircle2 className="size-3.5" />} {steps.filter((s) => checkStatus[s.key] === "passed").length} of {steps.length} checks passed
               </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {[
+                { n: 1, label: "System check" },
+                { n: 2, label: "Instructions" },
+                { n: 3, label: "Start test" },
+              ].map((s, i, arr) => (
+                <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        background: s.n === 1 ? "#fff" : "transparent",
+                        color: s.n === 1 ? "var(--navy)" : "var(--on-navy-muted)",
+                        border: s.n === 1 ? "none" : "1px solid var(--navy-3)",
+                      }}
+                    >
+                      {s.n}
+                    </span>
+                    <span className="small" style={{ color: s.n === 1 ? "#fff" : "var(--on-navy-muted)", fontWeight: s.n === 1 ? 600 : 400 }}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < arr.length - 1 && <span style={{ width: 24, height: 1, background: "var(--navy-3)" }} />}
+                </div>
+              ))}
             </div>
           </div>
         </header>
 
         <main className="container">
-          <section className="card lift stack">
+          <section className="card lift stack" style={{ gap: 16, padding: 20 }}>
             <div>
-              <h2 className="h2">Let&apos;s make sure your system is ready</h2>
-              <p className="small muted" style={{ marginTop: 4 }}>
+              <h2 className="h2" style={{ fontSize: 18 }}>Let&apos;s make sure your system is ready</h2>
+              <p className="small muted" style={{ marginTop: 2 }}>
                 Complete these {steps.length} checks in order — each needs a quick permission or a few seconds — before you can start the assessment.
               </p>
             </div>
 
-            <div className="row" style={{ alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 280px", minWidth: 260 }}>
-                <div className="split" style={{ marginBottom: 10 }}>
+            <div className="row" style={{ alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 240px", minWidth: 220, maxWidth: 280 }}>
+                <div className="split" style={{ marginBottom: 8 }}>
                   <p className="label" style={{ margin: 0 }}>Camera preview</p>
                   {checkStatus.camera === "passed" && (
                     <button type="button" onClick={() => setMirrorPreview((v) => !v)} className="btn btn-sm">
@@ -1426,35 +1519,80 @@ export function TakeAssessmentClient({
                 )}
               </div>
 
-              <div style={{ flex: "2 1 360px", minWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ flex: "2 1 360px", minWidth: 280, display: "flex", flexDirection: "column", gap: 6 }}>
                 <p className="label">System checks</p>
                 {steps.map((step, i) => {
                   const status = checkStatus[step.key];
                   const Icon = step.icon;
                   const isActive = i === firstPendingIndex;
+                  const showHint = status !== "passed";
                   return (
-                    <div key={step.key} className="box" style={status === "passed" ? { borderColor: "var(--success)", background: "var(--success-soft)" } : status === "failed" ? { borderColor: "var(--danger)", background: "var(--danger-soft)" } : undefined}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span className="icon-box navy"><Icon className="size-5" /></span>
+                    <div
+                      key={step.key}
+                      className="box"
+                      style={{
+                        padding: 10,
+                        ...(status === "passed"
+                          ? { borderColor: "var(--success)", background: "var(--success-soft)" }
+                          : status === "failed"
+                            ? { borderColor: "var(--danger)", background: "var(--danger-soft)" }
+                            : undefined),
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span className="icon-box navy" style={{ width: 32, height: 32 }}><Icon className="size-4" /></span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p className="strong">{i + 1}. {step.label}</p>
-                          <p className="small muted" style={{ marginTop: 2 }}>{status === "failed" ? step.failHint : step.hint}</p>
+                          <p className="small strong">{i + 1}. {step.label}</p>
+                          {showHint && (
+                            <p className="small muted" style={{ marginTop: 2, fontSize: 11.5 }}>{status === "failed" ? step.failHint : step.hint}</p>
+                          )}
                           {step.key === "position" && status === "passed" && cameraPositionValue && (
-                            <p className="small" style={{ marginTop: 4, color: "var(--gold-text)", fontWeight: 600 }}>
-                              You chose: {CAMERA_POSITION_OPTIONS.find((o) => o.value === cameraPositionValue)?.label}
+                            <p className="small" style={{ marginTop: 2, color: "var(--gold-text)", fontWeight: 600 }}>
+                              {CAMERA_POSITION_OPTIONS.find((o) => o.value === cameraPositionValue)?.label}
                             </p>
                           )}
                         </div>
-                        {status === "passed" && <CheckCircle2 className="size-6 shrink-0" style={{ color: "var(--success)" }} />}
-                        {status === "failed" && <XCircle className="size-6 shrink-0" style={{ color: "var(--danger)" }} />}
+                        {status === "passed" && <CheckCircle2 className="size-5 shrink-0" style={{ color: "var(--success)" }} />}
+                        {status === "failed" && <XCircle className="size-5 shrink-0" style={{ color: "var(--danger)" }} />}
                         {status !== "passed" && step.key !== "position" && (
-                          <button type="button" disabled={!isActive || status === "checking"} onClick={step.action} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
+                          <button type="button" disabled={!isActive || status === "checking"} onClick={() => step.action()} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
                             {status === "checking" ? <Loader2 className="size-4 animate-spin" /> : status === "failed" ? "Retry" : "Check"}
                           </button>
                         )}
                       </div>
+                      {step.key === "camera" && status === "passed" && cameraDevices.length > 1 && (
+                        <select
+                          value={selectedCameraId}
+                          onChange={(e) => void handleCheckCamera(e.target.value)}
+                          className="select"
+                          style={{ marginTop: 6, height: 30, fontSize: 11.5 }}
+                        >
+                          {cameraDevices.map((d) => (
+                            <option key={d.deviceId} value={d.deviceId}>{d.label || "Camera"}</option>
+                          ))}
+                        </select>
+                      )}
+                      {step.key === "microphone" && status === "passed" && (
+                        <div style={{ marginTop: 6 }}>
+                          {micDevices.length > 1 && (
+                            <select
+                              value={selectedMicId}
+                              onChange={(e) => void handleCheckMicrophone(e.target.value)}
+                              className="select"
+                              style={{ height: 30, fontSize: 11.5, marginBottom: 6 }}
+                            >
+                              {micDevices.map((d) => (
+                                <option key={d.deviceId} value={d.deviceId}>{d.label || "Microphone"}</option>
+                              ))}
+                            </select>
+                          )}
+                          <div className="progress" style={{ height: 5 }}>
+                            <span style={{ width: `${Math.round(micLevel * 100)}%`, transition: "width .1s linear" }} />
+                          </div>
+                        </div>
+                      )}
                       {step.key === "position" && status !== "passed" && (
-                        <div className="grid" style={{ ["--min" as string]: "120px", marginTop: 10 }}>
+                        <div className="grid" style={{ ["--min" as string]: "110px", gap: 6, marginTop: 6 }}>
                           {CAMERA_POSITION_OPTIONS.map((opt) => (
                             <button key={opt.value} type="button" disabled={!isActive} onClick={() => handleSelectCameraPosition(opt.value)} className="btn btn-sm">
                               {opt.label}
