@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  FlipHorizontal,
   List,
   Maximize,
   Maximize2,
@@ -178,6 +179,7 @@ export function TakeAssessmentClient({
     system: "pending",
   });
   const [cameraPositionValue, setCameraPositionValue] = useState<string | null>(null);
+  const [mirrorPreview, setMirrorPreview] = useState(true);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // Shown after all system checks pass, before the exam actually starts — reading
   // this (and agreeing to it) is what triggers full-screen + the timer, not the
@@ -214,6 +216,10 @@ export function TakeAssessmentClient({
   // shown immediately on load if this attempt was already submitted earlier (e.g.
   // revisiting the URL), instead of the page.tsx redirect that used to happen here.
   const [showSummary, setShowSummary] = useState(alreadySubmitted);
+  // Shown once, right after the MCQ/written phase is submitted, before the
+  // student moves into the locked-in coding phase — recaps that phase alone
+  // and requires an explicit "Continue" click rather than silently jumping in.
+  const [showPhaseSummary, setShowPhaseSummary] = useState(false);
   const [codingSubmissions, setCodingSubmissions] = useState<
     Record<string, { code: string; language: string; passed: number; total: number }>
   >(() =>
@@ -456,6 +462,16 @@ export function TakeAssessmentClient({
       video.play().catch(() => {});
     }
   }, [checkStatus.camera]);
+
+  // Kick off the (multi-MB) AI model download the moment system-check opens,
+  // instead of waiting for the camera step to pass — it used to start there,
+  // which made the very next step (Camera Position) feel like it was hanging
+  // while TensorFlow initialized on the main thread. Starting it this early
+  // means it's usually done well before the student reaches that step.
+  useEffect(() => {
+    if (preExamChecking) void loadAiModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preExamChecking]);
 
   // ---------- Proctoring: webcam snapshots ----------
 
@@ -939,9 +955,158 @@ export function TakeAssessmentClient({
       await saveAssessmentAnswer(assignmentId, questionId, answers[questionId] ?? "");
     }
     await submitMcqPhase(assignmentId);
+    setShowPhaseSummary(true);
+    setSubmittingMcqPhase(false);
+  }
+
+  function handleContinueToCodingPhase() {
     setMcqPhaseSubmitted(true);
     setCurrentIndex(0);
-    setSubmittingMcqPhase(false);
+    setShowPhaseSummary(false);
+  }
+
+  function isQuestionAnswered(sq: (typeof questions)[number]) {
+    if (sq.questionType === "CODING") return !!codingSubmissions[sq.id];
+    const value = answers[sq.id];
+    return !!value && value.trim() !== "";
+  }
+
+  function formatElapsed(totalMinutes: number) {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  /** The compact stat-tiles + question-map block shared by the end-of-phase
+   * interstitial and the final submitted screen — `qs` scopes it to just the
+   * phase in question (or the whole assessment for the final screen). */
+  function renderSummaryStats(qs: typeof questions) {
+    const answeredCount = qs.filter(isQuestionAnswered).length;
+    const bookmarkedCount = qs.filter((q) => bookmarked[q.id]).length;
+    const elapsedMinutes =
+      remainingSeconds !== null ? Math.round((durationMinutes * 60 - remainingSeconds) / 60) : null;
+    return (
+      <>
+        <div className="grid" style={{ ["--min" as string]: "140px" }}>
+          <div className="tile">
+            <div className="label">Total Questions</div>
+            <div className="value">{qs.length}</div>
+          </div>
+          <div className="tile success">
+            <div className="label">Attempted</div>
+            <div className="value">{answeredCount}</div>
+          </div>
+          <div className="tile warning">
+            <div className="label">Not Attempted</div>
+            <div className="value">{qs.length - answeredCount}</div>
+          </div>
+          <div className="tile gold">
+            <div className="label">Bookmarked</div>
+            <div className="value">{bookmarkedCount}</div>
+          </div>
+          {elapsedMinutes !== null && (
+            <div className="tile">
+              <div className="label">Time Taken</div>
+              <div className="value">{formatElapsed(elapsedMinutes)}</div>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="label" style={{ marginBottom: 10 }}>Question Map</p>
+          <div className="grid" style={{ ["--min" as string]: "42px", gap: 8 }}>
+            {qs.map((q, i) => {
+              const answered = isQuestionAnswered(q);
+              const isBookmarked = bookmarked[q.id];
+              return (
+                <div
+                  key={q.id}
+                  title={`Q${i + 1}${answered ? " · attempted" : " · not attempted"}${isBookmarked ? " · bookmarked" : ""}`}
+                  style={{
+                    position: "relative",
+                    aspectRatio: "1",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    background: answered ? "var(--success-soft)" : "transparent",
+                    color: answered ? "var(--success-text)" : "var(--danger)",
+                    border: answered ? "none" : "1.5px dashed var(--danger)",
+                  }}
+                >
+                  {i + 1}
+                  {isBookmarked && (
+                    <span style={{ position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="row" style={{ gap: 18, marginTop: 12 }}>
+            <span className="small muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--success-soft)", display: "inline-block" }} /> Attempted
+            </span>
+            <span className="small muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 14, height: 14, borderRadius: "50%", border: "1.5px dashed var(--danger)", display: "inline-block" }} /> Not attempted
+            </span>
+            <span className="small muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)", display: "inline-block" }} /> Bookmarked
+            </span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (showPhaseSummary) {
+    const answeredCount = mcqQuestions.filter(isQuestionAnswered).length;
+    return (
+      <div className="lbf-scope" style={{ minHeight: "100vh", paddingBottom: 40 }}>
+        <header className="app-band">
+          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 16 }}>
+            <p className="strong" style={{ color: "#fff" }}>{assessmentTitle}</p>
+            <span className="small" style={{ color: "var(--on-navy-muted)", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 600 }}>
+              Section Submitted
+            </span>
+          </div>
+        </header>
+
+        <main className="container">
+          <section className="card lift stack">
+            <div style={{ display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--border)", paddingBottom: 20 }}>
+              <span className="icon-box" style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--success-soft)", color: "var(--success)" }}>
+                <CheckCircle2 className="size-8" />
+              </span>
+              <div>
+                <h1 className="h2">Multiple Choice &amp; Written section submitted</h1>
+                <p className="small muted" style={{ marginTop: 2 }}>
+                  {answeredCount}/{mcqQuestions.length} answered. This section is now locked — you&apos;ll move on to the Coding section next.
+                </p>
+              </div>
+            </div>
+
+            {renderSummaryStats(mcqQuestions)}
+
+            <div className="alert info">
+              <CheckCircle2 className="size-5 shrink-0" />
+              <div>
+                <p className="strong">Up next: the Coding section</p>
+                <p className="small" style={{ marginTop: 2 }}>
+                  {codingQuestions.length} coding question{codingQuestions.length !== 1 ? "s" : ""}. The timer keeps running — click below when you&apos;re ready.
+                </p>
+              </div>
+            </div>
+
+            <button onClick={handleContinueToCodingPhase} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
+              Continue to Coding Section <ChevronRight className="size-4" />
+            </button>
+          </section>
+          <p className="app-footer">Powered by Learn Being Forward</p>
+        </main>
+      </div>
+    );
   }
 
   if (showSummary) {
@@ -950,14 +1115,6 @@ export function TakeAssessmentClient({
       violation: "You left the assessment screen and didn't return in time, so it was submitted automatically with whatever answers were saved.",
       audio: "Too much background noise was detected, so the assessment was submitted automatically with whatever answers were saved.",
     };
-
-    function isQuestionAnswered(sq: (typeof questions)[number]) {
-      if (sq.questionType === "CODING") return !!codingSubmissions[sq.id];
-      const value = answers[sq.id];
-      return !!value && value.trim() !== "";
-    }
-    const totalAnswered = questions.filter(isQuestionAnswered).length;
-    const totalBookmarked = questions.filter((q) => bookmarked[q.id]).length;
 
     function renderQuestionCard(sq: (typeof questions)[number], globalIndex: number) {
       if (sq.questionType === "CODING") {
@@ -1057,22 +1214,28 @@ export function TakeAssessmentClient({
               </div>
             </div>
 
-            <div className="grid" style={{ ["--min" as string]: "140px" }}>
-              <div className="tile">
-                <div className="label">Total Questions</div>
-                <div className="value">{questions.length}</div>
-              </div>
-              <div className="tile success">
-                <div className="label">Attempted</div>
-                <div className="value">{totalAnswered}</div>
-              </div>
-              <div className="tile warning">
-                <div className="label">Not Attempted</div>
-                <div className="value">{questions.length - totalAnswered}</div>
-              </div>
-              <div className="tile gold">
-                <div className="label">Bookmarked</div>
-                <div className="value">{totalBookmarked}</div>
+            {renderSummaryStats(questions)}
+
+            <div>
+              <p className="label" style={{ marginBottom: 10 }}>Section-wise Summary</p>
+              <div className="stack" style={{ gap: 14 }}>
+                {sections.map((section) => {
+                  const sectionAnswered = section.qs.filter(isQuestionAnswered).length;
+                  const pct = section.qs.length > 0 ? Math.round((sectionAnswered / section.qs.length) * 100) : 0;
+                  return (
+                    <div key={section.label}>
+                      <div className="split" style={{ marginBottom: 8 }}>
+                        <p className="strong">{section.label}</p>
+                        <p className="small muted">
+                          {sectionAnswered}/{section.qs.length} attempted
+                        </p>
+                      </div>
+                      <div className="progress">
+                        <span style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1081,7 +1244,7 @@ export function TakeAssessmentClient({
               return (
                 <div key={section.label}>
                   <div className="split" style={{ marginBottom: 10 }}>
-                    <p className="label">{section.label}</p>
+                    <p className="label">{section.label} — Full Review</p>
                     <p className="small muted">
                       {sectionAnswered}/{section.qs.length} attempted
                     </p>
@@ -1224,9 +1387,27 @@ export function TakeAssessmentClient({
 
             <div className="row" style={{ alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
               <div style={{ flex: "1 1 280px", minWidth: 260 }}>
-                <p className="label" style={{ marginBottom: 10 }}>Camera preview</p>
+                <div className="split" style={{ marginBottom: 10 }}>
+                  <p className="label" style={{ margin: 0 }}>Camera preview</p>
+                  {checkStatus.camera === "passed" && (
+                    <button type="button" onClick={() => setMirrorPreview((v) => !v)} className="btn btn-sm">
+                      <FlipHorizontal className="size-3.5" /> {mirrorPreview ? "Mirrored" : "Not mirrored"}
+                    </button>
+                  )}
+                </div>
                 <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", background: "var(--navy)", aspectRatio: "4/3" }}>
-                  <video ref={checkPreviewVideoRef} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: checkStatus.camera === "passed" ? "block" : "none" }} />
+                  <video
+                    ref={checkPreviewVideoRef}
+                    muted
+                    playsInline
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: checkStatus.camera === "passed" ? "block" : "none",
+                      transform: mirrorPreview ? "scaleX(-1)" : undefined,
+                    }}
+                  />
                   {checkStatus.camera !== "passed" && (
                     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--on-navy-muted)" }}>
                       <Video className="size-10" />
