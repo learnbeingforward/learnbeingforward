@@ -21,14 +21,20 @@ export function DashboardShell({
   return (
     <div className="min-h-screen bg-cream">
       <SessionGuard />
-      <header className="border-b border-border bg-white">
-        <div className="container-page flex h-16 items-center justify-between md:h-20">
-          <Logo iconSize={32} textSize="text-lg" />
-          <SignOutButton />
-        </div>
-      </header>
-
-      {navLinks && navLinks.length > 0 && <LmsNav links={navLinks} />}
+      {/* hideTitleBlock means the content already supplies a complete header
+          of its own (BuilderHeader) — rendering this shell's header and nav
+          too would stack two (or three) headers on top of each other. */}
+      {!hideTitleBlock && (
+        <>
+          <header className="border-b border-border bg-white">
+            <div className="container-page flex h-16 items-center justify-between md:h-20">
+              <Logo iconSize={32} textSize="text-lg" />
+              <SignOutButton />
+            </div>
+          </header>
+          {navLinks && navLinks.length > 0 && <LmsNav links={navLinks} />}
+        </>
+      )}
 
       <div className="container-page py-10">
         {!hideTitleBlock && (

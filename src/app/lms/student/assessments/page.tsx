@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { studentNavLinks as navLinks } from "@/lib/lms-nav-links";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/lbf/AppShell";
+import { STUDENT_NAV } from "@/components/lbf/nav-config";
 import { BackLink } from "@/components/lms/BackLink";
 import { SharedSnapshotGallery } from "@/components/lms/SharedSnapshotGallery";
 import { AssessmentAnswerReview, type ReviewAnswer } from "@/components/lms/AssessmentAnswerReview";
@@ -25,6 +23,9 @@ export default async function StudentAssessmentsPage({
   const studentId = session!.user.id;
   const { assignmentId } = await searchParams;
 
+  const student = await prisma.user.findUnique({ where: { id: studentId }, select: { name: true, college: { select: { name: true } } } });
+  const shellUser = { name: student?.name ?? "Student", subtitle: student?.college?.name ?? "Student" };
+
   if (assignmentId) {
     const assignment = await prisma.assessmentAssignment.findUnique({
       where: { id: assignmentId },
@@ -37,10 +38,10 @@ export default async function StudentAssessmentsPage({
 
     if (!assignment || assignment.studentId !== studentId || !assignment.sentToStudentAt) {
       return (
-        <DashboardShell title="Assessment Result" subtitle="Not available" navLinks={navLinks}>
+        <AppShell nav={STUDENT_NAV} active="assessments" user={shellUser} crumb="Assessments" title="Assessment Result" subtitle="Not available">
           <BackLink href="/lms/student/assessments" label="Back to Assessments" />
-          <p className="text-sm text-muted-foreground">This result isn&apos;t available.</p>
-        </DashboardShell>
+          <p className="muted">This result isn&apos;t available.</p>
+        </AppShell>
       );
     }
 
@@ -75,16 +76,16 @@ export default async function StudentAssessmentsPage({
     });
 
     return (
-      <DashboardShell title={assignment.assessment.title} subtitle="Your result" navLinks={navLinks}>
+      <AppShell nav={STUDENT_NAV} active="assessments" user={shellUser} crumb="Assessments" title={assignment.assessment.title} subtitle="Your result">
         <BackLink href="/lms/student/assessments" label="Back to Assessments" />
-        <div className="mb-6 rounded-xl border border-border bg-white p-6 text-center">
-          <p className="text-sm text-muted-foreground">{TYPE_LABELS[assignment.assessment.type]}</p>
-          <p className="mt-1 text-3xl font-bold text-indigo">
+        <section className="card" style={{ textAlign: "center" }}>
+          <p className="small muted">{TYPE_LABELS[assignment.assessment.type]}</p>
+          <p className="h1" style={{ marginTop: 4 }}>
             {assignment.totalMarks ?? 0} / {assignment.maxMarks ?? 0}
           </p>
-        </div>
+        </section>
         {assignment.snapshots.length > 0 && (
-          <div className="mb-6">
+          <section className="card">
             <SharedSnapshotGallery
               snapshots={assignment.snapshots.map((s) => ({
                 id: s.id,
@@ -92,11 +93,11 @@ export default async function StudentAssessmentsPage({
                 capturedAt: s.capturedAt.toISOString(),
               }))}
             />
-          </div>
+          </section>
         )}
 
         <AssessmentAnswerReview answers={reviewAnswers} />
-      </DashboardShell>
+      </AppShell>
     );
   }
 
@@ -110,88 +111,81 @@ export default async function StudentAssessmentsPage({
   const completed = assignments.filter((a) => a.status === "SUBMITTED" || a.status === "AUTO_SUBMITTED");
 
   return (
-    <DashboardShell title="Assessments" subtitle="Assigned to you" navLinks={navLinks}>
+    <AppShell nav={STUDENT_NAV} active="assessments" user={shellUser} crumb="Assessments" title="Assessments" subtitle="Assigned to you">
       {assignments.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          No assessments assigned yet.
-        </div>
+        <div className="empty">No assessments assigned yet.</div>
       ) : (
-        <div className="space-y-8">
+        <>
           {toTake.length > 0 && (
-            <div>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">To Take</h2>
-              <div className="space-y-3">
+            <section className="card">
+              <h2 className="h2" style={{ marginBottom: 18 }}>To Take</h2>
+              <ul className="list">
                 {toTake.map((a) => {
                   const now = new Date();
                   const notOpenYet = a.assessment.availableFrom && now < a.assessment.availableFrom;
                   const windowClosed = a.assessment.availableUntil && now > a.assessment.availableUntil;
                   return (
-                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white p-4">
-                      <div>
-                        <p className="font-medium text-indigo">{a.assessment.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {TYPE_LABELS[a.assessment.type]} &middot; {a.assessment.questions.length} question
-                          {a.assessment.questions.length !== 1 ? "s" : ""}
-                        </p>
+                    <li key={a.id} className="list-row">
+                      <div className="grow">
+                        <div className="strong">{a.assessment.title}</div>
+                        <div className="small muted">
+                          {TYPE_LABELS[a.assessment.type]} · {a.assessment.questions.length} question{a.assessment.questions.length !== 1 ? "s" : ""}
+                        </div>
                         {a.assessment.availableFrom && a.assessment.availableUntil && (
-                          <p className="mt-1 text-xs text-muted-foreground">
+                          <div className="small muted" style={{ marginTop: 2 }}>
                             {notOpenYet
                               ? `Opens ${format(a.assessment.availableFrom, "MMM d, h:mm a")}`
                               : windowClosed
                                 ? "Window closed — can no longer be taken"
                                 : `Open until ${format(a.assessment.availableUntil, "MMM d, h:mm a")}`}
-                          </p>
+                          </div>
                         )}
                       </div>
-                      <Button
-                        render={<Link href={`/lms/student/assessments/${a.id}/take`} />}
-                        nativeButton={false}
-                        size="sm"
-                        disabled={!!notOpenYet || !!windowClosed}
-                        className="bg-indigo text-white hover:bg-indigo/90"
+                      <Link
+                        href={`/lms/student/assessments/${a.id}/take`}
+                        className={`btn btn-primary btn-sm ${notOpenYet || windowClosed ? "disabled" : ""}`}
+                        aria-disabled={!!notOpenYet || !!windowClosed}
+                        style={notOpenYet || windowClosed ? { pointerEvents: "none", opacity: 0.5 } : undefined}
                       >
                         {a.status === "IN_PROGRESS" ? "Resume" : "Start"} Assessment
-                      </Button>
-                    </div>
+                      </Link>
+                    </li>
                   );
                 })}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Once started, the assessment opens full-screen. Switching tabs or leaving full-screen counts as a
-                violation — after 3, it is submitted automatically.
+              </ul>
+              <p className="small muted" style={{ marginTop: 12 }}>
+                Once started, the assessment opens full-screen. Switching tabs or leaving full-screen counts as a violation — after 3, it is submitted automatically.
               </p>
-            </div>
+            </section>
           )}
 
           {completed.length > 0 && (
-            <div>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">Completed</h2>
-              <div className="space-y-3">
+            <section className="card">
+              <h2 className="h2" style={{ marginBottom: 18 }}>Completed</h2>
+              <ul className="list">
                 {completed.map((a) => (
-                  <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white p-4">
-                    <div>
-                      <p className="font-medium text-indigo">{a.assessment.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                  <li key={a.id} className="list-row">
+                    <div className="grow">
+                      <div className="strong">{a.assessment.title}</div>
+                      <div className="small muted">
                         {TYPE_LABELS[a.assessment.type]}
                         {a.autoSubmitted && " · Auto-submitted (proctoring violations)"}
-                      </p>
+                      </div>
                     </div>
                     {a.sentToStudentAt ? (
-                      <Link href={`/lms/student/assessments?assignmentId=${a.id}`}>
-                        <Badge className="bg-indigo/10 text-indigo hover:bg-indigo/20">
-                          {a.totalMarks ?? 0} / {a.maxMarks ?? 0} marks — View details
-                        </Badge>
+                      <Link href={`/lms/student/assessments?assignmentId=${a.id}`} className="pill info">
+                        {a.totalMarks ?? 0} / {a.maxMarks ?? 0} marks — View details
                       </Link>
                     ) : (
-                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Awaiting results</Badge>
+                      <span className="pill warning">Awaiting results</span>
                     )}
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           )}
-        </div>
+        </>
       )}
-    </DashboardShell>
+    </AppShell>
   );
 }

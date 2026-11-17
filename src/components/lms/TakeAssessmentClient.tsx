@@ -258,6 +258,7 @@ export function TakeAssessmentClient({
   const audioViolationHandled = useRef(false);
   const finished = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const checkPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
   // A second, offscreen <video> created in JS (not JSX) so it exists from the moment
   // the camera stream is granted — the visible preview <video> only mounts once
   // `started` is true, which is too late: snapshot capture needs a playing video
@@ -444,6 +445,17 @@ export function TakeAssessmentClient({
       video.play().catch(() => {});
     }
   }, [started, proctoringEnabled]);
+
+  // Live preview on the system-check screen itself, once the camera step passes.
+  useEffect(() => {
+    if (checkStatus.camera !== "passed") return;
+    const video = checkPreviewVideoRef.current;
+    const stream = camStreamRef.current;
+    if (video && stream) {
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
+  }, [checkStatus.camera]);
 
   // ---------- Proctoring: webcam snapshots ----------
 
@@ -951,23 +963,19 @@ export function TakeAssessmentClient({
       if (sq.questionType === "CODING") {
         const sub = codingSubmissions[sq.id];
         return (
-          <div key={sq.id} className="rounded-xl border border-border bg-white p-4">
-            <div className="flex items-start justify-between gap-3">
-              <p className="whitespace-pre-wrap text-sm font-medium text-indigo">
+          <div key={sq.id} className="box">
+            <div className="split" style={{ alignItems: "flex-start" }}>
+              <p className="small strong" style={{ whiteSpace: "pre-wrap" }}>
                 Q{globalIndex + 1}. {sq.questionText}
               </p>
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                  sub ? "bg-indigo/10 text-indigo" : "bg-cream text-muted-foreground"
-                }`}
-              >
+              <span className={`pill ${sub ? "info" : ""}`} style={{ flexShrink: 0 }}>
                 {sub ? `${sub.passed}/${sub.total} test cases passed` : "Not attempted"}
               </span>
             </div>
             {sub ? (
-              <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 text-xs text-white">{sub.code || "(empty submission)"}</pre>
+              <pre className="code" style={{ marginTop: 8 }}>{sub.code || "(empty submission)"}</pre>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">You didn&apos;t submit code for this question.</p>
+              <p className="small muted" style={{ marginTop: 8 }}>You didn&apos;t submit code for this question.</p>
             )}
           </div>
         );
@@ -976,18 +984,16 @@ export function TakeAssessmentClient({
       const value = answers[sq.id];
       const answered = !!value && value.trim() !== "";
       return (
-        <div key={sq.id} className="rounded-xl border border-border bg-white p-4">
-          <div className="flex items-start justify-between gap-3">
-            <p className="whitespace-pre-wrap text-sm font-medium text-indigo">
+        <div key={sq.id} className="box">
+          <div className="split" style={{ alignItems: "flex-start" }}>
+            <p className="small strong" style={{ whiteSpace: "pre-wrap" }}>
               Q{globalIndex + 1}. {sq.questionText}
             </p>
-            {!answered && (
-              <span className="shrink-0 rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-muted-foreground">Skipped</span>
-            )}
+            {!answered && <span className="pill" style={{ flexShrink: 0 }}>Skipped</span>}
           </div>
           {sq.questionType === "MCQ" ? (
             answered ? (
-              <p className="mt-2 whitespace-pre-wrap text-sm text-indigo">
+              <p className="small" style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>
                 {sq.answerType === "NUMERIC"
                   ? value
                   : value
@@ -996,12 +1002,12 @@ export function TakeAssessmentClient({
                       .join("; ")}
               </p>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">No option selected.</p>
+              <p className="small muted" style={{ marginTop: 8 }}>No option selected.</p>
             )
           ) : answered ? (
-            <p className="mt-2 whitespace-pre-wrap rounded-lg bg-cream p-3 text-sm text-indigo">{value}</p>
+            <p className="small" style={{ marginTop: 8, whiteSpace: "pre-wrap", background: "var(--surface)", borderRadius: 10, padding: 12 }}>{value}</p>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">No answer given.</p>
+            <p className="small muted" style={{ marginTop: 8 }}>No answer given.</p>
           )}
         </div>
       );
@@ -1019,76 +1025,79 @@ export function TakeAssessmentClient({
       : [{ label: "Questions", qs: questions }];
 
     return (
-      <div className="min-h-screen bg-cream pb-10">
-        <div className="bg-indigo-dark px-4 py-6 text-white sm:px-6">
-          <div className="mx-auto flex max-w-4xl items-center justify-between">
-            <p className="font-semibold">{assessmentTitle}</p>
-            <span className="text-xs font-semibold uppercase tracking-wide text-white/70">Assessment Completed</span>
+      <div className="lbf-scope" style={{ minHeight: "100vh", paddingBottom: 40 }}>
+        <header className="app-band">
+          <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 16 }}>
+            <p className="strong" style={{ color: "#fff" }}>{assessmentTitle}</p>
+            <span className="small" style={{ color: "var(--on-navy-muted)", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 600 }}>Assessment Completed</span>
           </div>
-        </div>
+        </header>
 
-        <div className="mx-auto -mt-8 max-w-4xl px-4 sm:px-6">
-          <div className="rounded-2xl border border-border bg-white p-6 shadow-lg sm:p-8">
+        <main className="container">
+          <section className="card lift stack">
             {autoSubmitted && autoSubmitReason && (
-              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-                <AlertTriangle className="mt-0.5 size-6 shrink-0 text-red-500" />
+              <div className="alert danger">
+                <AlertTriangle className="size-5 shrink-0" />
                 <div>
-                  <p className="font-semibold text-red-700">Assessment Submitted Automatically</p>
-                  <p className="mt-1 text-sm text-red-700/80">{AUTO_SUBMIT_MESSAGE[autoSubmitReason]}</p>
+                  <p className="strong">Assessment Submitted Automatically</p>
+                  <p className="small" style={{ marginTop: 2 }}>{AUTO_SUBMIT_MESSAGE[autoSubmitReason]}</p>
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-4 border-b border-border pb-6">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-green-100">
-                <CheckCircle2 className="size-8 text-green-600" />
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--border)", paddingBottom: 20 }}>
+              <span className="icon-box" style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--success-soft)", color: "var(--success)" }}>
+                <CheckCircle2 className="size-8" />
+              </span>
               <div>
-                <h1 className="text-xl font-bold text-indigo sm:text-2xl">Your assessment has been submitted</h1>
-                <p className="mt-0.5 text-sm text-muted-foreground">
+                <h1 className="h2">Your assessment has been submitted</h1>
+                <p className="small muted" style={{ marginTop: 2 }}>
                   Here&apos;s what was recorded for every question — review it, then head back to your assessments.
                 </p>
               </div>
             </div>
 
-            <div className="my-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                { label: "Total Questions", value: questions.length, className: "bg-cream text-indigo" },
-                { label: "Attempted", value: totalAnswered, className: "bg-green-50 text-green-700" },
-                { label: "Not Attempted", value: questions.length - totalAnswered, className: "bg-amber-50 text-amber-700" },
-                { label: "Bookmarked", value: totalBookmarked, className: "bg-indigo/5 text-indigo" },
-              ].map((tile) => (
-                <div key={tile.label} className={`rounded-xl p-4 text-center ${tile.className}`}>
-                  <p className="text-2xl font-bold">{tile.value}</p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide">{tile.label}</p>
-                </div>
-              ))}
+            <div className="grid" style={{ ["--min" as string]: "140px" }}>
+              <div className="tile">
+                <div className="label">Total Questions</div>
+                <div className="value">{questions.length}</div>
+              </div>
+              <div className="tile success">
+                <div className="label">Attempted</div>
+                <div className="value">{totalAnswered}</div>
+              </div>
+              <div className="tile warning">
+                <div className="label">Not Attempted</div>
+                <div className="value">{questions.length - totalAnswered}</div>
+              </div>
+              <div className="tile gold">
+                <div className="label">Bookmarked</div>
+                <div className="value">{totalBookmarked}</div>
+              </div>
             </div>
 
             {sections.map((section) => {
               const sectionAnswered = section.qs.filter(isQuestionAnswered).length;
               return (
-                <div key={section.label} className="mt-6">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{section.label}</p>
-                    <p className="text-xs text-muted-foreground">
+                <div key={section.label}>
+                  <div className="split" style={{ marginBottom: 10 }}>
+                    <p className="label">{section.label}</p>
+                    <p className="small muted">
                       {sectionAnswered}/{section.qs.length} attempted
                     </p>
                   </div>
-                  <div className="space-y-3">
+                  <div className="stack" style={{ gap: 12 }}>
                     {section.qs.map((sq) => renderQuestionCard(sq, questions.findIndex((x) => x.id === sq.id)))}
                   </div>
                 </div>
               );
             })}
 
-            <div className="mt-6 flex items-start gap-3 rounded-xl bg-indigo/5 p-5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white">
-                <CheckCircle2 className="size-5 text-indigo" />
-              </div>
+            <div className="alert info">
+              <CheckCircle2 className="size-5 shrink-0" />
               <div>
-                <p className="font-semibold text-indigo">Your result will be shared after evaluation</p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="strong">Your result will be shared after evaluation</p>
+                <p className="small" style={{ marginTop: 2 }}>
                   We&apos;re compiling your answers, running any submitted code against all test cases, and
                   reviewing proctoring activity. You&apos;ll be notified once your result is ready — you don&apos;t
                   need to do anything else.
@@ -1096,15 +1105,12 @@ export function TakeAssessmentClient({
               </div>
             </div>
 
-            <Button
-              onClick={() => router.push("/lms/student/assessments")}
-              className="mt-6 w-full bg-indigo text-white hover:bg-indigo/90 sm:w-auto"
-            >
+            <button onClick={() => router.push("/lms/student/assessments")} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
               Go to Dashboard <ChevronRight className="size-4" />
-            </Button>
-          </div>
-          <p className="mt-4 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
-        </div>
+            </button>
+          </section>
+          <p className="app-footer">Powered by Learn Being Forward</p>
+        </main>
       </div>
     );
   }
@@ -1122,17 +1128,17 @@ export function TakeAssessmentClient({
 
   if (needsFullscreenClick) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6 text-center text-white">
-        <div className="max-w-md">
-          <Maximize className="mx-auto mb-4 size-10 text-gold" />
-          <h1 className="text-xl font-bold">Enter Full-Screen to Begin</h1>
-          <p className="mt-3 text-sm text-white/70">
+      <div className="lbf-scope" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--navy)", padding: 24 }}>
+        <div className="card" style={{ maxWidth: 420, textAlign: "center" }}>
+          <Maximize className="size-10" style={{ color: "var(--gold)", margin: "0 auto" }} />
+          <h1 className="h2" style={{ marginTop: 14 }}>Enter Full-Screen to Begin</h1>
+          <p className="small muted" style={{ marginTop: 10 }}>
             Your camera and microphone are ready. One last step — click below to enter full-screen, which starts
             the assessment immediately.
           </p>
-          <Button onClick={handleEnterFullscreenAndBegin} className="mt-6 bg-gold text-indigo hover:bg-gold-light">
-            <Maximize className="size-4" /> Enter Full-Screen & Start
-          </Button>
+          <button onClick={handleEnterFullscreenAndBegin} className="btn btn-gold" style={{ marginTop: 18 }}>
+            <Maximize className="size-4" /> Enter Full-Screen &amp; Start
+          </button>
         </div>
       </div>
     );
@@ -1192,101 +1198,109 @@ export function TakeAssessmentClient({
     ];
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6">
-        <div className="w-full max-w-lg">
-          <h1 className="text-center text-xl font-bold text-white">Pre-Assessment System Check</h1>
-          <p className="mt-2 text-center text-sm text-white/70">
-            Complete these {steps.length} checks in order — each needs a quick permission or a few seconds — before
-            you can start the assessment.
-          </p>
+      <div className="lbf-scope">
+        <header className="app-band">
+          <div className="container" style={{ paddingTop: 16 }}>
+            <div className="split">
+              <div>
+                <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>{assessmentTitle}</h1>
+                <p className="small" style={{ color: "var(--on-navy-muted)", marginTop: 2 }}>Step 1 of 3 · System check</p>
+              </div>
+              <span className={`pill ${allPassed ? "success" : "gold"}`} style={{ background: allPassed ? undefined : "var(--navy-3)", color: allPassed ? undefined : "#fff" }}>
+                {allPassed && <CheckCircle2 className="size-3.5" />} {steps.filter((s) => checkStatus[s.key] === "passed").length} of {steps.length} checks passed
+              </span>
+            </div>
+          </div>
+        </header>
 
-          <div className="mt-6 space-y-3">
-            {steps.map((step, i) => {
-              const status = checkStatus[step.key];
-              const Icon = step.icon;
-              const isActive = i === firstPendingIndex;
-              return (
-                <div
-                  key={step.key}
-                  className={`rounded-xl border p-4 ${
-                    status === "passed"
-                      ? "border-green-400/40 bg-green-500/10"
-                      : status === "failed"
-                        ? "border-red-400/40 bg-red-500/10"
-                        : "border-white/15 bg-white/5"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-                      <Icon className="size-5 text-gold" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-white">
-                        {i + 1}. {step.label}
-                      </p>
-                      <p className="mt-0.5 text-xs text-white/60">{status === "failed" ? step.failHint : step.hint}</p>
-                      {step.key === "audio" && status === "checking" && (
-                        <p className="mt-1 text-xs font-semibold text-gold">Listening... {calibrationSecondsLeft}s</p>
-                      )}
-                      {step.key === "position" && status === "passed" && cameraPositionValue && (
-                        <p className="mt-1 text-xs font-semibold text-gold">
-                          You chose: {CAMERA_POSITION_OPTIONS.find((o) => o.value === cameraPositionValue)?.label}
-                        </p>
-                      )}
-                    </div>
-                    {status === "passed" && <CheckCircle2 className="size-6 shrink-0 text-green-400" />}
-                    {status === "failed" && <XCircle className="size-6 shrink-0 text-red-400" />}
-                    {status !== "passed" && step.key !== "position" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={!isActive || status === "checking"}
-                        onClick={step.action}
-                        className="shrink-0 bg-gold text-indigo hover:bg-gold-light disabled:opacity-40"
-                      >
-                        {status === "checking" ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : status === "failed" ? (
-                          "Retry"
-                        ) : (
-                          "Check"
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                  {step.key === "position" && status !== "passed" && (
-                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {CAMERA_POSITION_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          disabled={!isActive}
-                          onClick={() => handleSelectCameraPosition(opt.value)}
-                          className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-medium text-white transition-colors hover:border-gold hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
+        <main className="container">
+          <section className="card lift stack">
+            <div>
+              <h2 className="h2">Let&apos;s make sure your system is ready</h2>
+              <p className="small muted" style={{ marginTop: 4 }}>
+                Complete these {steps.length} checks in order — each needs a quick permission or a few seconds — before you can start the assessment.
+              </p>
+            </div>
+
+            <div className="row" style={{ alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 280px", minWidth: 260 }}>
+                <p className="label" style={{ marginBottom: 10 }}>Camera preview</p>
+                <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", background: "var(--navy)", aspectRatio: "4/3" }}>
+                  <video ref={checkPreviewVideoRef} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: checkStatus.camera === "passed" ? "block" : "none" }} />
+                  {checkStatus.camera !== "passed" && (
+                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--on-navy-muted)" }}>
+                      <Video className="size-10" />
                     </div>
                   )}
+                  {checkStatus.camera === "passed" && (
+                    <span className="pill danger" style={{ position: "absolute", top: 10, left: 10 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} /> LIVE
+                    </span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                {checkStatus.audio === "checking" && (
+                  <p className="small" style={{ marginTop: 10, color: "var(--gold-text)", fontWeight: 600 }}>Listening for background noise… {calibrationSecondsLeft}s</p>
+                )}
+              </div>
 
-          {mediaError && <p className="mt-5 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{mediaError}</p>}
+              <div style={{ flex: "2 1 360px", minWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}>
+                <p className="label">System checks</p>
+                {steps.map((step, i) => {
+                  const status = checkStatus[step.key];
+                  const Icon = step.icon;
+                  const isActive = i === firstPendingIndex;
+                  return (
+                    <div key={step.key} className="box" style={status === "passed" ? { borderColor: "var(--success)", background: "var(--success-soft)" } : status === "failed" ? { borderColor: "var(--danger)", background: "var(--danger-soft)" } : undefined}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span className="icon-box navy"><Icon className="size-5" /></span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p className="strong">{i + 1}. {step.label}</p>
+                          <p className="small muted" style={{ marginTop: 2 }}>{status === "failed" ? step.failHint : step.hint}</p>
+                          {step.key === "position" && status === "passed" && cameraPositionValue && (
+                            <p className="small" style={{ marginTop: 4, color: "var(--gold-text)", fontWeight: 600 }}>
+                              You chose: {CAMERA_POSITION_OPTIONS.find((o) => o.value === cameraPositionValue)?.label}
+                            </p>
+                          )}
+                        </div>
+                        {status === "passed" && <CheckCircle2 className="size-6 shrink-0" style={{ color: "var(--success)" }} />}
+                        {status === "failed" && <XCircle className="size-6 shrink-0" style={{ color: "var(--danger)" }} />}
+                        {status !== "passed" && step.key !== "position" && (
+                          <button type="button" disabled={!isActive || status === "checking"} onClick={step.action} className="btn btn-gold btn-sm" style={{ flexShrink: 0 }}>
+                            {status === "checking" ? <Loader2 className="size-4 animate-spin" /> : status === "failed" ? "Retry" : "Check"}
+                          </button>
+                        )}
+                      </div>
+                      {step.key === "position" && status !== "passed" && (
+                        <div className="grid" style={{ ["--min" as string]: "120px", marginTop: 10 }}>
+                          {CAMERA_POSITION_OPTIONS.map((opt) => (
+                            <button key={opt.value} type="button" disabled={!isActive} onClick={() => handleSelectCameraPosition(opt.value)} className="btn btn-sm">
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-          <Button
-            onClick={() => {
-              setPreExamChecking(false);
-              setShowInstructions(true);
-            }}
-            disabled={!allPassed}
-            className="mt-5 w-full bg-gold text-indigo hover:bg-gold-light disabled:opacity-40"
-          >
-            Next: Instructions <ChevronRight className="size-4" />
-          </Button>
-        </div>
+            {mediaError && <div className="alert danger">{mediaError}</div>}
+
+            <button
+              onClick={() => {
+                setPreExamChecking(false);
+                setShowInstructions(true);
+              }}
+              disabled={!allPassed}
+              className="btn btn-primary"
+              style={{ alignSelf: "flex-end", opacity: allPassed ? 1 : 0.4 }}
+            >
+              Next: Instructions <ChevronRight className="size-4" />
+            </button>
+          </section>
+          <p className="app-footer">Powered by Learn Being Forward</p>
+        </main>
       </div>
     );
   }
@@ -1314,62 +1328,62 @@ export function TakeAssessmentClient({
         outcome: "A single still image is captured and sent to the admin to review — this does not auto-submit by itself.",
       },
     ];
-    const severityClass: Record<string, string> = {
-      WARNING: "bg-amber-100 text-amber-700",
-      "FLAGGED FOR REVIEW": "bg-indigo/10 text-indigo",
+    const severityPill: Record<string, string> = {
+      WARNING: "warning",
+      "FLAGGED FOR REVIEW": "info",
     };
 
     return (
-      <div className="min-h-screen bg-cream pb-10">
-        <div className="bg-indigo-dark px-4 py-6 text-white sm:px-6">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => {
-                setShowInstructions(false);
-                setPreExamChecking(true);
-              }}
-              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80 hover:text-white"
-            >
-              <ChevronLeft className="size-3.5" /> System Check
-            </button>
-            <div className="text-center">
-              <p className="font-semibold">{assessmentTitle}</p>
-              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
-                Read before you start
+      <div className="lbf-scope">
+        <header className="app-band">
+          <div className="container" style={{ paddingTop: 16 }}>
+            <div className="split">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInstructions(false);
+                  setPreExamChecking(true);
+                }}
+                className="btn btn-ghost-light btn-sm"
+              >
+                <ChevronLeft className="size-3.5" /> System Check
+              </button>
+              <div style={{ textAlign: "center" }}>
+                <p className="strong" style={{ color: "#fff" }}>{assessmentTitle}</p>
+                <p className="small" style={{ color: "var(--on-navy-muted)", marginTop: 2 }}>Step 2 of 3 · Read before you start</p>
+              </div>
+              <span className="pill success"><CheckCircle2 className="size-3.5" /> All system checks passed</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="container">
+          <section className="card lift stack">
+            <div>
+              <h1 className="h2">Instructions &amp; Rules</h1>
+              <p className="small muted" style={{ marginTop: 4 }}>
+                Please read everything on this page. The timer starts only when you click Start Assessment.
               </p>
             </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
-              <CheckCircle2 className="size-3.5" /> All system checks passed
-            </span>
-          </div>
-        </div>
 
-        <div className="mx-auto -mt-8 max-w-6xl px-4 sm:px-6">
-          <div className="rounded-2xl border border-border bg-white p-6 shadow-lg sm:p-8">
-            <h1 className="text-2xl font-bold text-indigo">Instructions &amp; Rules</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Please read everything on this page. The timer starts only when you click Start Assessment.
-            </p>
-
-            <div className="mt-6 grid grid-cols-2 gap-3 border-y border-border py-6 sm:grid-cols-4">
+            <div className="grid" style={{ ["--min" as string]: "140px" }}>
               {[
                 { label: "Duration", value: `${durationMinutes} min` },
                 { label: "Questions", value: String(questions.length) },
                 { label: "Sections", value: sectionLabels.join(", ") },
                 { label: "Total Marks", value: String(totalMarks) },
               ].map((tile) => (
-                <div key={tile.label} className="rounded-xl bg-cream p-4 text-center">
-                  <p className="text-xl font-bold text-indigo">{tile.value}</p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{tile.label}</p>
+                <div key={tile.label} className="tile">
+                  <div className="label">{tile.label}</div>
+                  <div className="value">{tile.value}</div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">General Instructions</p>
-                <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-indigo">
+            <div className="row" style={{ alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 300px" }}>
+                <p className="label" style={{ marginBottom: 10 }}>General Instructions</p>
+                <ol className="stack" style={{ gap: 8, paddingLeft: 20, fontSize: 14 }}>
                   <li>Once started, this assessment runs full-screen for the entire duration.</li>
                   <li>Do not switch tabs, minimize the window, or exit full-screen — each time counts as a violation.</li>
                   <li>Answer every question within the time limit — it auto-submits at 00:00 with whatever is saved.</li>
@@ -1384,46 +1398,36 @@ export function TakeAssessmentClient({
                 </ol>
               </div>
 
-              <div className="rounded-xl bg-cream p-5">
-                <p className="flex items-center gap-2 font-semibold text-indigo">
+              <div className="box" style={{ flex: "1 1 260px", background: "var(--surface)" }}>
+                <p className="strong" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Video className="size-5" /> AI Proctoring is ON
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="small muted" style={{ marginTop: 6 }}>
                   These are monitored for the full session and reviewed by an admin afterward:
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {["Webcam video (live AI analysis only — never recorded)", "Microphone audio level", "Tab & window switches", "Full-screen exit"].map(
-                    (chip) => (
-                      <span key={chip} className="rounded-full border border-border bg-white px-3 py-1 text-xs text-indigo">
-                        {chip}
-                      </span>
-                    )
-                  )}
+                <div className="row" style={{ marginTop: 10, gap: 8 }}>
+                  {["Webcam video (live AI analysis only — never recorded)", "Microphone audio level", "Tab & window switches", "Full-screen exit"].map((chip) => (
+                    <span key={chip} className="chip">{chip}</span>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="mt-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Violations &amp; What Happens</p>
-              <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-cream text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-2.5">Violation</th>
-                      <th className="px-4 py-2.5">Detected By</th>
-                      <th className="px-4 py-2.5">What Happens</th>
-                    </tr>
+            <div>
+              <p className="label" style={{ marginBottom: 10 }}>Violations &amp; What Happens</p>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr><th>Violation</th><th>Detected By</th><th>What Happens</th></tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody>
                     {violations.map((v) => (
                       <tr key={v.violation}>
-                        <td className="px-4 py-3 font-medium text-indigo">{v.violation}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{v.detectedBy}</td>
-                        <td className="px-4 py-3">
-                          <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${severityClass[v.severity]}`}>
-                            {v.severity}
-                          </span>
-                          <p className="text-xs text-muted-foreground">{v.outcome}</p>
+                        <td className="strong">{v.violation}</td>
+                        <td className="small muted">{v.detectedBy}</td>
+                        <td>
+                          <div className={`pill ${severityPill[v.severity]}`} style={{ marginBottom: 4 }}>{v.severity}</div>
+                          <p className="small muted">{v.outcome}</p>
                         </td>
                       </tr>
                     ))}
@@ -1432,54 +1436,45 @@ export function TakeAssessmentClient({
               </div>
             </div>
 
-            <label className="mt-6 flex items-start gap-2 rounded-xl border border-border bg-cream p-4 text-sm text-indigo">
-              <input
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 accent-indigo"
-              />
+            <label className="check box" style={{ background: "var(--surface)" }}>
+              <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
               <span>
                 I have read the instructions. I agree to be monitored through my camera and microphone, and I
                 understand that malpractice can lead to disqualification.
               </span>
             </label>
 
-            {mediaError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-destructive">{mediaError}</p>}
+            {mediaError && <div className="alert danger">{mediaError}</div>}
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="split">
               <button
                 type="button"
                 onClick={() => {
                   setShowInstructions(false);
                   setPreExamChecking(true);
                 }}
-                className="text-sm font-semibold text-indigo underline underline-offset-2"
+                className="btn btn-sm"
               >
                 ‹ Back to System Check
               </button>
-              <Button
-                onClick={handleFinalStart}
-                disabled={!agreedToTerms || starting}
-                className="bg-indigo text-white hover:bg-indigo/90 disabled:opacity-40"
-              >
+              <button onClick={handleFinalStart} disabled={!agreedToTerms || starting} className="btn btn-primary" style={{ opacity: !agreedToTerms || starting ? 0.4 : 1 }}>
                 {starting ? <Loader2 className="size-4 animate-spin" /> : <Maximize className="size-4" />}
                 Start Assessment
-              </Button>
+              </button>
             </div>
-          </div>
-          <p className="mt-4 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
-        </div>
+          </section>
+          <p className="app-footer">Powered by Learn Being Forward</p>
+        </main>
       </div>
     );
   }
 
   if (!started) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-indigo-dark p-6 text-center text-white">
-        <div className="max-w-md">
-          <h1 className="text-xl font-bold">{assessmentTitle}</h1>
-          <p className="mt-3 text-sm text-white/70">
+      <div className="lbf-scope" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--navy)", padding: 24 }}>
+        <div className="card" style={{ maxWidth: 440, textAlign: "center" }}>
+          <h1 className="h2">{assessmentTitle}</h1>
+          <p className="small muted" style={{ marginTop: 12 }}>
             This assessment runs full-screen and lasts <strong>{durationMinutes} minutes</strong>. Once started,
             do not switch tabs, minimize the window, or leave full-screen — each time counts as a violation, and
             after {VIOLATION_LIMIT} the assessment is submitted automatically with whatever you&apos;ve answered
@@ -1487,24 +1482,18 @@ export function TakeAssessmentClient({
             submits immediately.
           </p>
           {proctoringEnabled && (
-            <p className="mt-2 text-sm text-white/70">
+            <p className="small muted" style={{ marginTop: 8 }}>
               This assessment is proctored — you will be watched on camera and your audio will be monitored for
               the entire duration. Unexpected noise is flagged as a violation, up to {AUDIO_VIOLATION_LIMIT}{" "}
               warnings.
             </p>
           )}
-          <p className="mt-2 text-sm text-white/70">{questions.length} questions &middot; {questions.reduce((s, q) => s + q.marks, 0)} marks total.</p>
-          {mediaError && (
-            <p className="mt-3 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{mediaError}</p>
-          )}
-          <Button
-            onClick={proctoringEnabled ? () => setPreExamChecking(true) : handleStart}
-            disabled={starting}
-            className="mt-6 bg-gold text-indigo hover:bg-gold-light"
-          >
+          <p className="small muted" style={{ marginTop: 8 }}>{questions.length} questions &middot; {questions.reduce((s, q) => s + q.marks, 0)} marks total.</p>
+          {mediaError && <div className="alert danger" style={{ marginTop: 12 }}>{mediaError}</div>}
+          <button onClick={proctoringEnabled ? () => setPreExamChecking(true) : handleStart} disabled={starting} className="btn btn-gold" style={{ marginTop: 20 }}>
             {starting ? <Loader2 className="size-4 animate-spin" /> : <Maximize className="size-4" />}
             {proctoringEnabled ? "Start System Check" : "Start Assessment (Full-Screen)"}
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -1573,29 +1562,25 @@ export function TakeAssessmentClient({
       : [{ label: assessmentTitle, qs: questions }];
 
     return (
-      <div className="min-h-screen bg-cream">
-        <div className="bg-indigo-dark px-6 py-5 text-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowAllProblems(false)}
-              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80 hover:text-white"
-            >
+      <div className="lbf-scope" style={{ minHeight: "100vh" }}>
+        <header className="app-band" style={{ padding: "16px 0" }}>
+          <div className="container split">
+            <button type="button" onClick={() => setShowAllProblems(false)} className="btn btn-ghost-light btn-sm">
               <ChevronLeft className="size-3.5" /> Back to Assessment
             </button>
-            <p className="text-sm font-semibold">{assessmentTitle}</p>
+            <p className="strong" style={{ color: "#fff" }}>{assessmentTitle}</p>
           </div>
-        </div>
-        <div className="mx-auto max-w-5xl space-y-8 p-6">
+        </header>
+        <main className="container stack" style={{ paddingTop: 24, paddingBottom: 24 }}>
           {sections.map((section) => (
-            <div key={section.label}>
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{section.label}</p>
-                <p className="text-xs text-muted-foreground">
+            <section key={section.label} className="card">
+              <div className="split" style={{ marginBottom: 14 }}>
+                <p className="label">{section.label}</p>
+                <p className="small muted">
                   {section.qs.filter(isAnswered).length}/{section.qs.length} attempted
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">
+              <div className="grid" style={{ ["--min" as string]: "110px" }}>
                 {section.qs.map((sq) => {
                   const globalIndex = activeQuestions.findIndex((aq) => aq.id === sq.id);
                   const isCurrentPhase = globalIndex !== -1;
@@ -1609,122 +1594,113 @@ export function TakeAssessmentClient({
                         jumpTo(globalIndex);
                         setShowAllProblems(false);
                       }}
-                      className={`rounded-xl border p-3 text-left transition-colors ${
+                      className="box"
+                      style={
                         !isCurrentPhase
-                          ? "cursor-not-allowed border-border bg-white/50 opacity-50"
+                          ? { cursor: "not-allowed", opacity: 0.5, textAlign: "left" }
                           : done
-                            ? "border-green-300 bg-green-50"
-                            : "border-border bg-white hover:border-indigo/40"
-                      }`}
+                            ? { borderColor: "var(--success)", background: "var(--success-soft)", textAlign: "left" }
+                            : { textAlign: "left" }
+                      }
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-indigo">Q{questions.findIndex((x) => x.id === sq.id) + 1}</span>
-                        {bookmarked[sq.id] && <Bookmark className="size-3.5 fill-gold text-gold" />}
+                      <div className="split">
+                        <span className="strong">Q{questions.findIndex((x) => x.id === sq.id) + 1}</span>
+                        {bookmarked[sq.id] && <Bookmark className="size-3.5" style={{ color: "var(--gold)", fill: "var(--gold)" }} />}
                       </div>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
+                      <p className="small muted" style={{ marginTop: 4 }}>
                         {sq.questionType === "CODING" ? "Coding" : sq.questionType === "MCQ" ? "MCQ" : "Written"}
                       </p>
-                      <p className={`mt-1 text-[11px] font-medium ${done ? "text-green-700" : "text-muted-foreground"}`}>
+                      <p className="small" style={{ marginTop: 2, fontWeight: 600, color: done ? "var(--success-text)" : "var(--muted)" }}>
                         {done ? "Attempted" : "Not attempted"}
                       </p>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </section>
           ))}
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-cream pb-28">
+    <div className="lbf-scope" style={{ minHeight: "100vh", paddingBottom: 110 }}>
       {/* HEADER BAND */}
-      <div className="bg-indigo-dark px-4 py-6 text-white sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => setShowAllProblems(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/80 hover:text-white"
-          >
+      <header className="app-band" style={{ padding: "16px 0" }}>
+        <div className="container" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <button type="button" onClick={() => setShowAllProblems(true)} className="btn btn-ghost-light btn-sm">
             <ChevronLeft className="size-3.5" /> All Problems
           </button>
 
-          <div className="text-center">
-            <p className="flex items-center justify-center gap-1.5">
-              <Clock className="size-5 text-gold" />
+          <div style={{ textAlign: "center" }}>
+            <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#fff" }}>
+              <Clock className="size-5" style={{ color: "var(--gold)" }} />
               {renderTimer()}
             </p>
-            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+            <p className="small" style={{ color: "var(--on-navy-muted)", marginTop: 2 }}>
               Time left in this assessment session
             </p>
           </div>
 
-          <div className="w-44 sm:w-52">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-              <div
-                className="h-full rounded-full bg-green-500 transition-all"
-                style={{ width: `${activeQuestions.length ? (answeredCount / activeQuestions.length) * 100 : 0}%` }}
-              />
+          <div style={{ width: 200 }}>
+            <div className="progress on-navy">
+              <span style={{ width: `${activeQuestions.length ? (answeredCount / activeQuestions.length) * 100 : 0}%` }} />
             </div>
-            <p className="mt-1 text-right text-[11px] text-white/70">
+            <p className="small" style={{ textAlign: "right", color: "var(--on-navy-muted)", marginTop: 4 }}>
               {answeredCount}/{activeQuestions.length} Questions attempted
             </p>
           </div>
         </div>
-      </div>
+      </header>
 
       {(!isFullscreen || warning || audioWarning) && (
-        <div className="mx-auto max-w-6xl space-y-2 px-4 pt-4 sm:px-6">
+        <div className="container stack" style={{ gap: 8, paddingTop: 16 }}>
           {!isFullscreen && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-              <span className="flex items-center gap-1.5">
+            <div className="alert warning" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <AlertTriangle className="size-4" /> Not in full-screen — Violations: {violationCount}/{VIOLATION_LIMIT}
                 {proctoringEnabled && <> &middot; Audio: {audioViolationCount}/{AUDIO_VIOLATION_LIMIT}</>}
               </span>
-              <Button
-                size="sm"
-                onClick={() => document.documentElement.requestFullscreen().catch(() => {})}
-                className="bg-gold text-indigo hover:bg-gold-light"
-              >
+              <button onClick={() => document.documentElement.requestFullscreen().catch(() => {})} className="btn btn-gold btn-sm">
                 <Maximize className="size-3.5" /> Return to Full-Screen
-              </Button>
+              </button>
             </div>
           )}
           {warning && (
-            <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">
-              <AlertTriangle className="mr-1.5 inline size-4" /> {warning}
+            <div className="alert danger">
+              <AlertTriangle className="size-4 shrink-0" /> {warning}
             </div>
           )}
           {audioWarning && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-              <AlertTriangle className="mr-1.5 inline size-4" /> {audioWarning}
+            <div className="alert warning">
+              <AlertTriangle className="size-4 shrink-0" /> {audioWarning}
             </div>
           )}
         </div>
       )}
 
       {hasCodingQuestions && (
-        <p className="mx-auto mt-4 max-w-6xl px-4 text-center text-xs font-semibold uppercase tracking-wide text-indigo sm:px-6">
+        <p className="container small strong" style={{ marginTop: 16, textAlign: "center", textTransform: "uppercase", letterSpacing: ".04em" }}>
           {inCodingPhase ? "Phase 2 — Coding" : "Phase 1 — Multiple Choice & Written"}
         </p>
       )}
 
       {/* MAIN CARD — overlaps the header band */}
-      <div className="mx-auto -mt-8 max-w-6xl px-4 sm:px-6">
-        <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-lg">
+      <div className="container">
+        <div className="card lift" style={{ padding: 0, overflow: "hidden" }}>
           {/* question navigation strip */}
-          <div className="flex items-center justify-center gap-2 overflow-x-auto border-b border-border bg-cream/60 px-4 py-3">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, overflowX: "auto", borderBottom: "1px solid var(--border)", background: "var(--surface)", padding: "12px 16px" }}>
             <button
               type="button"
               disabled={!hasPrevWindow}
               onClick={() => setNavWindowStart((w) => Math.max(0, w - NAV_WINDOW_SIZE))}
-              className="shrink-0 text-xs font-semibold uppercase tracking-wide text-indigo disabled:opacity-30"
+              className="small strong"
+              style={{ flexShrink: 0, textTransform: "uppercase", letterSpacing: ".04em", opacity: hasPrevWindow ? 1 : 0.3 }}
             >
               ‹ Prev
             </button>
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div style={{ display: "flex", flexShrink: 0, alignItems: "center", gap: 6 }}>
               {navWindowQuestions.map((nq, idx) => {
                 const i = navWindowStart + idx;
                 const current = i === currentIndex;
@@ -1734,17 +1710,24 @@ export function TakeAssessmentClient({
                     key={nq.id}
                     type="button"
                     onClick={() => jumpTo(i)}
-                    className={`relative flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                      current
-                        ? "bg-indigo text-white"
-                        : done
-                          ? "border border-border bg-white text-indigo"
-                          : "border border-border bg-white text-muted-foreground"
-                    }`}
+                    className="small strong"
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      flexShrink: 0,
+                      width: 36,
+                      height: 36,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "50%",
+                      background: current ? "var(--navy)" : "#fff",
+                      color: current ? "#fff" : done ? "var(--navy)" : "var(--muted)",
+                      border: current ? "none" : "1px solid var(--border)",
+                    }}
                     title={`Question ${i + 1}${done ? " (answered)" : ""}`}
                   >
                     {i + 1}
-                    {done && <span className={`absolute bottom-1 size-1 rounded-full ${current ? "bg-white" : "bg-green-500"}`} />}
+                    {done && <span style={{ position: "absolute", bottom: 4, width: 4, height: 4, borderRadius: "50%", background: current ? "#fff" : "var(--success)" }} />}
                   </button>
                 );
               })}
@@ -1753,7 +1736,8 @@ export function TakeAssessmentClient({
               type="button"
               disabled={!hasNextWindow}
               onClick={() => setNavWindowStart((w) => w + NAV_WINDOW_SIZE)}
-              className="shrink-0 text-xs font-semibold uppercase tracking-wide text-indigo disabled:opacity-30"
+              className="small strong"
+              style={{ flexShrink: 0, textTransform: "uppercase", letterSpacing: ".04em", opacity: hasNextWindow ? 1 : 0.3 }}
             >
               Next ›
             </button>
@@ -1775,34 +1759,32 @@ export function TakeAssessmentClient({
           ) : (
             <div className="grid md:grid-cols-[45%_55%]">
               {/* question panel */}
-              <div className="border-border p-6 md:border-r">
-                <div className="mb-1 flex items-start justify-between gap-3">
-                  <p className="font-bold text-indigo">{assessmentTitle}</p>
+              <div className="p-6" style={{ borderRight: "1px solid var(--border)" }}>
+                <div className="split" style={{ marginBottom: 4, alignItems: "flex-start" }}>
+                  <p className="strong">{assessmentTitle}</p>
                   <button
                     type="button"
                     onClick={() => toggleBookmark(q.id)}
                     title={bookmarked[q.id] ? "Remove bookmark" : "Mark for review"}
                     className="shrink-0"
                   >
-                    <Bookmark className={`size-5 ${bookmarked[q.id] ? "fill-gold text-gold" : "text-muted-foreground"}`} />
+                    <Bookmark className="size-5" style={bookmarked[q.id] ? { color: "var(--gold)", fill: "var(--gold)" } : { color: "var(--muted)" }} />
                   </button>
                 </div>
-                <p className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="rounded bg-cream px-1.5 py-0.5 font-medium">{q.questionType === "MCQ" ? "MCQ" : "Written"}</span>
-                  {q.sectionName && <span className="rounded bg-indigo/5 px-1.5 py-0.5 font-medium text-indigo">{q.sectionName}</span>}
+                <p className="row" style={{ gap: 6, marginBottom: 16 }}>
+                  <span className="pill">{q.questionType === "MCQ" ? "MCQ" : "Written"}</span>
+                  {q.sectionName && <span className="pill info">{q.sectionName}</span>}
                 </p>
                 {q.snippetCode && (
-                  <div className="mb-3">
-                    {q.snippetLanguage && (
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{q.snippetLanguage}</p>
-                    )}
-                    <pre className="overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-white select-none">{q.snippetCode}</pre>
+                  <div style={{ marginBottom: 12 }}>
+                    {q.snippetLanguage && <p className="label" style={{ marginBottom: 4 }}>{q.snippetLanguage}</p>}
+                    <pre className="code select-none">{q.snippetCode}</pre>
                   </div>
                 )}
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Description</p>
-                <div className="max-h-[50vh] overflow-y-auto pr-1">
-                  <p className="whitespace-pre-wrap text-base leading-relaxed text-indigo">{q.questionText}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
+                <p className="label" style={{ marginBottom: 8 }}>Description</p>
+                <div style={{ maxHeight: "50vh", overflowY: "auto", paddingRight: 4 }}>
+                  <p style={{ whiteSpace: "pre-wrap", fontSize: 16, lineHeight: 1.6 }}>{q.questionText}</p>
+                  <p className="small muted" style={{ marginTop: 8 }}>
                     {q.marks} mark{q.marks !== 1 ? "s" : ""}
                   </p>
                 </div>
@@ -1810,18 +1792,14 @@ export function TakeAssessmentClient({
 
               {/* answer panel */}
               <div className="p-6">
-                <div className="mb-1 flex items-center justify-between gap-3">
-                  <p className="font-semibold text-indigo">Answer choices</p>
-                  <span
-                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
-                      isAnswered(q) ? "border-green-300 bg-green-50 text-green-700" : "border-border bg-cream text-muted-foreground"
-                    }`}
-                  >
-                    {isAnswered(q) ? <CheckCircle2 className="size-3" /> : <span className="size-1.5 rounded-full bg-muted-foreground" />}
+                <div className="split" style={{ marginBottom: 4 }}>
+                  <p className="strong">Answer choices</p>
+                  <span className={`pill ${isAnswered(q) ? "success" : ""}`}>
+                    {isAnswered(q) ? <CheckCircle2 className="size-3" /> : <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--muted)", display: "inline-block" }} />}
                     {isAnswered(q) ? "Solved" : "Unsolved"}
                   </span>
                 </div>
-                <p className="mb-4 text-xs text-muted-foreground">Please choose a correct answer.</p>
+                <p className="small muted" style={{ marginBottom: 16 }}>Please choose a correct answer.</p>
 
                 {q.questionType === "MCQ" && q.answerType === "NUMERIC" ? (
                   <input
@@ -1830,10 +1808,11 @@ export function TakeAssessmentClient({
                     value={answers[q.id] ?? ""}
                     onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                     placeholder="Enter your numeric answer"
-                    className="h-11 w-full max-w-xs rounded-lg border border-border px-3 text-base text-indigo outline-none focus-visible:border-indigo"
+                    className="input"
+                    style={{ height: 44, maxWidth: 280, fontSize: 16 }}
                   />
                 ) : q.questionType === "MCQ" ? (
-                  <div className="space-y-2">
+                  <div className="stack" style={{ gap: 8 }}>
                     {(["A", "B", "C", "D"] as const).map((letter) => {
                       const text = q[`option${letter}` as "optionA"];
                       const isMultiple = q.answerType === "MULTIPLE";
@@ -1842,9 +1821,13 @@ export function TakeAssessmentClient({
                       return (
                         <label
                           key={letter}
-                          className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
-                            selected ? "border-indigo bg-indigo/5" : "border-transparent bg-cream hover:bg-cream/70"
-                          }`}
+                          className="check"
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: 10,
+                            border: selected ? "1px solid var(--navy)" : "1px solid transparent",
+                            background: selected ? "var(--gold-soft)" : "var(--surface)",
+                          }}
                         >
                           <input
                             type={isMultiple ? "checkbox" : "radio"}
@@ -1859,9 +1842,8 @@ export function TakeAssessmentClient({
                               const next = selected ? selectedLetters.filter((l) => l !== letter) : [...selectedLetters, letter];
                               handleAnswerChange(q.id, next.sort().join(","));
                             }}
-                            className="mt-1 shrink-0 accent-indigo"
                           />
-                          <span className="whitespace-pre-wrap">
+                          <span style={{ whiteSpace: "pre-wrap" }}>
                             {letter}. {text}
                           </span>
                         </label>
@@ -1878,14 +1860,14 @@ export function TakeAssessmentClient({
                   />
                 )}
 
-                <p className="mt-6 text-center text-[11px] text-muted-foreground">Powered by Learn Being Forward</p>
+                <p className="app-footer">Powered by Learn Being Forward</p>
               </div>
             </div>
           )}
         </div>
 
         {!inCodingPhase && hasCodingQuestions && isLast && (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
+          <p className="small muted" style={{ marginTop: 12, textAlign: "center" }}>
             Once you finish this phase, you can&apos;t come back to these questions — review your answers first.
           </p>
         )}
@@ -1894,36 +1876,18 @@ export function TakeAssessmentClient({
       {/* STICKY BOTTOM ACTION BAR */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 px-3 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => jumpTo(Math.max(0, currentIndex - 1))}
-            disabled={currentIndex === 0}
-            className="border-border text-xs font-semibold uppercase tracking-wide text-indigo"
-          >
+          <button onClick={() => jumpTo(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} className="btn btn-sm">
             <ChevronLeft className="size-3.5" /> Previous Problem
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setReviewing(true)}
-            className="border-red-300 text-xs font-semibold uppercase tracking-wide text-red-600 hover:bg-red-50"
-          >
+          </button>
+          <button onClick={() => setReviewing(true)} className="btn btn-sm btn-danger">
             <Square className="size-3 fill-current" /> Finish &amp; Submit
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowAllProblems(true)}
-            className="border-border text-xs font-semibold uppercase tracking-wide text-indigo"
-          >
+          </button>
+          <button onClick={() => setShowAllProblems(true)} className="btn btn-sm">
             <List className="size-3.5" /> Back to All Problems
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => jumpTo(Math.min(activeQuestions.length - 1, currentIndex + 1))}
-            disabled={currentIndex === activeQuestions.length - 1}
-            className="border-border text-xs font-semibold uppercase tracking-wide text-indigo"
-          >
+          </button>
+          <button onClick={() => jumpTo(Math.min(activeQuestions.length - 1, currentIndex + 1))} disabled={currentIndex === activeQuestions.length - 1} className="btn btn-sm">
             Next Problem <ChevronRight className="size-3.5" />
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -1960,40 +1924,40 @@ export function TakeAssessmentClient({
 
       {/* FINISH & SUBMIT confirmation modal */}
       {reviewing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-indigo">
+        <div className="lbf-scope" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(20,28,46,.6)", padding: 16 }}>
+          <div className="card" style={{ width: "100%", maxWidth: 420 }}>
+            <h2 className="h2">
               {!inCodingPhase && hasCodingQuestions ? "Finish Phase 1 & Continue to Coding?" : "Finish & Submit Assignment?"}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">This can&apos;t be undone once confirmed.</p>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-lg bg-green-50 p-3">
-                <p className="text-2xl font-bold text-green-700">{reviewQuestions.length - unansweredCount}</p>
-                <p className="text-xs text-muted-foreground">Attempted</p>
+            <p className="small muted" style={{ marginTop: 4 }}>This can&apos;t be undone once confirmed.</p>
+            <div className="grid" style={{ ["--min" as string]: "100px", marginTop: 16, textAlign: "center" }}>
+              <div className="tile success">
+                <div className="value">{reviewQuestions.length - unansweredCount}</div>
+                <div className="label">Attempted</div>
               </div>
-              <div className="rounded-lg bg-cream p-3">
-                <p className="text-2xl font-bold text-indigo">{unansweredCount}</p>
-                <p className="text-xs text-muted-foreground">Unattempted</p>
+              <div className="tile">
+                <div className="value">{unansweredCount}</div>
+                <div className="label">Unattempted</div>
               </div>
-              <div className="rounded-lg bg-gold/10 p-3">
-                <p className="text-2xl font-bold text-gold">{bookmarkedCount}</p>
-                <p className="text-xs text-muted-foreground">Bookmarked</p>
+              <div className="tile gold">
+                <div className="value">{bookmarkedCount}</div>
+                <div className="label">Bookmarked</div>
               </div>
             </div>
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={() => setReviewing(false)} className="border-border text-indigo">
+            <div className="split" style={{ marginTop: 20, justifyContent: "flex-end" }}>
+              <button onClick={() => setReviewing(false)} className="btn">
                 Cancel
-              </Button>
+              </button>
               {!inCodingPhase && hasCodingQuestions ? (
-                <Button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="bg-red-600 text-white hover:bg-red-700">
+                <button onClick={handleSubmitMcqPhase} disabled={submittingMcqPhase} className="btn btn-danger">
                   {submittingMcqPhase && <Loader2 className="size-4 animate-spin" />}
                   Continue to Coding
-                </Button>
+                </button>
               ) : (
-                <Button onClick={handleSubmit} disabled={submitting} className="bg-red-600 text-white hover:bg-red-700">
+                <button onClick={handleSubmit} disabled={submitting} className="btn btn-danger">
                   {submitting && <Loader2 className="size-4 animate-spin" />}
                   Submit
-                </Button>
+                </button>
               )}
             </div>
           </div>
@@ -2001,20 +1965,17 @@ export function TakeAssessmentClient({
       )}
 
       {leaveDeadline !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="mx-4 max-w-sm rounded-xl bg-white p-6 text-center shadow-xl">
-            <AlertTriangle className="mx-auto mb-3 size-10 text-red-500" />
-            <h2 className="text-lg font-bold text-indigo">You left the assessment screen</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+        <div className="lbf-scope" style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(20,28,46,.7)" }}>
+          <div className="card" style={{ margin: 16, maxWidth: 360, textAlign: "center" }}>
+            <AlertTriangle className="size-10" style={{ color: "var(--danger)", margin: "0 auto 12px" }} />
+            <h2 className="h2">You left the assessment screen</h2>
+            <p className="small muted" style={{ marginTop: 8 }}>
               Return to full-screen now, or the assessment will be submitted automatically in{" "}
               <strong>{leaveSecondsLeft}s</strong>.
             </p>
-            <Button
-              onClick={handleReturnToFullscreen}
-              className="mt-4 w-full bg-gold text-indigo hover:bg-gold-light"
-            >
+            <button onClick={handleReturnToFullscreen} className="btn btn-gold" style={{ width: "100%", marginTop: 16 }}>
               <Maximize className="size-4" /> Return to Full-Screen
-            </Button>
+            </button>
           </div>
         </div>
       )}
