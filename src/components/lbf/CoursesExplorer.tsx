@@ -120,6 +120,26 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
         );
       })}
 
+      {tab === "ALL" && (
+        <div>
+          <h2 className="label" style={{ margin: "32px 0 14px" }}>
+            Coding Pattern Artifacts
+          </h2>
+          <div className="grid" style={{ ["--min" as string]: "240px" }}>
+            <Link className="list-row" style={{ textDecoration: "none", color: "inherit" }} href="/coding-patterns">
+              <span className="icon-box gold">
+                <Icon name="grid" size={20} />
+              </span>
+              <span className="grow">
+                <span className="h3" style={{ display: "block" }}>Coding Pattern Artifacts</span>
+                <span className="muted small">14 levels, 100 DSA coding patterns — interactive visualisers</span>
+              </span>
+              <Icon name="chevR" size={16} />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 && <p className="empty">No courses match your search.</p>}
     </>
   );
