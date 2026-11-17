@@ -16,7 +16,7 @@ export default async function AuthPage() {
     <div className="lbf-scope">
       <PublicHeader
         active=""
-        bandStyle={{ paddingBottom: 180 }}
+        bandStyle={{ paddingBottom: 108 }}
         eyebrow="Welcome back"
         title={
           <span style={{ fontSize: 34 }}>

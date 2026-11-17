@@ -19,7 +19,7 @@ export default async function ResetPasswordPage({
     <div className="lbf-scope">
       <PublicHeader
         active=""
-        bandStyle={{ paddingBottom: 180 }}
+        bandStyle={{ paddingBottom: 108 }}
         eyebrow="Account recovery"
         title={
           <span style={{ fontSize: 34 }}>
@@ -29,7 +29,7 @@ export default async function ResetPasswordPage({
         description="Used from the email link, and on first login for accounts created by an admin."
       />
       <main className="container">
-        <div className="row" style={{ marginTop: -140, justifyContent: "center" }}>
+        <div className="row" style={{ marginTop: -84, justifyContent: "center" }}>
           <ResetPasswordForm token={token ?? ""} />
         </div>
       </main>

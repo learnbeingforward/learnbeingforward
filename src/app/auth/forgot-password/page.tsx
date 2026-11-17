@@ -10,7 +10,7 @@ export default function ForgotPasswordPage() {
     <div className="lbf-scope">
       <PublicHeader
         active=""
-        bandStyle={{ paddingBottom: 180 }}
+        bandStyle={{ paddingBottom: 108 }}
         eyebrow="Account recovery"
         title={
           <span style={{ fontSize: 34 }}>
@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
         description="Enter your account email and we'll send you a secure reset link."
       />
       <main className="container">
-        <div className="row" style={{ marginTop: -140, justifyContent: "center" }}>
+        <div className="row" style={{ marginTop: -84, justifyContent: "center" }}>
           <ForgotPasswordForm />
         </div>
       </main>
