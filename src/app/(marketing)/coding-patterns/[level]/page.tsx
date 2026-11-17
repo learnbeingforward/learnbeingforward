@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { PublicShell } from "@/components/lbf/PublicShell";
+import { CodingPatternViewer } from "@/components/lbf/CodingPatternViewer";
 
 const LEVELS: Record<string, string> = {
   "level-01": "Programming Basics",
@@ -31,22 +31,5 @@ export default async function CodingPatternLevelPage({ params }: PageProps<"/cod
   const name = LEVELS[level];
   if (!name) notFound();
 
-  return (
-    <PublicShell
-      header={{
-        active: "courses",
-        eyebrow: "Coding Pattern Artifacts",
-        title: <>{name}</>,
-        description: "Interactive visualiser — Java by default, with a Python toggle inside.",
-      }}
-    >
-      <section className="card lift" style={{ padding: 0, overflow: "hidden" }}>
-        <iframe
-          src={`/coding-patterns/${level}.html`}
-          title={`${name} visualiser`}
-          style={{ width: "100%", height: "85vh", border: 0, display: "block" }}
-        />
-      </section>
-    </PublicShell>
-  );
+  return <CodingPatternViewer level={level} name={name} />;
 }
