@@ -6,6 +6,14 @@ import { PublicHeader } from "./PublicHeader";
 
 export function CodingPatternViewer({ level, name }: { level: string; name: string }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Deep-links (e.g. from a QR code in the book: /coding-patterns/level-05#fast-slow)
+  // land on this page with the anchor still in the URL — forward it into the
+  // iframe so it opens straight to that pattern instead of the top of the level.
+  const [iframeSrc, setIframeSrc] = useState(`/coding-patterns/${level}.html`);
+
+  useEffect(() => {
+    setIframeSrc(`/coding-patterns/${level}.html${window.location.hash}`);
+  }, [level]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -20,7 +28,7 @@ export function CodingPatternViewer({ level, name }: { level: string; name: stri
       {!isFullscreen && <PublicHeader active="courses" heroContent={<></>} bandStyle={{ paddingBottom: 22 }} />}
       <div style={isFullscreen ? { position: "fixed", inset: 0, zIndex: 999, background: "#fff" } : undefined}>
         <iframe
-          src={`/coding-patterns/${level}.html`}
+          src={iframeSrc}
           title={`${name} visualiser`}
           style={{ width: "100%", height: isFullscreen ? "100vh" : "85vh", border: 0, display: "block" }}
         />
