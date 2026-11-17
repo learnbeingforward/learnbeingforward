@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { CheckCircle2, Loader2, Play, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -95,42 +94,42 @@ export function CodingQuestionPanel({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
-      <p className="mb-1 whitespace-pre-wrap text-base font-medium leading-relaxed text-indigo">
+    <div className="box">
+      <p className="strong" style={{ whiteSpace: "pre-wrap", fontSize: 16, lineHeight: 1.6 }}>
         {question.questionText}{" "}
-        <span className="text-xs font-normal text-muted-foreground">
+        <span className="small muted" style={{ fontWeight: 400 }}>
           ({question.marks} mark{question.marks !== 1 ? "s" : ""})
         </span>
       </p>
-      <p className="mb-3 text-xs text-muted-foreground">Time limit: {question.timeLimitSeconds ?? 8} sec per test case</p>
+      <p className="small muted" style={{ marginTop: 4, marginBottom: 12 }}>Time limit: {question.timeLimitSeconds ?? 8} sec per test case</p>
       {passed !== null && total !== null && (
-        <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-indigo">
-          <CheckCircle2 className="size-3.5 text-green-600" /> Last submitted: {passed}/{total} test cases passed
+        <p className="small" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+          <CheckCircle2 className="size-3.5" style={{ color: "var(--success)" }} /> Last submitted: {passed}/{total} test cases passed
         </p>
       )}
 
       {question.visibleTestCases.length > 0 && (
-        <div className="mb-4 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Example Test Cases</p>
+        <div className="stack" style={{ gap: 8, marginBottom: 16 }}>
+          <p className="label">Example Test Cases</p>
           {question.visibleTestCases.map((tc, i) => (
-            <div key={tc.id} className="grid gap-2 rounded-lg bg-cream p-3 text-xs sm:grid-cols-2">
+            <div key={tc.id} className="grid small" style={{ ["--min" as string]: "180px", background: "var(--surface)", borderRadius: 10, padding: 12 }}>
               <div>
-                <p className="font-medium text-indigo">Input {i + 1}</p>
-                <pre className="mt-1 whitespace-pre-wrap font-mono text-indigo/80">{tc.input || "(none)"}</pre>
+                <p className="strong">Input {i + 1}</p>
+                <pre className="code" style={{ marginTop: 4, background: "transparent", color: "inherit", padding: 0 }}>{tc.input || "(none)"}</pre>
               </div>
               <div>
-                <p className="font-medium text-indigo">Expected Output</p>
-                <pre className="mt-1 whitespace-pre-wrap font-mono text-indigo/80">{tc.expectedOutput}</pre>
+                <p className="strong">Expected Output</p>
+                <pre className="code" style={{ marginTop: 4, background: "transparent", color: "inherit", padding: 0 }}>{tc.expectedOutput}</pre>
               </div>
             </div>
           ))}
-          <p className="text-xs text-muted-foreground">
+          <p className="small muted">
             Plus additional hidden test cases that only run when you submit — their inputs aren&apos;t shown.
           </p>
         </div>
       )}
 
-      <div className="mb-2">
+      <div style={{ marginBottom: 8 }}>
         <Select value={language} onValueChange={handleLanguageChange}>
           <SelectTrigger className="w-40">
             <SelectValue>{(value: string | null) => LANGUAGES.find((l) => l.value === value)?.label ?? "Language"}</SelectValue>
@@ -150,74 +149,73 @@ export function CodingQuestionPanel({
         onChange={(e) => setCode(e.target.value)}
         spellCheck={false}
         rows={14}
-        className="w-full rounded-lg border border-border bg-indigo-dark p-3 font-mono text-sm text-white outline-none focus-visible:border-ring"
+        className="code"
+        style={{ width: "100%", resize: "vertical", outline: "none" }}
         placeholder="Write your code here..."
       />
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="button" variant="outline" disabled={isRunning} onClick={handleRun} className="border-border text-indigo">
+      <div className="row" style={{ marginTop: 12 }}>
+        <button type="button" disabled={isRunning} onClick={handleRun} className="btn btn-sm">
           {isRunning ? <Loader2 className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
           Run
-        </Button>
-        <Button type="button" disabled={isSubmitting} onClick={handleSubmitCode} className="bg-indigo text-white hover:bg-indigo/90">
+        </button>
+        <button type="button" disabled={isSubmitting} onClick={handleSubmitCode} className="btn btn-primary btn-sm">
           {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
           Submit Code
-        </Button>
+        </button>
       </div>
 
-      {runResult?.error && <p className="mt-3 text-sm text-destructive">{runResult.error}</p>}
+      {runResult?.error && <div className="alert danger" style={{ marginTop: 12 }}>{runResult.error}</div>}
       {runResult?.ok && runResult.results && (() => {
         const compileFailure = runResult.results.find((r) => r.verdict === "compile_error" || r.verdict === "runtime_error");
         const allPassed = runResult.results.every((r) => r.passed);
         return (
-          <div className="mt-3">
+          <div style={{ marginTop: 12 }}>
             {compileFailure ? (
-              <div className="rounded-lg border border-red-300 bg-red-50 p-3">
-                <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700">
+              <div className="alert danger" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                <p className="strong" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <XCircle className="size-4" />
                   {compileFailure.verdict === "compile_error" ? "Compilation error" : "Runtime error"}
                 </p>
-                <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-red-200">
-                  {compileFailure.actualOutput}
-                </pre>
-                <p className="mt-2 text-xs text-red-700">Fix it and press Run again. Run is never scored.</p>
+                <pre className="code" style={{ marginTop: 8 }}>{compileFailure.actualOutput}</pre>
+                <p className="small" style={{ marginTop: 8 }}>Fix it and press Run again. Run is never scored.</p>
               </div>
             ) : (
               <>
-                <p className="mb-2 text-xs font-semibold text-indigo">
+                <p className="small strong" style={{ marginBottom: 8 }}>
                   {runResult.results.filter((r) => r.passed).length} / {runResult.results.length} visible tests passed
                 </p>
-                <div className="space-y-2">
+                <div className="stack" style={{ gap: 8 }}>
                   {runResult.results.map((r, i) =>
                     r.passed ? (
-                      <div key={i} className="flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
-                        <CheckCircle2 className="size-3.5" /> Test {i + 1} &middot; Passed
+                      <div key={i} className="alert success small" style={{ fontWeight: 600 }}>
+                        <CheckCircle2 className="size-3.5 shrink-0" /> Test {i + 1} &middot; Passed
                       </div>
                     ) : (
-                      <div key={i} className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs">
-                        <p className="mb-2 flex items-center gap-1.5 font-semibold text-red-700">
-                          <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">Wrong Answer</span>
+                      <div key={i} className="alert danger" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                        <p className="small strong" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                          <span className="pill danger">Wrong Answer</span>
                           Test {i + 1}
                         </p>
-                        <div className="grid gap-2 sm:grid-cols-3">
+                        <div className="grid small" style={{ ["--min" as string]: "140px" }}>
                           <div>
-                            <p className="font-medium text-indigo">Input</p>
-                            <pre className="mt-0.5 whitespace-pre-wrap font-mono">{r.input || "(none)"}</pre>
+                            <p className="strong">Input</p>
+                            <pre style={{ marginTop: 2, whiteSpace: "pre-wrap", fontFamily: "var(--mono)" }}>{r.input || "(none)"}</pre>
                           </div>
                           <div>
-                            <p className="font-medium text-indigo">Expected</p>
-                            <pre className="mt-0.5 whitespace-pre-wrap font-mono">{r.expectedOutput}</pre>
+                            <p className="strong">Expected</p>
+                            <pre style={{ marginTop: 2, whiteSpace: "pre-wrap", fontFamily: "var(--mono)" }}>{r.expectedOutput}</pre>
                           </div>
                           <div>
-                            <p className="font-medium text-indigo">Your Output</p>
-                            <pre className="mt-0.5 whitespace-pre-wrap rounded bg-red-100 font-mono">{r.actualOutput || "(no output)"}</pre>
+                            <p className="strong">Your Output</p>
+                            <pre style={{ marginTop: 2, whiteSpace: "pre-wrap", fontFamily: "var(--mono)", background: "rgba(185,28,28,.08)", borderRadius: 6, padding: 4 }}>{r.actualOutput || "(no output)"}</pre>
                           </div>
                         </div>
                       </div>
                     )
                   )}
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="small muted" style={{ marginTop: 8 }}>
                   {allPassed
                     ? "Looks good. Press Submit to run the hidden tests."
                     : "Hidden tests are not run on Run. They run only when you press Submit."}
@@ -228,65 +226,46 @@ export function CodingQuestionPanel({
         );
       })()}
 
-      {submitResult?.error && !submitResult.compileErrorDetail && <p className="mt-3 text-sm text-destructive">{submitResult.error}</p>}
+      {submitResult?.error && !submitResult.compileErrorDetail && <div className="alert danger" style={{ marginTop: 12 }}>{submitResult.error}</div>}
       {submitResult?.compileErrorDetail && (
-        <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3">
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700">
+        <div className="alert danger" style={{ marginTop: 12, flexDirection: "column", alignItems: "stretch" }}>
+          <p className="strong" style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <XCircle className="size-4" /> Compilation error
           </p>
-          <pre className="mt-2 overflow-x-auto rounded-lg bg-indigo-dark p-3 font-mono text-xs text-red-200">{submitResult.compileErrorDetail}</pre>
-          <p className="mt-2 text-xs text-red-700">This submission wasn&apos;t scored and didn&apos;t use a submission attempt.</p>
+          <pre className="code" style={{ marginTop: 8 }}>{submitResult.compileErrorDetail}</pre>
+          <p className="small" style={{ marginTop: 8 }}>This submission wasn&apos;t scored and didn&apos;t use a submission attempt.</p>
         </div>
       )}
       {submitResult?.ok && (
-        <div className="mt-3">
+        <div style={{ marginTop: 12 }}>
           <div
-            className={`flex flex-wrap items-center justify-between gap-2 rounded-lg p-3 ${
-              submitResult.testCasesPassed === submitResult.testCasesTotal
-                ? "bg-green-50"
-                : submitResult.testCasesPassed && submitResult.testCasesPassed > 0
-                  ? "bg-amber-50"
-                  : "bg-red-50"
-            }`}
+            className={`split ${submitResult.testCasesPassed === submitResult.testCasesTotal ? "tile success" : submitResult.testCasesPassed && submitResult.testCasesPassed > 0 ? "tile warning" : "tile danger"}`}
           >
             <div>
-              <p
-                className={`text-sm font-bold ${
-                  submitResult.testCasesPassed === submitResult.testCasesTotal
-                    ? "text-green-700"
-                    : submitResult.testCasesPassed && submitResult.testCasesPassed > 0
-                      ? "text-amber-700"
-                      : "text-red-700"
-                }`}
-              >
+              <p className="strong" style={{ fontSize: 15 }}>
                 {submitResult.testCasesPassed}/{submitResult.testCasesTotal} tests passed
               </p>
               {submitResult.submittedAt && (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="small muted" style={{ marginTop: 2 }}>
                   Submitted at {new Date(submitResult.submittedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                   {submitResult.submissionNumber ? ` · Submission #${submitResult.submissionNumber}` : ""}
                 </p>
               )}
             </div>
-            <p className="text-sm font-semibold text-indigo">
+            <p className="strong">
               {submitResult.marksAwarded}/{question.marks} marks
             </p>
           </div>
           {submitResult.tests && (
-            <div className="mt-2 space-y-1">
+            <div className="stack" style={{ gap: 4, marginTop: 8 }}>
               {submitResult.tests.map((t, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-xs ${
-                    t.verdict === "passed" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-medium">
+                <div key={i} className={`split small ${t.verdict === "passed" ? "" : ""}`} style={{ padding: "6px 12px", borderRadius: 8, background: t.verdict === "passed" ? "var(--success-soft)" : "var(--danger-soft)", color: t.verdict === "passed" ? "var(--success-text)" : "var(--danger-text)" }}>
+                  <span className="strong" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {t.verdict === "passed" ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
                     {t.label}
                   </span>
                   {t.verdict !== "passed" && (
-                    <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    <span className="pill danger">
                       {t.verdict === "wrong_answer"
                         ? "Wrong Answer"
                         : t.verdict === "time_limit_exceeded"
@@ -300,7 +279,7 @@ export function CodingQuestionPanel({
               ))}
             </div>
           )}
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="small muted" style={{ marginTop: 8 }}>
             Hidden inputs are never shown. You can change your code and submit again; your last submission is scored.
           </p>
         </div>
