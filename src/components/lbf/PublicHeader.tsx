@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { Icon } from "./icons";
 
 const LINKS = [
@@ -35,28 +39,41 @@ export function PublicHeader({
    * back-link + title/pills row doesn't fit that shape). */
   heroContent?: React.ReactNode;
 }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <header className={`band${tall ? " tall" : ""}`} style={bandStyle}>
       <div className="container">
-        <div className="app-top" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
-          <Link className="brand" href="/">
+        <div className="app-top">
+          <Link className="brand" href="/" onClick={() => setMobileOpen(false)}>
             <Icon name="cap" size={26} />
             <span className="wm">
               Learn Being <span>Forward</span>
             </span>
           </Link>
-          <nav className="nav" aria-label="Main">
+
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((v) => !v)}
+          >
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          <nav className={`nav${mobileOpen ? " open" : ""}`} aria-label="Main">
             {LINKS.map((l) => (
-              <Link key={l.key} href={l.href} className={l.key === active ? "active" : ""}>
+              <Link key={l.key} href={l.href} className={l.key === active ? "active" : ""} onClick={() => setMobileOpen(false)}>
                 {l.label}
               </Link>
             ))}
           </nav>
-          <div className="nav-actions">
-            <Link className="btn btn-ghost-light btn-sm" href="/auth">
+          <div className={`nav-actions${mobileOpen ? " open" : ""}`}>
+            <Link className="btn btn-ghost-light btn-sm" href="/auth" onClick={() => setMobileOpen(false)}>
               Login
             </Link>
-            <Link className="btn btn-gold btn-sm" href="/auth?mode=signup">
+            <Link className="btn btn-gold btn-sm" href="/auth?mode=signup" onClick={() => setMobileOpen(false)}>
               Sign Up
             </Link>
           </div>
