@@ -213,7 +213,7 @@
 .lbf-scope .app-band{background:var(--navy);color:#fff;padding:0 0 72px}
 .lbf-scope .app-top-bar{position:sticky;top:0;z-index:30;background:var(--navy);box-shadow:0 1px 0 var(--navy-3)}
 .lbf-scope .app-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
-.lbf-scope .app-band-body{padding-top:0}
+.lbf-scope .app-band-body{padding-top:8px}
 .lbf-scope .app-nav{display:flex;flex-wrap:wrap;gap:4px;margin-top:0;padding-top:0}
 .lbf-scope .app-nav a{color:#D5DCEA;text-decoration:none;font-weight:500;font-size:13px;padding:8px 12px;border-radius:999px;display:inline-flex;gap:8px;align-items:center}
 .lbf-scope .app-nav a:hover{background:var(--navy-2);color:#fff}
