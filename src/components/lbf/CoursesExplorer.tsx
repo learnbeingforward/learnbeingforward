@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon, type IconName } from "./icons";
+import { CODING_PATTERN_LEVELS } from "@/lib/coding-patterns";
 
 export type ExplorerCourse = {
   slug: string;
@@ -23,6 +24,7 @@ const TABS = [
   { key: "TECHNICAL", label: "Technical" },
   { key: "APTITUDE", label: "Aptitude" },
   { key: "SOFT_SKILL", label: "Soft skills" },
+  { key: "CODING_PATTERNS", label: "Coding patterns" },
 ] as const;
 
 const GROUP_LABELS: Record<string, string> = {
@@ -37,19 +39,24 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
 
   const counts = useMemo(
     () => ({
-      ALL: courses.length,
+      ALL: courses.length + CODING_PATTERN_LEVELS.length,
       TECHNICAL: courses.filter((c) => c.domain === "TECHNICAL").length,
       APTITUDE: courses.filter((c) => c.domain === "APTITUDE").length,
       SOFT_SKILL: courses.filter((c) => c.domain === "SOFT_SKILL").length,
+      CODING_PATTERNS: CODING_PATTERN_LEVELS.length,
     }),
     [courses]
   );
 
   const filtered = courses.filter((c) => {
-    if (tab !== "ALL" && c.domain !== tab) return false;
+    if (tab !== "ALL" && tab !== c.domain) return false;
     if (query.trim() && !c.name.toLowerCase().includes(query.trim().toLowerCase())) return false;
     return true;
   });
+
+  const q = query.trim().toLowerCase();
+  const filteredLevels = CODING_PATTERN_LEVELS.filter((l) => !q || l.name.toLowerCase().includes(q));
+  const showCodingPatterns = (tab === "ALL" || tab === "CODING_PATTERNS") && filteredLevels.length > 0;
 
   const groups: ExplorerCourse["domain"][] = ["TECHNICAL", "APTITUDE", "SOFT_SKILL"];
 
@@ -120,27 +127,39 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
         );
       })}
 
-      {tab === "ALL" && (
+      {showCodingPatterns && (
         <div>
-          <h2 className="label" style={{ margin: "32px 0 14px" }}>
-            Coding Pattern Artifacts
-          </h2>
-          <div className="grid" style={{ ["--min" as string]: "240px" }}>
-            <Link className="list-row" style={{ textDecoration: "none", color: "inherit" }} href="/coding-patterns">
-              <span className="icon-box gold">
-                <Icon name="grid" size={20} />
-              </span>
-              <span className="grow">
-                <span className="h3" style={{ display: "block" }}>Coding Pattern Artifacts</span>
-                <span className="muted small">14 levels, 100 DSA coding patterns — interactive visualisers</span>
-              </span>
-              <Icon name="chevR" size={16} />
+          <div className="split" style={{ margin: "32px 0 14px" }}>
+            <h2 className="label" style={{ margin: 0 }}>Coding Patterns</h2>
+            <Link href="/coding-patterns" className="small" style={{ fontWeight: 600, color: "var(--navy)" }}>
+              View all artifacts →
             </Link>
+          </div>
+          <div className="grid" style={{ ["--min" as string]: "240px" }}>
+            {filteredLevels.map((level, i) => (
+              <Link
+                key={level.slug}
+                className="list-row"
+                style={{ textDecoration: "none", color: "inherit" }}
+                href={`/coding-patterns/${level.slug}`}
+              >
+                <span className="icon-box gold">
+                  <Icon name="grid" size={20} />
+                </span>
+                <span className="grow">
+                  <span className="h3" style={{ display: "block" }}>
+                    Level {String(i + 1).padStart(2, "0")} · {level.name}
+                  </span>
+                  <span className="muted small">Interactive DSA pattern visualiser</span>
+                </span>
+                <Icon name="chevR" size={16} />
+              </Link>
+            ))}
           </div>
         </div>
       )}
 
-      {filtered.length === 0 && <p className="empty">No courses match your search.</p>}
+      {filtered.length === 0 && !showCodingPatterns && <p className="empty">No courses match your search.</p>}
     </>
   );
 }

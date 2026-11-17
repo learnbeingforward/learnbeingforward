@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 export default async function CoursesPage() {
-  const courses = await prisma.course.findMany({ orderBy: { order: "asc" } });
+  const courses = await prisma.course.findMany({ where: { isPlaceholder: false }, orderBy: { order: "asc" } });
 
   const explorerCourses: ExplorerCourse[] = courses.map((c) => ({
     slug: c.slug,

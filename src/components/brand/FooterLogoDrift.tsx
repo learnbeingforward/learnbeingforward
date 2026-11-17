@@ -6,7 +6,7 @@ import { LogoIcon } from "./LogoIcon";
  */
 export function FooterLogoDrift() {
   return (
-    <div className="overflow-hidden border-t border-white/10 py-7">
+    <div className="overflow-hidden border-t border-white/10 py-4">
       <div className="flex items-center justify-center gap-3 motion-safe:animate-footer-logo-drift">
         <LogoIcon variant="white" className="size-8 shrink-0 opacity-80 sm:size-10" />
         <span

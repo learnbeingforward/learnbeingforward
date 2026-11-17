@@ -1,0 +1,16 @@
+export const CODING_PATTERN_LEVELS = [
+  { slug: "level-01", name: "Programming Basics" },
+  { slug: "level-02", name: "Arrays and Strings" },
+  { slug: "level-03", name: "Searching and Sorting" },
+  { slug: "level-04", name: "Hashing" },
+  { slug: "level-05", name: "Linked Lists" },
+  { slug: "level-06", name: "Stacks and Queues" },
+  { slug: "level-07", name: "Recursion and Backtracking" },
+  { slug: "level-08", name: "Trees" },
+  { slug: "level-09", name: "Heaps" },
+  { slug: "level-10", name: "Graphs" },
+  { slug: "level-11", name: "Greedy" },
+  { slug: "level-12", name: "Dynamic Programming" },
+  { slug: "level-13", name: "Bit Manipulation" },
+  { slug: "level-14", name: "Advanced Patterns" },
+] as const;
