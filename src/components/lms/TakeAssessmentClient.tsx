@@ -1014,7 +1014,7 @@ export function TakeAssessmentClient({
 
         <div>
           <p className="label" style={{ marginBottom: 10 }}>Question Map</p>
-          <div className="grid" style={{ ["--min" as string]: "42px", gap: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {qs.map((q, i) => {
               const answered = isQuestionAnswered(q);
               const isBookmarked = bookmarked[q.id];
@@ -1024,7 +1024,9 @@ export function TakeAssessmentClient({
                   title={`Q${i + 1}${answered ? " · attempted" : " · not attempted"}${isBookmarked ? " · bookmarked" : ""}`}
                   style={{
                     position: "relative",
-                    aspectRatio: "1",
+                    flex: "0 0 auto",
+                    width: 36,
+                    height: 36,
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
