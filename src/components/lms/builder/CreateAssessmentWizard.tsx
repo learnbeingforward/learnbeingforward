@@ -109,10 +109,6 @@ export function CreateAssessmentWizard({
                 <Input name="durationMinutes" type="number" min={1} required defaultValue={assessment.durationMinutes} className="h-10" />
               </div>
               <div>
-                <Label className={labelClass}>Pass mark</Label>
-                <Input name="passMark" type="number" min={0} defaultValue={assessment.passMark ?? ""} className="h-10" />
-              </div>
-              <div>
                 <Label className={labelClass}>Opens on</Label>
                 <Input
                   type="datetime-local"
@@ -137,6 +133,10 @@ export function CreateAssessmentWizard({
                   className="h-10"
                 />
                 <input type="hidden" name="availableUntil" ref={availableUntilIsoRef} defaultValue={assessment.availableUntil ?? ""} />
+              </div>
+              <div>
+                <Label className={labelClass}>Pass mark</Label>
+                <Input name="passMark" type="number" min={0} defaultValue={assessment.passMark ?? ""} className="h-10" />
               </div>
             </div>
             <div className="mt-4">
