@@ -20,6 +20,7 @@ import { execSync } from "node:child_process";
 const STEPS = [
   "scripts/add-main-book-modules.ts",
   "scripts/generate-submodule-content.ts",
+  "scripts/setup-coding-patterns.ts",
   "scripts/update-team-experience.ts",
   "scripts/create-super-admin-lohitkab.ts",
   "scripts/update-contact-email.ts",

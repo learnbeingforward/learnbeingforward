@@ -1,0 +1,842 @@
+[
+  {
+    "slug": "level-01",
+    "name": "Programming Basics",
+    "order": 1,
+    "bookTitle": "Programming Basics — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-01.pdf",
+    "artifactUrl": "/coding-patterns/level-01",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Counter",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-01-counter.pdf",
+        "pageStart": 4,
+        "pageEnd": 7
+      },
+      {
+        "order": 2,
+        "title": "Accumulator",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-02-accumulator.pdf",
+        "pageStart": 8,
+        "pageEnd": 11
+      },
+      {
+        "order": 3,
+        "title": "Min / Max Tracking",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-03-min-max-tracking.pdf",
+        "pageStart": 12,
+        "pageEnd": 16
+      },
+      {
+        "order": 4,
+        "title": "Flag / Sentinel",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-04-flag-sentinel.pdf",
+        "pageStart": 17,
+        "pageEnd": 21
+      },
+      {
+        "order": 5,
+        "title": "Swap",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-05-swap.pdf",
+        "pageStart": 22,
+        "pageEnd": 25
+      },
+      {
+        "order": 6,
+        "title": "Digit Extraction",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-06-digit-extraction.pdf",
+        "pageStart": 26,
+        "pageEnd": 31
+      },
+      {
+        "order": 7,
+        "title": "Nested Loops",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-07-nested-loops.pdf",
+        "pageStart": 32,
+        "pageEnd": 34
+      },
+      {
+        "order": 8,
+        "title": "Linear Search",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-08-linear-search.pdf",
+        "pageStart": 35,
+        "pageEnd": 39
+      },
+      {
+        "order": 9,
+        "title": "Early Exit / Guard Clause",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-09-early-exit-guard-clause.pdf",
+        "pageStart": 40,
+        "pageEnd": 44
+      },
+      {
+        "order": 10,
+        "title": "Parity / Toggle",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-01/1-10-parity-toggle.pdf",
+        "pageStart": 45,
+        "pageEnd": 50
+      }
+    ]
+  },
+  {
+    "slug": "level-02",
+    "name": "Arrays and Strings",
+    "order": 2,
+    "bookTitle": "Arrays and Strings — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-02.pdf",
+    "artifactUrl": "/coding-patterns/level-02",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Reverse in Place",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-01-reverse-in-place.pdf",
+        "pageStart": 4,
+        "pageEnd": 7
+      },
+      {
+        "order": 2,
+        "title": "Two Pointers (Opposite Ends)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-02-two-pointers-opposite-ends.pdf",
+        "pageStart": 8,
+        "pageEnd": 11
+      },
+      {
+        "order": 3,
+        "title": "Two Pointers (Same Direction)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-03-two-pointers-same-direction.pdf",
+        "pageStart": 12,
+        "pageEnd": 14
+      },
+      {
+        "order": 4,
+        "title": "Sliding Window (Fixed Size)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-04-sliding-window-fixed-size.pdf",
+        "pageStart": 15,
+        "pageEnd": 18
+      },
+      {
+        "order": 5,
+        "title": "Sliding Window (Variable Size)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-05-sliding-window-variable-size.pdf",
+        "pageStart": 19,
+        "pageEnd": 21
+      },
+      {
+        "order": 6,
+        "title": "Prefix Sum",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-06-prefix-sum.pdf",
+        "pageStart": 22,
+        "pageEnd": 25
+      },
+      {
+        "order": 7,
+        "title": "Difference Array",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-07-difference-array.pdf",
+        "pageStart": 26,
+        "pageEnd": 29
+      },
+      {
+        "order": 8,
+        "title": "Prefix / Suffix Products",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-08-prefix-suffix-products.pdf",
+        "pageStart": 30,
+        "pageEnd": 32
+      },
+      {
+        "order": 9,
+        "title": "Kadane's Algorithm",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-09-kadane-s-algorithm.pdf",
+        "pageStart": 33,
+        "pageEnd": 35
+      },
+      {
+        "order": 10,
+        "title": "Frequency Counting",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-10-frequency-counting.pdf",
+        "pageStart": 36,
+        "pageEnd": 39
+      },
+      {
+        "order": 11,
+        "title": "Cyclic Sort",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-11-cyclic-sort.pdf",
+        "pageStart": 40,
+        "pageEnd": 43
+      },
+      {
+        "order": 12,
+        "title": "Dutch National Flag",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-12-dutch-national-flag.pdf",
+        "pageStart": 44,
+        "pageEnd": 46
+      },
+      {
+        "order": 13,
+        "title": "Matrix Traversal",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-02/2-13-matrix-traversal.pdf",
+        "pageStart": 47,
+        "pageEnd": 51
+      }
+    ]
+  },
+  {
+    "slug": "level-03",
+    "name": "Searching and Sorting",
+    "order": 3,
+    "bookTitle": "Searching and Sorting — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-03.pdf",
+    "artifactUrl": "/coding-patterns/level-03",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Binary Search",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-01-binary-search.pdf",
+        "pageStart": 4,
+        "pageEnd": 8
+      },
+      {
+        "order": 2,
+        "title": "Modified Binary Search",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-02-modified-binary-search.pdf",
+        "pageStart": 9,
+        "pageEnd": 12
+      },
+      {
+        "order": 3,
+        "title": "Binary Search on the Answer",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-03-binary-search-on-the-answer.pdf",
+        "pageStart": 13,
+        "pageEnd": 17
+      },
+      {
+        "order": 4,
+        "title": "Sort First, Then Solve",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-04-sort-first-then-solve.pdf",
+        "pageStart": 18,
+        "pageEnd": 20
+      },
+      {
+        "order": 5,
+        "title": "Merge Intervals",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-05-merge-intervals.pdf",
+        "pageStart": 21,
+        "pageEnd": 24
+      },
+      {
+        "order": 6,
+        "title": "Custom Comparator",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-06-custom-comparator.pdf",
+        "pageStart": 25,
+        "pageEnd": 28
+      },
+      {
+        "order": 7,
+        "title": "Quickselect",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-07-quickselect.pdf",
+        "pageStart": 29,
+        "pageEnd": 32
+      },
+      {
+        "order": 8,
+        "title": "Counting / Bucket Sort",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-03/3-08-counting-bucket-sort.pdf",
+        "pageStart": 33,
+        "pageEnd": 37
+      }
+    ]
+  },
+  {
+    "slug": "level-04",
+    "name": "Hashing",
+    "order": 4,
+    "bookTitle": "Hashing — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-04.pdf",
+    "artifactUrl": "/coding-patterns/level-04",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Complement Lookup (Two Sum)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-04/4-01-complement-lookup-two-sum.pdf",
+        "pageStart": 4,
+        "pageEnd": 7
+      },
+      {
+        "order": 2,
+        "title": "Group By Key",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-04/4-02-group-by-key.pdf",
+        "pageStart": 8,
+        "pageEnd": 11
+      },
+      {
+        "order": 3,
+        "title": "Prefix Sum + Hash Map",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-04/4-03-prefix-sum-hash-map.pdf",
+        "pageStart": 12,
+        "pageEnd": 14
+      },
+      {
+        "order": 4,
+        "title": "Seen Set",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-04/4-04-seen-set.pdf",
+        "pageStart": 15,
+        "pageEnd": 18
+      },
+      {
+        "order": 5,
+        "title": "Rolling Hash (Rabin-karp)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-04/4-05-rolling-hash-rabin-karp.pdf",
+        "pageStart": 19,
+        "pageEnd": 24
+      }
+    ]
+  },
+  {
+    "slug": "level-05",
+    "name": "Linked Lists",
+    "order": 5,
+    "bookTitle": "Linked Lists — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-05.pdf",
+    "artifactUrl": "/coding-patterns/level-05",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Fast and Slow Pointers",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-05/5-01-fast-and-slow-pointers.pdf",
+        "pageStart": 4,
+        "pageEnd": 9
+      },
+      {
+        "order": 2,
+        "title": "Gap Runner (N-th From the End)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-05/5-02-gap-runner-n-th-from-the-end.pdf",
+        "pageStart": 10,
+        "pageEnd": 15
+      },
+      {
+        "order": 3,
+        "title": "In-place Reversal",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-05/5-03-in-place-reversal.pdf",
+        "pageStart": 16,
+        "pageEnd": 21
+      },
+      {
+        "order": 4,
+        "title": "Dummy Head Node",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-05/5-04-dummy-head-node.pdf",
+        "pageStart": 22,
+        "pageEnd": 27
+      },
+      {
+        "order": 5,
+        "title": "Merge Two Sorted Lists",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-05/5-05-merge-two-sorted-lists.pdf",
+        "pageStart": 28,
+        "pageEnd": 33
+      }
+    ]
+  },
+  {
+    "slug": "level-06",
+    "name": "Stacks and Queues",
+    "order": 6,
+    "bookTitle": "Stacks and Queues — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-06.pdf",
+    "artifactUrl": "/coding-patterns/level-06",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Stack for Matching",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-06/6-01-stack-for-matching.pdf",
+        "pageStart": 4,
+        "pageEnd": 7
+      },
+      {
+        "order": 2,
+        "title": "Monotonic Stack",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-06/6-02-monotonic-stack.pdf",
+        "pageStart": 8,
+        "pageEnd": 11
+      },
+      {
+        "order": 3,
+        "title": "Monotonic Deque",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-06/6-03-monotonic-deque.pdf",
+        "pageStart": 12,
+        "pageEnd": 15
+      },
+      {
+        "order": 4,
+        "title": "Expression Evaluation",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-06/6-04-expression-evaluation.pdf",
+        "pageStart": 16,
+        "pageEnd": 19
+      },
+      {
+        "order": 5,
+        "title": "Min Stack (Auxiliary Stack)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-06/6-05-min-stack-auxiliary-stack.pdf",
+        "pageStart": 20,
+        "pageEnd": 24
+      },
+      {
+        "order": 6,
+        "title": "Queue Simulation",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-06/6-06-queue-simulation.pdf",
+        "pageStart": 25,
+        "pageEnd": 28
+      }
+    ]
+  },
+  {
+    "slug": "level-07",
+    "name": "Recursion and Backtracking",
+    "order": 7,
+    "bookTitle": "Recursion and Backtracking — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-07.pdf",
+    "artifactUrl": "/coding-patterns/level-07",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Base Case + Recursive Case",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-01-base-case-recursive-case.pdf",
+        "pageStart": 4,
+        "pageEnd": 7
+      },
+      {
+        "order": 2,
+        "title": "Divide and Conquer",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-02-divide-and-conquer.pdf",
+        "pageStart": 8,
+        "pageEnd": 11
+      },
+      {
+        "order": 3,
+        "title": "Subsets (Include / Exclude)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-03-subsets-include-exclude.pdf",
+        "pageStart": 12,
+        "pageEnd": 16
+      },
+      {
+        "order": 4,
+        "title": "Permutations",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-04-permutations.pdf",
+        "pageStart": 17,
+        "pageEnd": 20
+      },
+      {
+        "order": 5,
+        "title": "Combinations / Combination Sum",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-05-combinations-combination-sum.pdf",
+        "pageStart": 21,
+        "pageEnd": 24
+      },
+      {
+        "order": 6,
+        "title": "Constraint Backtracking (N-queens)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-06-constraint-backtracking-n-queens.pdf",
+        "pageStart": 25,
+        "pageEnd": 30
+      },
+      {
+        "order": 7,
+        "title": "Memoization",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-07/7-07-memoization.pdf",
+        "pageStart": 31,
+        "pageEnd": 35
+      }
+    ]
+  },
+  {
+    "slug": "level-08",
+    "name": "Trees",
+    "order": 8,
+    "bookTitle": "Trees — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-08.pdf",
+    "artifactUrl": "/coding-patterns/level-08",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "DFS Traversals",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-01-dfs-traversals.pdf",
+        "pageStart": 4,
+        "pageEnd": 9
+      },
+      {
+        "order": 2,
+        "title": "BFS Level Order",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-02-bfs-level-order.pdf",
+        "pageStart": 10,
+        "pageEnd": 16
+      },
+      {
+        "order": 3,
+        "title": "Bottom-up Recursion",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-03-bottom-up-recursion.pdf",
+        "pageStart": 17,
+        "pageEnd": 22
+      },
+      {
+        "order": 4,
+        "title": "Root-to-leaf Paths",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-04-root-to-leaf-paths.pdf",
+        "pageStart": 23,
+        "pageEnd": 28
+      },
+      {
+        "order": 5,
+        "title": "BST Property",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-05-bst-property.pdf",
+        "pageStart": 29,
+        "pageEnd": 34
+      },
+      {
+        "order": 6,
+        "title": "Lowest Common Ancestor",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-06-lowest-common-ancestor.pdf",
+        "pageStart": 35,
+        "pageEnd": 40
+      },
+      {
+        "order": 7,
+        "title": "Build / Serialize Trees",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-08/8-07-build-serialize-trees.pdf",
+        "pageStart": 41,
+        "pageEnd": 49
+      }
+    ]
+  },
+  {
+    "slug": "level-09",
+    "name": "Heaps",
+    "order": 9,
+    "bookTitle": "Heaps — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-09.pdf",
+    "artifactUrl": "/coding-patterns/level-09",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Top K Elements",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-09/9-01-top-k-elements.pdf",
+        "pageStart": 4,
+        "pageEnd": 8
+      },
+      {
+        "order": 2,
+        "title": "K-way Merge",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-09/9-02-k-way-merge.pdf",
+        "pageStart": 9,
+        "pageEnd": 12
+      },
+      {
+        "order": 3,
+        "title": "Two Heaps",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-09/9-03-two-heaps.pdf",
+        "pageStart": 13,
+        "pageEnd": 17
+      },
+      {
+        "order": 4,
+        "title": "Scheduling With a Heap",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-09/9-04-scheduling-with-a-heap.pdf",
+        "pageStart": 18,
+        "pageEnd": 23
+      }
+    ]
+  },
+  {
+    "slug": "level-10",
+    "name": "Graphs",
+    "order": 10,
+    "bookTitle": "Graphs — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-10.pdf",
+    "artifactUrl": "/coding-patterns/level-10",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "BFS Shortest Path",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-01-bfs-shortest-path.pdf",
+        "pageStart": 4,
+        "pageEnd": 8
+      },
+      {
+        "order": 2,
+        "title": "DFS / Connected Components",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-02-dfs-connected-components.pdf",
+        "pageStart": 9,
+        "pageEnd": 12
+      },
+      {
+        "order": 3,
+        "title": "Grid As a Graph / Flood Fill",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-03-grid-as-a-graph-flood-fill.pdf",
+        "pageStart": 13,
+        "pageEnd": 16
+      },
+      {
+        "order": 4,
+        "title": "Multi-source BFS",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-04-multi-source-bfs.pdf",
+        "pageStart": 17,
+        "pageEnd": 21
+      },
+      {
+        "order": 5,
+        "title": "Cycle Detection",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-05-cycle-detection.pdf",
+        "pageStart": 22,
+        "pageEnd": 26
+      },
+      {
+        "order": 6,
+        "title": "Topological Sort",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-06-topological-sort.pdf",
+        "pageStart": 27,
+        "pageEnd": 31
+      },
+      {
+        "order": 7,
+        "title": "Union-find (DSU)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-07-union-find-dsu.pdf",
+        "pageStart": 32,
+        "pageEnd": 35
+      },
+      {
+        "order": 8,
+        "title": "Bipartite Check / Colouring",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-08-bipartite-check-colouring.pdf",
+        "pageStart": 36,
+        "pageEnd": 41
+      },
+      {
+        "order": 9,
+        "title": "Dijkstra",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-09-dijkstra.pdf",
+        "pageStart": 42,
+        "pageEnd": 45
+      },
+      {
+        "order": 10,
+        "title": "Bellman-ford / Floyd-warshall",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-10-bellman-ford-floyd-warshall.pdf",
+        "pageStart": 46,
+        "pageEnd": 49
+      },
+      {
+        "order": 11,
+        "title": "Minimum Spanning Tree",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-10/10-11-minimum-spanning-tree.pdf",
+        "pageStart": 50,
+        "pageEnd": 55
+      }
+    ]
+  },
+  {
+    "slug": "level-11",
+    "name": "Greedy",
+    "order": 11,
+    "bookTitle": "Greedy — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-11.pdf",
+    "artifactUrl": "/coding-patterns/level-11",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Interval Scheduling / Activity Selection",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-11/11-01-interval-scheduling-activity-selection.pdf",
+        "pageStart": 4,
+        "pageEnd": 7
+      },
+      {
+        "order": 2,
+        "title": "Jump Game / Reachability",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-11/11-02-jump-game-reachability.pdf",
+        "pageStart": 8,
+        "pageEnd": 11
+      },
+      {
+        "order": 3,
+        "title": "Greedy With Sorting",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-11/11-03-greedy-with-sorting.pdf",
+        "pageStart": 12,
+        "pageEnd": 15
+      }
+    ]
+  },
+  {
+    "slug": "level-12",
+    "name": "Dynamic Programming",
+    "order": 12,
+    "bookTitle": "Dynamic Programming — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-12.pdf",
+    "artifactUrl": "/coding-patterns/level-12",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "1-D DP",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-01-1-d-dp.pdf",
+        "pageStart": 4,
+        "pageEnd": 6
+      },
+      {
+        "order": 2,
+        "title": "0/1 Knapsack",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-02-0-1-knapsack.pdf",
+        "pageStart": 7,
+        "pageEnd": 10
+      },
+      {
+        "order": 3,
+        "title": "Unbounded Knapsack (Coin Change)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-03-unbounded-knapsack-coin-change.pdf",
+        "pageStart": 11,
+        "pageEnd": 14
+      },
+      {
+        "order": 4,
+        "title": "Two-string DP (LCS, Edit Distance)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-04-two-string-dp-lcs-edit-distance.pdf",
+        "pageStart": 15,
+        "pageEnd": 18
+      },
+      {
+        "order": 5,
+        "title": "Longest Increasing Subsequence",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-05-longest-increasing-subsequence.pdf",
+        "pageStart": 19,
+        "pageEnd": 22
+      },
+      {
+        "order": 6,
+        "title": "Grid DP",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-06-grid-dp.pdf",
+        "pageStart": 23,
+        "pageEnd": 26
+      },
+      {
+        "order": 7,
+        "title": "Interval DP",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-07-interval-dp.pdf",
+        "pageStart": 27,
+        "pageEnd": 30
+      },
+      {
+        "order": 8,
+        "title": "State-machine DP",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-08-state-machine-dp.pdf",
+        "pageStart": 31,
+        "pageEnd": 34
+      },
+      {
+        "order": 9,
+        "title": "DP on Trees",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-09-dp-on-trees.pdf",
+        "pageStart": 35,
+        "pageEnd": 38
+      },
+      {
+        "order": 10,
+        "title": "Bitmask DP",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-10-bitmask-dp.pdf",
+        "pageStart": 39,
+        "pageEnd": 42
+      },
+      {
+        "order": 11,
+        "title": "Digit DP",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-12/12-11-digit-dp.pdf",
+        "pageStart": 43,
+        "pageEnd": 48
+      }
+    ]
+  },
+  {
+    "slug": "level-13",
+    "name": "Bit Manipulation",
+    "order": 13,
+    "bookTitle": "Bit Manipulation — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-13.pdf",
+    "artifactUrl": "/coding-patterns/level-13",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "XOR Tricks",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-13/13-01-xor-tricks.pdf",
+        "pageStart": 4,
+        "pageEnd": 5
+      },
+      {
+        "order": 2,
+        "title": "Get, Set, Clear, Toggle a Bit",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-13/13-02-get-set-clear-toggle-a-bit.pdf",
+        "pageStart": 6,
+        "pageEnd": 9
+      },
+      {
+        "order": 3,
+        "title": "Counting Bits / Power of Two",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-13/13-03-counting-bits-power-of-two.pdf",
+        "pageStart": 10,
+        "pageEnd": 12
+      },
+      {
+        "order": 4,
+        "title": "Bitmask Subsets / Parity Masks",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-13/13-04-bitmask-subsets-parity-masks.pdf",
+        "pageStart": 13,
+        "pageEnd": 17
+      }
+    ]
+  },
+  {
+    "slug": "level-14",
+    "name": "Advanced Patterns",
+    "order": 14,
+    "bookTitle": "Advanced Patterns — Complete Course Notes",
+    "bookUrl": "/uploads/course-content/coding-patterns-books/level-14.pdf",
+    "artifactUrl": "/coding-patterns/level-14",
+    "subModules": [
+      {
+        "order": 1,
+        "title": "Trie",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-14/14-01-trie.pdf",
+        "pageStart": 4,
+        "pageEnd": 9
+      },
+      {
+        "order": 2,
+        "title": "Segment Tree / Fenwick Tree",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-14/14-02-segment-tree-fenwick-tree.pdf",
+        "pageStart": 10,
+        "pageEnd": 14
+      },
+      {
+        "order": 3,
+        "title": "KMP / Z-algorithm",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-14/14-03-kmp-z-algorithm.pdf",
+        "pageStart": 15,
+        "pageEnd": 18
+      },
+      {
+        "order": 4,
+        "title": "Meet in the Middle",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-14/14-04-meet-in-the-middle.pdf",
+        "pageStart": 19,
+        "pageEnd": 23
+      },
+      {
+        "order": 5,
+        "title": "Math Patterns (Sieve, GCD, Fast Power)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-14/14-05-math-patterns-sieve-gcd-fast-power.pdf",
+        "pageStart": 24,
+        "pageEnd": 26
+      },
+      {
+        "order": 6,
+        "title": "System-style Design (LRU Cache, Rate Limiter)",
+        "fileUrl": "/uploads/course-content/submodules/coding-patterns/level-14/14-06-system-style-design-lru-cache-rate-limiter.pdf",
+        "pageStart": 27,
+        "pageEnd": 32
+      }
+    ]
+  }
+]
