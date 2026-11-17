@@ -9,20 +9,20 @@ export const metadata: Metadata = {
 };
 
 const LEVELS = [
-  { file: "level-01.html", name: "Programming Basics" },
-  { file: "level-02.html", name: "Arrays and Strings" },
-  { file: "level-03.html", name: "Searching and Sorting" },
-  { file: "level-04.html", name: "Hashing" },
-  { file: "level-05.html", name: "Linked Lists" },
-  { file: "level-06.html", name: "Stacks and Queues" },
-  { file: "level-07.html", name: "Recursion and Backtracking" },
-  { file: "level-08.html", name: "Trees" },
-  { file: "level-09.html", name: "Heaps" },
-  { file: "level-10.html", name: "Graphs" },
-  { file: "level-11.html", name: "Greedy" },
-  { file: "level-12.html", name: "Dynamic Programming" },
-  { file: "level-13.html", name: "Bit Manipulation" },
-  { file: "level-14.html", name: "Advanced Patterns" },
+  { slug: "level-01", name: "Programming Basics" },
+  { slug: "level-02", name: "Arrays and Strings" },
+  { slug: "level-03", name: "Searching and Sorting" },
+  { slug: "level-04", name: "Hashing" },
+  { slug: "level-05", name: "Linked Lists" },
+  { slug: "level-06", name: "Stacks and Queues" },
+  { slug: "level-07", name: "Recursion and Backtracking" },
+  { slug: "level-08", name: "Trees" },
+  { slug: "level-09", name: "Heaps" },
+  { slug: "level-10", name: "Graphs" },
+  { slug: "level-11", name: "Greedy" },
+  { slug: "level-12", name: "Dynamic Programming" },
+  { slug: "level-13", name: "Bit Manipulation" },
+  { slug: "level-14", name: "Advanced Patterns" },
 ] as const;
 
 export default function CodingPatternArtifactsPage() {
@@ -42,11 +42,11 @@ export default function CodingPatternArtifactsPage() {
       <section className="card lift">
         <div className="grid" style={{ ["--min" as string]: "260px" }}>
           {LEVELS.map((level, i) => (
-            <a
-              key={level.file}
+            <Link
+              key={level.slug}
               className="box hover stack"
               style={{ gap: 12, textDecoration: "none", color: "inherit" }}
-              href={`/coding-patterns/${level.file}`}
+              href={`/coding-patterns/${level.slug}`}
             >
               <div className="split">
                 <span className="icon-box navy">
@@ -56,7 +56,7 @@ export default function CodingPatternArtifactsPage() {
               </div>
               <h3 className="h3">{level.name}</h3>
               <span style={{ fontWeight: 600, color: "var(--navy)" }}>Open visualiser →</span>
-            </a>
+            </Link>
           ))}
         </div>
       </section>
