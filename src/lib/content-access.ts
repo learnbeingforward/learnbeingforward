@@ -1,4 +1,22 @@
 import { prisma } from "@/lib/prisma";
+import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
+
+/** Whether this student meets the attendance bar for the given course — the
+ * same rule certification eligibility uses. Used to decide whether an admin
+ * deciding a content-access request needs the extra "send to college"
+ * option, or can just approve/reject directly like any other request. */
+export async function getStudentCourseAttendance(studentId: string, courseId: string): Promise<{ pct: number; eligible: boolean }> {
+  const enrollment = await prisma.enrollment.findFirst({
+    where: { studentId, courseId },
+    include: { attendanceRecords: true, certification: true },
+  });
+  if (!enrollment) return { pct: 0, eligible: false };
+  const total = enrollment.attendanceRecords.length || enrollment.totalClasses;
+  const present = enrollment.attendanceRecords.filter((r) => r.present).length;
+  const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+  const eligible = pct >= ATTENDANCE_THRESHOLD || !!enrollment.certification?.overrideApproved;
+  return { pct, eligible };
+}
 
 export async function getUnlockedContentForStudent(studentId: string) {
   const enrollments = await prisma.enrollment.findMany({

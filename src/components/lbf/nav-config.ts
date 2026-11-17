@@ -151,6 +151,7 @@ export const COLLEGE_NAV: NavConfig = {
     { key: "courses", label: "Courses", icon: "book", pages: [{ key: "courses", label: "Courses", href: "/lms/college/courses" }] },
     { key: "batches", label: "Batches", icon: "layers", pages: [{ key: "batches", label: "Batches", href: "/lms/college/batches" }] },
     { key: "queries", label: "Query from Student", icon: "message", pages: [{ key: "queries", label: "Query from Student", href: "/lms/college/queries" }] },
+    { key: "content-requests", label: "Content Requests", icon: "file", pages: [{ key: "content-requests", label: "Content Requests", href: "/lms/college/content-requests" }] },
     { key: "contracts", label: "Contracts", icon: "file", pages: [{ key: "contracts", label: "Contracts", href: "/lms/college/contracts" }] },
     { key: "assessment-data", label: "Assessment Data", icon: "chart", pages: [{ key: "assessment-data", label: "Assessment Data", href: "/lms/college/assessment-data" }] },
     { key: "profile", label: "Profile", icon: "user", pages: [{ key: "profile", label: "Profile", href: "/lms/college/profile" }] },

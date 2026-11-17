@@ -28,6 +28,10 @@ enum RequestStatus {
   APPROVED
   REJECTED
   PENDING_RATE
+  // ContentAccessRequest only: the admin forwarded this request (made by a
+  // student below the attendance threshold) to their college instead of
+  // deciding it directly — the college's own approve/reject is now final.
+  PENDING_COLLEGE
 }
 
 enum TechCategory {

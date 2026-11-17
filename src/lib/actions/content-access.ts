@@ -208,3 +208,55 @@ export async function decideContentAccessRequests(requestIds: string[], approve:
   revalidatePath("/lms/company/course-content/requests");
   revalidatePath("/lms/student/content");
 }
+
+/**
+ * The admin's second option for a request from a below-threshold student:
+ * instead of deciding it themselves, forward it to the student's own college
+ * for a final approve/reject. Only meaningful while still PENDING — once a
+ * college has it, the admin's own approve/reject buttons are hidden in the UI
+ * (see course-content/requests/page.tsx), though nothing here stops them
+ * from still deciding it directly if they really need to.
+ */
+export async function sendContentRequestToCollege(requestId: string) {
+  await requireCourseContentAccess();
+
+  const request = await prisma.contentAccessRequest.findUnique({
+    where: { id: requestId },
+    include: { student: true },
+  });
+  if (!request || request.status !== "PENDING") return;
+  if (!request.student.collegeId) throw new Error("This student isn't linked to a college.");
+
+  await prisma.contentAccessRequest.update({ where: { id: requestId }, data: { status: "PENDING_COLLEGE" } });
+
+  revalidatePath("/lms/company/course-content/requests");
+}
+
+/** The college's own final decision on a request the admin forwarded to them. */
+export async function decideContentAccessRequestAsCollege(requestId: string, approve: boolean) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "COLLEGE_ADMIN" || !session.user.collegeId) {
+    throw new Error("Only a college admin can decide this.");
+  }
+
+  const request = await prisma.contentAccessRequest.findUnique({
+    where: { id: requestId },
+    include: { student: true },
+  });
+  if (!request || request.status !== "PENDING_COLLEGE" || request.student.collegeId !== session.user.collegeId) {
+    throw new Error("This request isn't waiting on your college.");
+  }
+
+  await prisma.contentAccessRequest.update({
+    where: { id: requestId },
+    data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date() },
+  });
+
+  await notify("ADMIN", `${request.student.name}'s college ${approve ? "approved" : "rejected"} a content request`, {
+    href: "/lms/company/course-content/requests",
+  });
+
+  revalidatePath("/lms/college/content-requests");
+  revalidatePath("/lms/company/course-content/requests");
+  revalidatePath("/lms/student/content");
+}
