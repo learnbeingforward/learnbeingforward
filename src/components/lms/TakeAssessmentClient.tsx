@@ -2083,23 +2083,43 @@ export function TakeAssessmentClient({
             webcamExpanded ? "h-56 w-72" : "h-24 w-32"
           } ${pipPos ? "" : "right-4 top-4"}`}
         >
-          <video ref={videoRef} muted playsInline className="size-full object-cover" />
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="size-full object-cover"
+            style={{ transform: mirrorPreview ? "scaleX(-1)" : undefined }}
+          />
           <span className="pointer-events-none absolute left-1.5 top-1.5 flex items-center gap-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-white">
             <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
             REC
           </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setWebcamExpanded((v) => !v);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute right-1.5 top-1.5 rounded bg-black/50 p-1 text-white hover:bg-black/70"
-            title={webcamExpanded ? "Collapse" : "Expand"}
-          >
-            {webcamExpanded ? <Minimize2 className="size-3" /> : <Maximize2 className="size-3" />}
-          </button>
+          <div className="absolute right-1.5 top-1.5 flex gap-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMirrorPreview((v) => !v);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="rounded bg-black/50 p-1 text-white hover:bg-black/70"
+              title={mirrorPreview ? "Un-mirror preview" : "Mirror preview"}
+            >
+              <FlipHorizontal className="size-3" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setWebcamExpanded((v) => !v);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="rounded bg-black/50 p-1 text-white hover:bg-black/70"
+              title={webcamExpanded ? "Collapse" : "Expand"}
+            >
+              {webcamExpanded ? <Minimize2 className="size-3" /> : <Maximize2 className="size-3" />}
+            </button>
+          </div>
         </div>
       )}
 
