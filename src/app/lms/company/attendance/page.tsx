@@ -220,22 +220,15 @@ export default async function CompanyAttendancePage({
           </div>
 
           {awaitingCertificates.length > 0 && (
-            <section className="card">
-              <h2 className="h2" style={{ marginBottom: 18 }}>Eligible for certificate, not yet issued ({awaitingCertificates.length})</h2>
-              <ul className="list" style={{ maxHeight: 280, overflowY: "auto" }}>
-                {awaitingCertificates.map(({ enrollment, pct }) => (
-                  <li key={enrollment.id} className="list-row">
-                    <div className="grow">
-                      <div className="strong">{enrollment.student.name}</div>
-                      <div className="small muted">{enrollment.course.name} · {enrollment.college?.name ?? "—"} · {pct}% attendance</div>
-                    </div>
-                    <form action={approveCertificate.bind(null, enrollment.id)}>
-                      <button className="btn btn-primary btn-sm" type="submit">Approve Certificate</button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/attendance/certificates">
+              <div className="split">
+                <div>
+                  <h2 className="h2">Eligible for certificate, not yet issued ({awaitingCertificates.length})</h2>
+                  <p className="small muted" style={{ marginTop: 4 }}>Browse by course, then college and semester — or search a student by name.</p>
+                </div>
+                <span style={{ fontWeight: 600, color: "var(--navy)" }}>Open →</span>
+              </div>
+            </Link>
           )}
         </>
       )}
