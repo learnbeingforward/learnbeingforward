@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { chunkIntoBatches, AUTO_BATCH_CAP, MANUAL_BATCH_CAP } from "@/lib/batching";
 import { isCompanyStaff } from "@/lib/auth-helpers";
 import { getEmployeeKeys } from "@/lib/employee-access";
+import { notify } from "@/lib/notifications";
 
 async function isAuthorizedEmployee(userId: string) {
   return (await getEmployeeKeys(userId)).includes("trainers.manage");
@@ -391,4 +392,230 @@ export async function deleteTrainingSession(sessionId: string) {
   revalidatePath("/lms/company/trainers/schedule");
   revalidatePath("/lms/trainer/schedule");
   revalidatePath("/lms/trainer/attendance");
+}
+
+/**
+ * Deletes every batch created on a given calendar day (used by the batch
+ * calendar's bulk "delete all batches created that day" action). Batches with
+ * attendance already recorded are skipped rather than blocking the whole
+ * operation — the caller is told how many were skipped.
+ */
+export async function deleteBatchesCreatedOn(dateKey: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "SUPER_ADMIN") {
+    throw new Error("Only the main company admin can bulk-delete batches.");
+  }
+
+  const dayStart = new Date(`${dateKey}T00:00:00`);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const batches = await prisma.batch.findMany({
+    where: { createdAt: { gte: dayStart, lt: dayEnd } },
+    include: { trainingSessions: true },
+  });
+
+  const deletable = batches.filter((b) => !b.trainingSessions.some((s) => s.attendanceTaken));
+
+  await prisma.$transaction([
+    prisma.enrollment.updateMany({ where: { batchId: { in: deletable.map((b) => b.id) } }, data: { batchId: null, trainerId: null } }),
+    prisma.trainingSession.deleteMany({ where: { batchId: { in: deletable.map((b) => b.id) } } }),
+    prisma.batch.deleteMany({ where: { id: { in: deletable.map((b) => b.id) } } }),
+  ]);
+
+  revalidateBatchPaths();
+  revalidatePath("/lms/company/trainers/batches/calendar");
+}
+
+export type RequestBatchState = { ok: boolean; error?: string } | null;
+
+/**
+ * A college's request to form a new batch — unlike createManualBatch, the
+ * course and student list aren't limited to existing unbatched enrollments:
+ * a college can request a batch for any course and any of their own
+ * students, and students without an enrollment in that course yet get one
+ * created automatically once the request is approved. Nothing is active
+ * (no Batch row, no notification to the batch's students) until a company
+ * admin approves it.
+ */
+export async function requestBatch(
+  _prevState: RequestBatchState,
+  formData: FormData
+): Promise<RequestBatchState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "COLLEGE_ADMIN" || !session.user.collegeId) {
+    return { ok: false, error: "Only a college admin can request a batch." };
+  }
+  const collegeId = session.user.collegeId;
+
+  const courseId = String(formData.get("courseId") ?? "");
+  const name = String(formData.get("name") ?? "").trim() || null;
+  const semesterInput = String(formData.get("semester") ?? "").trim();
+  const semester = semesterInput ? Number.parseInt(semesterInput, 10) : null;
+  const studentIds = formData.getAll("studentIds").map(String);
+
+  if (!courseId) return { ok: false, error: "Select a course." };
+  if (studentIds.length === 0) return { ok: false, error: "Select at least one student." };
+
+  const [course, students, college] = await Promise.all([
+    prisma.course.findUnique({ where: { id: courseId }, select: { name: true } }),
+    prisma.user.findMany({ where: { id: { in: studentIds }, collegeId, role: "STUDENT" }, select: { id: true } }),
+    prisma.college.findUnique({ where: { id: collegeId }, select: { name: true } }),
+  ]);
+  if (!course) return { ok: false, error: "Course not found." };
+  if (students.length !== studentIds.length) {
+    return { ok: false, error: "Some selected students are no longer available at your college." };
+  }
+
+  await prisma.batchRequest.create({
+    data: { collegeId, courseId, name, semester, studentIds },
+  });
+
+  await notify("COLLEGE", `${college?.name ?? "A college"} requested a new batch for ${course.name}`, {
+    message: `${studentIds.length} student${studentIds.length !== 1 ? "s" : ""} — awaiting approval.`,
+    href: "/lms/company/trainers/batches/requests",
+    requiredKey: "trainers.manage",
+  });
+
+  revalidatePath("/lms/college/batches");
+  revalidatePath("/lms/company/trainers/batches/requests");
+  return { ok: true };
+}
+
+export async function approveBatchRequest(requestId: string, formData: FormData) {
+  await requireTrainerManagement();
+
+  const request = await prisma.batchRequest.findUnique({ where: { id: requestId } });
+  if (!request || request.status !== "PENDING") {
+    throw new Error("This request is no longer pending.");
+  }
+
+  const trainingType = String(formData.get("trainingType") ?? "");
+  if (!["CSR", "FREE", "PAID"].includes(trainingType)) {
+    throw new Error("Select a training type.");
+  }
+  const rateInput = String(formData.get("rate") ?? "").trim();
+  const rate = rateInput ? Number.parseInt(rateInput, 10) : null;
+  if (trainingType === "PAID" && (!rate || rate <= 0)) {
+    throw new Error("Enter a valid price / hourly rate for paid training.");
+  }
+  const startDateInput = String(formData.get("trainingStartDate") ?? "").trim();
+  const trainingStartDate = startDateInput ? new Date(`${startDateInput}T00:00:00`) : null;
+  if (!trainingStartDate || Number.isNaN(trainingStartDate.getTime())) {
+    throw new Error("Enter a valid start date.");
+  }
+  const daysInput = String(formData.get("trainingDays") ?? "").trim();
+  const trainingDays = Number.parseInt(daysInput, 10);
+  if (!Number.isFinite(trainingDays) || trainingDays < 1) {
+    throw new Error("Enter a valid number of training days.");
+  }
+
+  const studentIds = Array.isArray(request.studentIds) ? (request.studentIds as unknown[]).map(String) : [];
+  if (studentIds.length === 0) throw new Error("This request has no students.");
+
+  const course = await prisma.course.findUniqueOrThrow({ where: { id: request.courseId } });
+
+  // The request's students aren't limited to ones already enrolled in this
+  // course — anyone missing an enrollment here gets one created as part of
+  // approval, instead of being silently dropped from the batch.
+  const existingEnrollments = await prisma.enrollment.findMany({
+    where: { studentId: { in: studentIds }, courseId: request.courseId },
+  });
+  const existingByStudent = new Map(existingEnrollments.map((e) => [e.studentId, e]));
+
+  const existingBatchCount = await prisma.batch.count({ where: { collegeId: request.collegeId, courseId: request.courseId } });
+  const semesterLabel = request.semester ? ` — Sem ${request.semester}` : "";
+  const baseName = request.name || `${course.name}${semesterLabel}`;
+
+  const chunks = chunkIntoBatches(
+    studentIds.map((id) => ({ id, enrolledAt: existingByStudent.get(id)?.enrolledAt ?? new Date() })),
+    MANUAL_BATCH_CAP
+  );
+
+  const createdBatchIds: string[] = [];
+  await prisma.$transaction(async (tx) => {
+    for (const [i, chunk] of chunks.entries()) {
+      const batch = await tx.batch.create({
+        data: {
+          collegeId: request.collegeId,
+          courseId: request.courseId,
+          semester: request.semester,
+          name: chunks.length > 1 ? `${baseName} — Batch ${existingBatchCount + i + 1}` : baseName,
+          trainingType: trainingType as never,
+          rate,
+          trainingStartDate,
+          trainingDays,
+        },
+      });
+      createdBatchIds.push(batch.id);
+
+      const chunkIds = chunk.map((c) => c.id);
+      const chunkExistingEnrollmentIds = chunkIds
+        .filter((id) => existingByStudent.has(id))
+        .map((id) => existingByStudent.get(id)!.id);
+      const chunkMissingStudentIds = chunkIds.filter((id) => !existingByStudent.has(id));
+
+      if (chunkExistingEnrollmentIds.length > 0) {
+        await tx.enrollment.updateMany({
+          where: { id: { in: chunkExistingEnrollmentIds } },
+          data: { batchId: batch.id },
+        });
+      }
+      for (const studentId of chunkMissingStudentIds) {
+        await tx.enrollment.create({
+          data: { studentId, courseId: request.courseId, collegeId: request.collegeId, batchId: batch.id },
+        });
+      }
+    }
+
+    await tx.batchRequest.update({
+      where: { id: requestId },
+      data: {
+        status: "APPROVED",
+        decidedAt: new Date(),
+        trainingType: trainingType as never,
+        rate,
+        trainingStartDate,
+        trainingDays,
+        resultBatchId: createdBatchIds[0],
+      },
+    });
+  });
+
+  const college = await prisma.college.findUnique({ where: { id: request.collegeId }, select: { name: true } });
+  await notify("COLLEGE", `Approved ${college?.name ?? "a college"}'s batch request for ${course.name}`, {
+    href: `/lms/company/trainers/batches?collegeId=${request.collegeId}`,
+    requiredKey: "trainers.manage",
+  });
+
+  revalidateBatchPaths();
+  revalidatePath("/lms/company/trainers/batches/requests");
+}
+
+export async function rejectBatchRequest(requestId: string, formData: FormData) {
+  await requireTrainerManagement();
+
+  const request = await prisma.batchRequest.findUnique({ where: { id: requestId } });
+  if (!request || request.status !== "PENDING") return;
+
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("Enter a reason for rejecting this request.");
+
+  await prisma.batchRequest.update({
+    where: { id: requestId },
+    data: { status: "REJECTED", decidedAt: new Date(), rejectReason: reason },
+  });
+
+  const [college, course] = await Promise.all([
+    prisma.college.findUnique({ where: { id: request.collegeId }, select: { name: true } }),
+    prisma.course.findUnique({ where: { id: request.courseId }, select: { name: true } }),
+  ]);
+  await notify("COLLEGE", `Rejected ${college?.name ?? "a college"}'s batch request for ${course?.name ?? "a course"}`, {
+    message: reason,
+    href: "/lms/company/trainers/batches/requests",
+    requiredKey: "trainers.manage",
+  });
+
+  revalidatePath("/lms/college/batches");
+  revalidatePath("/lms/company/trainers/batches/requests");
 }

@@ -17,7 +17,10 @@ export default async function CompanyTrainersPage() {
   const canManage = keys.includes("trainers.manage");
   const canInvoices = keys.includes("trainers.invoices");
 
-  const trainers = await prisma.trainer.findMany({ include: { loginUser: true, batches: true }, orderBy: { name: "asc" } });
+  const [trainers, pendingBatchRequests] = await Promise.all([
+    prisma.trainer.findMany({ include: { loginUser: true, batches: true }, orderBy: { name: "asc" } }),
+    prisma.batchRequest.count({ where: { status: "PENDING" } }),
+  ]);
 
   return (
     <AppShell
@@ -36,6 +39,23 @@ export default async function CompanyTrainersPage() {
             <span className="icon-box gold"><Icon name="users" size={20} /></span>
             <h3 className="h3" style={{ marginTop: 12 }}>Batches</h3>
             <p className="small muted" style={{ marginTop: 4 }}>Group enrolled students into class batches.</p>
+          </Link>
+        )}
+        {canManage && (
+          <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/trainers/batches/requests">
+            <span className="split" style={{ alignItems: "flex-start" }}>
+              <span className="icon-box gold"><Icon name="bell" size={20} /></span>
+              {pendingBatchRequests > 0 && <span className="pill warning">{pendingBatchRequests} pending</span>}
+            </span>
+            <h3 className="h3" style={{ marginTop: 12 }}>Batch requests</h3>
+            <p className="small muted" style={{ marginTop: 4 }}>Approve batches colleges have asked to create.</p>
+          </Link>
+        )}
+        {canManage && (
+          <Link className="card" style={{ textDecoration: "none", color: "inherit", display: "block" }} href="/lms/company/trainers/batches/calendar">
+            <span className="icon-box gold"><Icon name="calendar" size={20} /></span>
+            <h3 className="h3" style={{ marginTop: 12 }}>Batch calendar</h3>
+            <p className="small muted" style={{ marginTop: 4 }}>Browse batches by the date they were created.</p>
           </Link>
         )}
         {canManage && (

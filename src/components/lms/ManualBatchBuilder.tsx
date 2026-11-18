@@ -185,9 +185,24 @@ export function ManualBatchBuilder({
 
       {candidates.length > 0 ? (
         <div>
-          <p className="mb-2 text-sm font-medium text-indigo">
-            Unbatched students ({selected.size} selected, max {MANUAL_BATCH_CAP})
-          </p>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-medium text-indigo">
+              Unbatched students ({selected.size} selected, max {MANUAL_BATCH_CAP})
+            </p>
+            <button
+              type="button"
+              className="text-xs font-medium text-indigo underline"
+              onClick={() =>
+                setSelected((prev) =>
+                  prev.size === candidates.length
+                    ? new Set()
+                    : new Set(candidates.slice(0, MANUAL_BATCH_CAP).map((c) => c.id))
+                )
+              }
+            >
+              {selected.size === candidates.length ? "Clear all" : "Select all"}
+            </button>
+          </div>
           <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-border p-3">
             {candidates.map((c) => (
               <label key={c.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-cream">

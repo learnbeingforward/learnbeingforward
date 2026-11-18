@@ -103,7 +103,7 @@ export default async function CompanyBatchesPage({
 
   const [unbatched, batches, trainers, approvedContracts, allColleges, allCourses] = await Promise.all([
     prisma.enrollment.findMany({ where: { batchId: null, collegeId: { not: null } }, include: { student: true, course: true, college: true } }),
-    prisma.batch.findMany({ include: { college: true, course: true, trainer: true, enrollments: true }, orderBy: { createdAt: "desc" } }),
+    prisma.batch.findMany({ include: { college: true, course: true, trainer: true, enrollments: true, trainingSessions: true }, orderBy: { createdAt: "desc" } }),
     prisma.trainer.findMany({ orderBy: { name: "asc" } }),
     prisma.collegeContract.findMany({ where: { status: "APPROVED" }, orderBy: { decidedAt: "desc" } }),
     prisma.college.findMany({ orderBy: { name: "asc" } }),
@@ -170,8 +170,32 @@ export default async function CompanyBatchesPage({
     colleges.set(b.collegeId, entry);
   }
 
+  const mostRecentBatch = batches[0];
+  const canUndo = mostRecentBatch && !mostRecentBatch.trainingSessions.some((s) => s.attendanceTaken);
+
   return (
-    <AppShell nav={nav} active="trainers" user={shellUser} hasUnread={hasUnread} crumb="Accounts › Trainers › Batches" title="Batches" subtitle="Group enrolled students into class batches.">
+    <AppShell
+      nav={nav}
+      active="trainers"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Accounts › Trainers › Batches"
+      title="Batches"
+      subtitle="Group enrolled students into class batches."
+      actions={
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link className="btn btn-ghost-light" href="/lms/company/trainers/batches/requests">Batch requests</Link>
+          <Link className="btn btn-ghost-light" href="/lms/company/trainers/batches/calendar">Calendar</Link>
+          {canUndo && (
+            <form action={deleteBatch.bind(null, mostRecentBatch.id)}>
+              <button className="btn btn-sm" type="submit" title="Deletes the most recently created batch">
+                Undo most recent ({mostRecentBatch.name})
+              </button>
+            </form>
+          )}
+        </div>
+      }
+    >
       <BackLink href="/lms/company/trainers" label="Back to Trainers" />
 
       <div className="row">

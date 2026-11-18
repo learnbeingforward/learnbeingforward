@@ -58,6 +58,12 @@ enum ContractType {
   PER_DAY_FLAT
 }
 
+enum BatchTrainingType {
+  CSR
+  FREE
+  PAID
+}
+
 enum CourseDomain {
   TECHNICAL
   APTITUDE
@@ -135,6 +141,7 @@ model College {
   enrollmentRequests   EnrollmentRequest[]
   attendanceExceptions AttendanceException[]
   batches              Batch[]
+  batchRequests        BatchRequest[]
   contracts            CollegeContract[]
 }
 
@@ -155,6 +162,7 @@ model Course {
   enrollments        Enrollment[]
   enrollmentRequests EnrollmentRequest[]
   batches            Batch[]
+  batchRequests      BatchRequest[]
   sessionContents    SessionContent[]
   courseContents     CourseContent[]
   contracts          CollegeContract[]
@@ -293,12 +301,49 @@ model Batch {
   trainer   Trainer? @relation(fields: [trainerId], references: [id])
   createdAt DateTime @default(now())
 
+  // Only set when this batch came out of an approved college BatchRequest —
+  // carried straight over from the admin's approval decision.
+  trainingType      BatchTrainingType?
+  rate              Int?
+  trainingStartDate DateTime?
+  trainingDays      Int?
+
   enrollments      Enrollment[]
   trainingSessions TrainingSession[]
 
   @@index([collegeId])
   @@index([courseId])
   @@index([trainerId])
+}
+
+/** A college's request to form a new batch — college picks a course and any
+ * students at their college (not limited to ones already enrolled in that
+ * course; studentIds not yet enrolled get an Enrollment created on approval).
+ * The batch doesn't exist and students aren't notified until a company admin
+ * approves it, at which point the training type/rate/schedule they set here
+ * get carried onto the real Batch via resultBatchId. */
+model BatchRequest {
+  id                String             @id @default(cuid())
+  collegeId         String
+  college           College            @relation(fields: [collegeId], references: [id])
+  courseId          String
+  course            Course             @relation(fields: [courseId], references: [id])
+  name              String?
+  semester          Int?
+  studentIds        Json
+  status            RequestStatus      @default(PENDING)
+  trainingType      BatchTrainingType?
+  rate              Int?
+  trainingStartDate DateTime?
+  trainingDays      Int?
+  rejectReason      String?            @db.Text
+  resultBatchId     String?
+  requestedAt       DateTime           @default(now())
+  decidedAt         DateTime?
+
+  @@index([collegeId])
+  @@index([courseId])
+  @@index([status])
 }
 
 model TrainingSession {
