@@ -35,7 +35,14 @@ export async function scheduleTrainingSession(
     const include = formData.get(`slot${n}_include`) === "on";
     if (!include) return null;
     const timeValue = String(formData.get(`slot${n}_time`) ?? "");
-    const [startTime, endTime] = timeValue.split("|");
+    let startTime: string | undefined;
+    let endTime: string | undefined;
+    if (timeValue === "OTHER") {
+      startTime = String(formData.get(`slot${n}_customStart`) ?? "").trim() || undefined;
+      endTime = String(formData.get(`slot${n}_customEnd`) ?? "").trim() || undefined;
+    } else {
+      [startTime, endTime] = timeValue.split("|");
+    }
     const courseModuleId = String(formData.get(`slot${n}_moduleId`) ?? "").trim() || null;
     const topic = String(formData.get(`slot${n}_topic`) ?? "").trim() || null;
     if (!startTime || !endTime) return null;

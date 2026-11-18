@@ -37,6 +37,7 @@ export function ScheduleSessionForm({
   const [batchId, setBatchId] = useState("");
   const [trainerId, setTrainerId] = useState("");
   const [slotOn, setSlotOn] = useState({ 1: true, 2: false, 3: false });
+  const [slotTime, setSlotTime] = useState<Record<number, string>>({ 1: "", 2: "", 3: "" });
 
   const selectedBatch = batches.find((b) => b.id === batchId);
   const courseModules = useMemo(
@@ -130,7 +131,10 @@ export function ScheduleSessionForm({
                     Time
                     <RequiredMark />
                   </Label>
-                  <Select name={`slot${n}_time`}>
+                  <Select
+                    value={slotTime[n]}
+                    onValueChange={(v) => setSlotTime((prev) => ({ ...prev, [n]: String(v) }))}
+                  >
                     <SelectTrigger className="mt-1.5 w-full">
                       <SelectValue placeholder="Select time" />
                     </SelectTrigger>
@@ -140,8 +144,26 @@ export function ScheduleSessionForm({
                           {p.label}
                         </SelectItem>
                       ))}
+                      <SelectItem value="OTHER">Others (custom time)</SelectItem>
                     </SelectContent>
                   </Select>
+                  {slotTime[n] === "OTHER" ? (
+                    <input type="hidden" name={`slot${n}_time`} value="OTHER" />
+                  ) : (
+                    <input type="hidden" name={`slot${n}_time`} value={slotTime[n]} />
+                  )}
+                  {slotTime[n] === "OTHER" && (
+                    <div className="mt-2 grid gap-2 grid-cols-2">
+                      <div>
+                        <Label htmlFor={`slot${n}_customStart`} className="text-xs">Start time</Label>
+                        <Input id={`slot${n}_customStart`} name={`slot${n}_customStart`} type="time" required className="mt-1" />
+                      </div>
+                      <div>
+                        <Label htmlFor={`slot${n}_customEnd`} className="text-xs">End time</Label>
+                        <Input id={`slot${n}_customEnd`} name={`slot${n}_customEnd`} type="time" required className="mt-1" />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>Module / Subject</Label>
