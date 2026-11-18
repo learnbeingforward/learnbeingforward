@@ -30,6 +30,14 @@ export type SearchableStudent = {
   cvUrl: string | null;
 };
 
+type SortKey = "name" | "attendance" | "semester";
+
+const SORTERS: Record<SortKey, (a: SearchableStudent, b: SearchableStudent) => number> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  attendance: (a, b) => b.pct - a.pct,
+  semester: (a, b) => (b.semester ?? -1) - (a.semester ?? -1),
+};
+
 export function StudentSearchTable({
   rows,
   showCollege = false,
@@ -38,24 +46,39 @@ export function StudentSearchTable({
   showCollege?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
   const pathname = usePathname();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q));
-  }, [rows, query]);
+    const base = q ? rows.filter((r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)) : rows;
+    return [...base].sort(SORTERS[sortKey]);
+  }, [rows, query, sortKey]);
 
   return (
     <div>
-      <div className="relative mb-4 max-w-sm">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or email"
-          className="pl-9"
-        />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or email"
+            className="pl-9"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          Sort by
+          <select
+            className="rounded-md border border-border bg-white px-2 py-1.5 text-sm text-foreground"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+          >
+            <option value="name">Name (A–Z)</option>
+            <option value="attendance">Attendance (high–low)</option>
+            <option value="semester">Semester (high–low)</option>
+          </select>
+        </label>
       </div>
       <div className="rounded-xl border border-border bg-white">
         <Table>

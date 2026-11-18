@@ -21,12 +21,24 @@ function statusPillClass(status: string) {
   return status === "APPROVED" ? "success" : status === "REJECTED" ? "danger" : "gold";
 }
 
-export default async function CompanyCollegeSentPage() {
+const CONTRACT_SORTERS: Record<string, (a: { college: { name: string }; requestedAt: Date; status: string }, b: { college: { name: string }; requestedAt: Date; status: string }) => number> = {
+  college: (a, b) => a.college.name.localeCompare(b.college.name),
+  date: (a, b) => b.requestedAt.getTime() - a.requestedAt.getTime(),
+  status: (a, b) => a.status.localeCompare(b.status),
+};
+
+export default async function CompanyCollegeSentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>;
+}) {
+  const { sort } = await searchParams;
   const { session, keys, hasUnread } = await requireCompanyPageAccess("colleges.sent");
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
+  const sortKey = sort && sort in CONTRACT_SORTERS ? sort : "date";
 
-  const [contracts, upcomingSessions] = await Promise.all([
+  const [contractsRaw, upcomingSessions] = await Promise.all([
     prisma.collegeContract.findMany({
       where: { status: { not: "PENDING_RATE" } },
       include: { college: true, course: true, invoices: { orderBy: { submittedAt: "desc" } } },
@@ -39,6 +51,7 @@ export default async function CompanyCollegeSentPage() {
       take: 20,
     }),
   ]);
+  const contracts = [...contractsRaw].sort(CONTRACT_SORTERS[sortKey]);
 
   const approvedContractKeys = new Set(contracts.filter((c) => c.status === "APPROVED").map((c) => `${c.collegeId}:${c.courseId}`));
   const relevantSessions = upcomingSessions.filter((s) => approvedContractKeys.has(`${s.batch.collegeId}:${s.batch.courseId}`));
@@ -48,7 +61,21 @@ export default async function CompanyCollegeSentPage() {
       <BackLink href="/lms/company/colleges" label="Back to Colleges" />
 
       <section className="card">
-        <h2 className="h2" style={{ marginBottom: 18 }}>Training requests ({contracts.length})</h2>
+        <div className="split" style={{ marginBottom: 18 }}>
+          <h2 className="h2">Training requests ({contracts.length})</h2>
+          <div style={{ display: "flex", gap: 6 }}>
+            {(["date", "college", "status"] as const).map((key) => (
+              <Link
+                key={key}
+                href={`/lms/company/colleges/sent?sort=${key}`}
+                className={`pill ${sortKey === key ? "gold" : ""}`}
+                style={{ textDecoration: "none" }}
+              >
+                Sort: {key === "date" ? "Date" : key === "college" ? "College" : "Status"}
+              </Link>
+            ))}
+          </div>
+        </div>
         {contracts.length === 0 ? (
           <p className="empty">No training requests yet.</p>
         ) : (

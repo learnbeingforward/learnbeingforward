@@ -9,7 +9,18 @@ import { updateTrainerRate } from "@/lib/actions/trainers";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
-export default async function CompanyTrainersPage() {
+const TRAINER_SORTERS: Record<string, (a: { name: string; batches: unknown[]; hourlyRate: number }, b: { name: string; batches: unknown[]; hourlyRate: number }) => number> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  batches: (a, b) => b.batches.length - a.batches.length,
+  rate: (a, b) => b.hourlyRate - a.hourlyRate,
+};
+
+export default async function CompanyTrainersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>;
+}) {
+  const { sort } = await searchParams;
   const { session, keys, hasUnread } = await requireCompanyPageAccess(["trainers.manage", "trainers.invoices"]);
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
@@ -17,10 +28,12 @@ export default async function CompanyTrainersPage() {
   const canManage = keys.includes("trainers.manage");
   const canInvoices = keys.includes("trainers.invoices");
 
-  const [trainers, pendingBatchRequests] = await Promise.all([
+  const [trainersRaw, pendingBatchRequests] = await Promise.all([
     prisma.trainer.findMany({ include: { loginUser: true, batches: true }, orderBy: { name: "asc" } }),
     prisma.batchRequest.count({ where: { status: "PENDING" } }),
   ]);
+  const sortKey = sort && sort in TRAINER_SORTERS ? sort : "name";
+  const trainers = [...trainersRaw].sort(TRAINER_SORTERS[sortKey]);
 
   return (
     <AppShell
@@ -84,7 +97,26 @@ export default async function CompanyTrainersPage() {
         ) : (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Trainer</th><th>Batches</th><th>Login</th><th>Hourly rate</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>
+                    <Link href="/lms/company/trainers?sort=name" style={{ color: "inherit", textDecoration: sortKey === "name" ? "underline" : "none" }}>
+                      Trainer
+                    </Link>
+                  </th>
+                  <th>
+                    <Link href="/lms/company/trainers?sort=batches" style={{ color: "inherit", textDecoration: sortKey === "batches" ? "underline" : "none" }}>
+                      Batches
+                    </Link>
+                  </th>
+                  <th>Login</th>
+                  <th>
+                    <Link href="/lms/company/trainers?sort=rate" style={{ color: "inherit", textDecoration: sortKey === "rate" ? "underline" : "none" }}>
+                      Hourly rate
+                    </Link>
+                  </th>
+                </tr>
+              </thead>
               <tbody>
                 {trainers.map((trainer) => (
                   <tr key={trainer.id}>
