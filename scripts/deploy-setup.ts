@@ -24,6 +24,7 @@ const STEPS = [
   "scripts/update-team-experience.ts",
   "scripts/create-super-admin-lohitkab.ts",
   "scripts/update-contact-email.ts",
+  "scripts/seed-buy-listings.ts",
 ];
 
 for (const step of STEPS) {

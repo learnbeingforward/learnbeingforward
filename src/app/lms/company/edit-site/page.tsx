@@ -14,6 +14,7 @@ const sections: { href: string; icon: IconName; title: string; description: stri
   { href: "/lms/company/edit-site/home", icon: "home", title: "Home Page", description: "Add a new \"What We Do\" pillar on the homepage." },
   { href: "/lms/company/edit-site/footer", icon: "link", title: "Footer Links", description: "Add or remove quick links shown in the footer." },
   { href: "/lms/company/edit-site/company-contact", icon: "phone", title: "Company Contact", description: "Edit the name, phone, and email shown in the footer and Contact page." },
+  { href: "/lms/company/edit-site/buy", icon: "money", title: "Buy", description: "Price courses, set PDF preview limits, and manage orders for the public Buy page." },
 ];
 
 export default async function EditSitePage() {

@@ -64,6 +64,12 @@ enum BatchTrainingType {
   PAID
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 enum CourseDomain {
   TECHNICAL
   APTITUDE
@@ -166,6 +172,7 @@ model Course {
   sessionContents    SessionContent[]
   courseContents     CourseContent[]
   contracts          CollegeContract[]
+  buyListing         BuyListing?
 }
 
 model CourseModule {
@@ -187,6 +194,7 @@ model CourseModule {
   subModules            CourseSubModule[]
   courseContents        CourseContent[]
   pdfAccessRequests     ContentAccessRequest[]
+  buyPreviewLock        BuyPreviewLock?
 
   @@index([courseId])
 }
@@ -218,6 +226,7 @@ model CourseContent {
 
   links          ContentLink[]
   accessRequests ContentAccessRequest[]
+  buyPreviewLock BuyPreviewLock?
 
   @@index([courseId])
   @@index([courseModuleId])
@@ -605,6 +614,11 @@ model SiteSettings {
   companyBankIfsc          String?
   companyBankName          String?
   companyGstNumber         String?
+
+  // Shared across every Buy listing — one payment-receiving account for all
+  // course purchases, changeable any time from Edit Site > Buy.
+  buyUpiId      String?
+  buyQrImageUrl String?
 }
 
 model CollegeContract {
@@ -915,6 +929,69 @@ model Notification {
   @@index([category])
   @@index([read])
   @@index([createdAt])
+}
+
+/** Public-facing "Buy" entry for a course — an overlay of commercial
+ * metadata (price, headline, visibility) on top of the real Course record,
+ * never a copy of it. Modules/sub-modules/PDFs shown on the public Buy pages
+ * always come straight from the live CourseModule/CourseSubModule/
+ * CourseContent rows, so editing real course content automatically reflects
+ * here with nothing to keep in sync. */
+model BuyListing {
+  id        String   @id @default(cuid())
+  courseId  String   @unique
+  course    Course   @relation(fields: [courseId], references: [id])
+  price     Int
+  headline  String?  @db.Text
+  enabled   Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  previewLocks BuyPreviewLock[]
+  orders       CourseOrder[]
+}
+
+/** Marks one PDF (either a module's whole-course book, or a specific
+ * CourseContent item) as preview-locked for a Buy listing — previewFileUrl
+ * points at a separately generated, publicly viewable truncated copy
+ * (previewPages pages), while the real full file stays behind purchase. */
+model BuyPreviewLock {
+  id              String         @id @default(cuid())
+  buyListingId    String
+  buyListing      BuyListing     @relation(fields: [buyListingId], references: [id], onDelete: Cascade)
+  courseContentId String?        @unique
+  courseContent   CourseContent? @relation(fields: [courseContentId], references: [id], onDelete: Cascade)
+  courseModuleId  String?        @unique
+  courseModule    CourseModule?  @relation(fields: [courseModuleId], references: [id], onDelete: Cascade)
+  previewPages    Int            @default(4)
+  previewFileUrl  String?
+  createdAt       DateTime       @default(now())
+
+  @@index([buyListingId])
+}
+
+/** One purchase attempt — created the moment a buyer submits their details
+ * on the payment page, PENDING until a company admin confirms the manual
+ * UPI/QR transfer actually arrived. token gates the buyer's own order-status
+ * page and download links (no account/login involved), and is the only
+ * credential an email ever carries. */
+model CourseOrder {
+  id                 String      @id @default(cuid())
+  buyListingId       String
+  buyListing         BuyListing  @relation(fields: [buyListingId], references: [id])
+  buyerName          String
+  buyerEmail         String
+  buyerPhone         String?
+  amount             Int
+  token              String      @unique
+  status             OrderStatus @default(PENDING)
+  buyerClaimedPaidAt DateTime?
+  paidAt             DateTime?
+  emailSentAt        DateTime?
+  createdAt          DateTime    @default(now())
+
+  @@index([buyListingId])
+  @@index([status])
 }
 
 model AssessmentAnswer {

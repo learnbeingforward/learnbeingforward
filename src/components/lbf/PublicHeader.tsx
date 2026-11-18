@@ -12,6 +12,7 @@ const LINKS = [
   { key: "about", label: "About", href: "/about" },
   { key: "team", label: "Team", href: "/team" },
   { key: "contact", label: "Contact", href: "/contact" },
+  { key: "buy", label: "Buy", href: "/buy" },
 ];
 
 /** The navy band + nav + hero used at the top of every public page. `tall`
