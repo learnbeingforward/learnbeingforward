@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
@@ -71,10 +72,13 @@ export default async function StudentContentPage({
                   <div className="small muted">Whole course book</div>
                 </div>
                 {bookRequest?.status === "APPROVED" ? (
-                  <a className="btn btn-sm" href={courseBook.mainPdfUrl!} target="_blank" rel="noopener noreferrer">
-                    <Icon name="download" size={16} />
-                    Download
-                  </a>
+                  <Link
+                    className="btn btn-sm"
+                    href={`/lms/student/content/view?moduleId=${moduleId}&title=${encodeURIComponent(courseBook.mainPdfTitle ?? "Course book")}&back=${encodeURIComponent(`/lms/student/content?courseId=${courseId}&moduleId=${moduleId}`)}`}
+                  >
+                    <Icon name="eye" size={16} />
+                    View
+                  </Link>
                 ) : bookRequest?.status === "PENDING" ? (
                   <span className="pill warning">Request sent</span>
                 ) : (
@@ -110,10 +114,13 @@ export default async function StudentContentPage({
                     )}
                   </div>
                   {request?.status === "APPROVED" ? (
-                    <a className="btn btn-sm" href={item.fileUrl} target="_blank" rel="noopener noreferrer">
-                      <Icon name="download" size={16} />
-                      Download
-                    </a>
+                    <Link
+                      className="btn btn-sm"
+                      href={`/lms/student/content/view?contentId=${item.id}&title=${encodeURIComponent(item.courseSubModule ? item.courseSubModule.title : item.title)}&back=${encodeURIComponent(`/lms/student/content?courseId=${courseId}&moduleId=${moduleId}`)}`}
+                    >
+                      <Icon name="eye" size={16} />
+                      View
+                    </Link>
                   ) : request?.status === "PENDING" ? (
                     <span className="pill warning">Request sent</span>
                   ) : (
@@ -203,9 +210,9 @@ export default async function StudentContentPage({
                   <Icon name="file" size={18} />
                 </span>
                 <div className="grow">
-                  <a href={c.fileUrl} target="_blank" rel="noopener noreferrer" className="strong">
+                  <Link href={`/lms/student/content/view?sessionContentId=${c.id}&title=${encodeURIComponent(c.title)}`} className="strong">
                     {c.title}
-                  </a>
+                  </Link>
                   <div className="small muted">
                     {c.trainer.name} · {c.course?.name} — {c.courseModule?.title}
                     {c.courseSubModule && ` — ${c.courseSubModule.title}`}
