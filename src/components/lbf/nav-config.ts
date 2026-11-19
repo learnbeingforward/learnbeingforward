@@ -19,8 +19,9 @@ const PAGE_PERMISSION: Record<string, string[]> = {
   "edit-site": ["overview.edit-site"],
   "trainer-content": ["overview.trainer-content"],
   "add-account": ["accounts.add"],
-  "manage-accounts": ["accounts.manage.students", "accounts.manage.colleges", "accounts.manage.trainers", "accounts.manage.admins"],
+  "manage-accounts": ["accounts.manage.students", "accounts.manage.colleges", "accounts.manage.trainers", "accounts.manage.admins", "accounts.manage.buyers"],
   students: ["accounts.students"],
+  buyers: ["accounts.manage.buyers"],
   colleges: ["colleges.view"],
   trainers: ["trainers.manage"],
   registrations: ["registrations.new"],
@@ -91,6 +92,7 @@ export const SUPER_ADMIN_NAV: NavConfig = {
         { key: "add-account", label: "Add Account", href: "/lms/company/accounts" },
         { key: "manage-accounts", label: "Manage Accounts", href: "/lms/company/manage-accounts" },
         { key: "students", label: "All Students", href: "/lms/company/students" },
+        { key: "buyers", label: "Buyers", href: "/lms/company/buyers" },
         { key: "colleges", label: "Colleges", href: "/lms/company/colleges" },
         { key: "trainers", label: "Trainers", href: "/lms/company/trainers" },
         { key: "account-details", label: "Account Details", href: "/lms/company/account-details" },
@@ -167,5 +169,13 @@ export const STUDENT_NAV: NavConfig = {
     { key: "content", label: "Content", icon: "file", pages: [{ key: "content", label: "Content", href: "/lms/student/content" }] },
     { key: "assessments", label: "Assessments", icon: "code", pages: [{ key: "assessments", label: "Assessments", href: "/lms/student/assessments" }] },
     { key: "profile", label: "Profile", icon: "user", pages: [{ key: "profile", label: "Profile", href: "/lms/student/profile" }] },
+  ],
+};
+
+export const BUYER_NAV: NavConfig = {
+  label: "Buyer",
+  groups: [
+    { key: "purchases", label: "My Purchases", icon: "book", pages: [{ key: "purchases", label: "My Purchases", href: "/lms/buyer" }] },
+    { key: "profile", label: "Profile", icon: "user", pages: [{ key: "profile", label: "Profile", href: "/lms/buyer/profile" }] },
   ],
 };

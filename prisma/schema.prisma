@@ -15,6 +15,9 @@ enum Role {
   TRAINER
   ADMIN2
   EMPLOYEE
+  // A Buy-page customer — never has a college, never an Enrollment, and gets
+  // an account only once their order is confirmed paid (see confirmOrderPaid).
+  BUYER
 }
 
 enum CertificationStatus {
@@ -112,6 +115,7 @@ model User {
   assessmentAssignments AssessmentAssignment[]
   passwordResetTokens   PasswordResetToken[]
   siteBuilderPageAccess SiteBuilderPageAccess[]
+  courseOrders          CourseOrder[]
 }
 
 model Trainer {
@@ -990,8 +994,14 @@ model CourseOrder {
   emailSentAt        DateTime?
   createdAt          DateTime    @default(now())
 
+  // Set once payment is confirmed — the BUYER account created so the buyer
+  // can log in and view (not download) the course, same as a student.
+  buyerUserId String?
+  buyerUser   User?   @relation(fields: [buyerUserId], references: [id])
+
   @@index([buyListingId])
   @@index([status])
+  @@index([buyerUserId])
 }
 
 model AssessmentAnswer {

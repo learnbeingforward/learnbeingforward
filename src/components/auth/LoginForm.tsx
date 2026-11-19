@@ -11,13 +11,14 @@ import { Icon } from "@/components/lbf/icons";
 import { PasswordField } from "@/components/auth/PasswordField";
 
 type SessionResponse = {
-  user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" | "ADMIN2" | "EMPLOYEE" };
+  user?: { role?: "STUDENT" | "COLLEGE_ADMIN" | "SUPER_ADMIN" | "TRAINER" | "ADMIN2" | "EMPLOYEE" | "BUYER" };
 };
 
 function roleRedirect(role?: string) {
   if (role === "SUPER_ADMIN" || role === "ADMIN2" || role === "EMPLOYEE") return "/lms/company";
   if (role === "COLLEGE_ADMIN") return "/lms/college";
   if (role === "TRAINER") return "/lms/trainer";
+  if (role === "BUYER") return "/lms/buyer";
   return "/lms/student";
 }
 

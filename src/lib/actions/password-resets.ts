@@ -164,6 +164,31 @@ export async function resetStudentPassword(
   return { ok: true };
 }
 
+export async function resetBuyerPassword(
+  _prevState: QuickResetState,
+  formData: FormData
+): Promise<QuickResetState> {
+  const session = await auth();
+  if (!(await authorizedFor(session, "accounts.manage.buyers"))) {
+    return { ok: false, error: "Not authorized." };
+  }
+
+  const buyerId = String(formData.get("buyerId") ?? "").trim();
+  const newPassword = String(formData.get("newPassword") ?? "").trim();
+  if (!buyerId) return { ok: false, error: "Select a buyer." };
+  if (newPassword.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
+
+  const buyer = await prisma.user.findFirst({ where: { id: buyerId, role: "BUYER" } });
+  if (!buyer) return { ok: false, error: "Buyer not found." };
+
+  await prisma.user.update({
+    where: { id: buyer.id },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10) },
+  });
+
+  return { ok: true };
+}
+
 export async function resetCollegePassword(
   _prevState: QuickResetState,
   formData: FormData

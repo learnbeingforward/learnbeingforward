@@ -7,6 +7,7 @@ import { ResetAccountForm } from "@/components/lms/ResetAccountForm";
 import { ResetStudentPasswordForm } from "@/components/lms/ResetStudentPasswordForm";
 import { ResetCollegePasswordForm } from "@/components/lms/ResetCollegePasswordForm";
 import { ResetTrainerPasswordForm } from "@/components/lms/ResetTrainerPasswordForm";
+import { ResetBuyerPasswordForm } from "@/components/lms/ResetBuyerPasswordForm";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
@@ -16,6 +17,7 @@ export default async function CompanyManageAccountsPage() {
     "accounts.manage.colleges",
     "accounts.manage.trainers",
     "accounts.manage.admins",
+    "accounts.manage.buyers",
   ]);
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
@@ -24,11 +26,13 @@ export default async function CompanyManageAccountsPage() {
   const canColleges = keys.includes("accounts.manage.colleges");
   const canTrainers = keys.includes("accounts.manage.trainers");
   const canAdmins = keys.includes("accounts.manage.admins");
+  const canBuyers = keys.includes("accounts.manage.buyers");
 
-  const [students, collegeAdmins, trainers] = await Promise.all([
+  const [students, collegeAdmins, trainers, buyers] = await Promise.all([
     canStudents ? prisma.user.findMany({ where: { role: "STUDENT" }, orderBy: { name: "asc" } }) : [],
     canColleges ? prisma.user.findMany({ where: { role: "COLLEGE_ADMIN" }, include: { college: true }, orderBy: { name: "asc" } }) : [],
     canTrainers ? prisma.trainer.findMany({ where: { loginUser: { isNot: null } }, orderBy: { name: "asc" } }) : [],
+    canBuyers ? prisma.user.findMany({ where: { role: "BUYER" }, orderBy: { name: "asc" } }) : [],
   ]);
 
   return (
@@ -62,6 +66,12 @@ export default async function CompanyManageAccountsPage() {
           <section className="card">
             <h2 className="h2" style={{ marginBottom: 18 }}>Reset a trainer&apos;s password</h2>
             <ResetTrainerPasswordForm trainers={trainers} />
+          </section>
+        )}
+        {canBuyers && (
+          <section className="card">
+            <h2 className="h2" style={{ marginBottom: 18 }}>Reset a buyer&apos;s password</h2>
+            <ResetBuyerPasswordForm buyers={buyers.map((b) => ({ id: b.id, name: b.name, email: b.email }))} />
           </section>
         )}
       </div>

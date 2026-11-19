@@ -1,6 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +9,10 @@ import { isCompanyStaff } from "@/lib/auth-helpers";
 import { requireCompanyAccess } from "@/lib/employee-access";
 import { generatePdfPreview } from "@/lib/pdf/preview-extract";
 import { sendMail } from "@/lib/mail";
+
+function generatePassword() {
+  return randomBytes(9).toString("base64").replace(/[+/=]/g, "");
+}
 
 async function requireCompany() {
   const session = await auth();
@@ -185,6 +190,13 @@ export async function buyerClaimPaid(orderId: string, token: string) {
   revalidatePath(`/buy/order/${orderId}`);
 }
 
+/**
+ * Confirming payment is also the only moment a buyer gets an actual account —
+ * never at checkout. A buyer who already has an account (e.g. a repeat
+ * purchase with the same email) keeps their existing password; this just
+ * attaches the new order to it and emails a "here's your new purchase"
+ * notice instead of fresh credentials.
+ */
 export async function confirmOrderPaid(orderId: string) {
   await requireCompany();
 
@@ -194,19 +206,56 @@ export async function confirmOrderPaid(orderId: string) {
   });
   if (!order || order.status === "PAID") return;
 
-  await prisma.courseOrder.update({ where: { id: orderId }, data: { status: "PAID", paidAt: new Date() } });
+  let buyer = await prisma.user.findUnique({ where: { email: order.buyerEmail } });
+  let generatedPassword: string | null = null;
 
-  const downloadBase = `https://learnbeingforward.in/buy/order/${order.id}?token=${order.token}`;
-  const lines: string[] = [
-    `Hi ${order.buyerName},`,
-    "",
-    `Thanks for purchasing ${order.buyListing.course.name}. Your books are ready — view and download them here:`,
-    downloadBase,
-    "",
-    "This link is yours alone — please don't share it.",
-    "",
-    "— Learn Being Forward",
-  ];
+  if (!buyer) {
+    generatedPassword = generatePassword();
+    buyer = await prisma.user.create({
+      data: {
+        name: order.buyerName,
+        email: order.buyerEmail,
+        phone: order.buyerPhone,
+        passwordHash: await bcrypt.hash(generatedPassword, 10),
+        role: "BUYER",
+      },
+    });
+  } else if (buyer.role !== "BUYER") {
+    // An existing student/staff account happens to share this email — don't
+    // silently repurpose it. The order still gets marked paid so nothing is
+    // lost; it's just not auto-linked to a login.
+    buyer = null;
+  }
+
+  await prisma.courseOrder.update({
+    where: { id: orderId },
+    data: { status: "PAID", paidAt: new Date(), buyerUserId: buyer?.id ?? null },
+  });
+
+  const loginUrl = "https://learnbeingforward.in/auth";
+  const lines = generatedPassword
+    ? [
+        `Hi ${order.buyerName},`,
+        "",
+        `Thanks for purchasing ${order.buyListing.course.name}. We've created an account for you so you can view your book inside the website — it can't be downloaded or shared, only viewed there.`,
+        "",
+        `Login: ${loginUrl}`,
+        `Email: ${order.buyerEmail}`,
+        `Password: ${generatedPassword}`,
+        "",
+        "You can change this password any time from your Profile page once you're logged in.",
+        "",
+        "— Learn Being Forward",
+      ]
+    : [
+        `Hi ${order.buyerName},`,
+        "",
+        `Thanks for purchasing ${order.buyListing.course.name} — it's now available in your existing account.`,
+        "",
+        `Login: ${loginUrl}`,
+        "",
+        "— Learn Being Forward",
+      ];
 
   try {
     await sendMail({
@@ -217,8 +266,8 @@ export async function confirmOrderPaid(orderId: string) {
     await prisma.courseOrder.update({ where: { id: orderId }, data: { emailSentAt: new Date() } });
   } catch (err) {
     console.error("[buy] Failed to email purchase confirmation:", err);
-    // The order is still marked PAID and the buyer can always revisit their
-    // own order link — a failed send here shouldn't undo the sale.
+    // The order and account still exist either way — a failed send here
+    // shouldn't undo the sale. The admin can resend credentials manually.
   }
 
   revalidatePath("/lms/company/edit-site/buy/orders");

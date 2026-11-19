@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PublicShell } from "@/components/lbf/PublicShell";
@@ -18,15 +19,7 @@ export default async function BuyOrderPage({
 
   const order = await prisma.courseOrder.findUnique({
     where: { id: orderId },
-    include: {
-      buyListing: {
-        include: {
-          course: {
-            include: { modules: { where: { mainPdfUrl: { not: null } }, orderBy: { order: "asc" } }, courseContents: { include: { courseSubModule: true }, orderBy: { title: "asc" } } },
-          },
-        },
-      },
-    },
+    include: { buyListing: { include: { course: true } } },
   });
   if (!order || !token || order.token !== token) notFound();
 
@@ -46,28 +39,17 @@ export default async function BuyOrderPage({
 
   if (order.status === "PAID") {
     return shell(
-      "Your books",
-      <>
-        <p className="muted" style={{ marginBottom: 18 }}>Thanks, {order.buyerName} — here&apos;s everything for {course.name}.</p>
-        <ul className="list">
-          {course.modules.map((mod) => (
-            <li key={mod.id} className="list-row">
-              <span className="grow">{mod.mainPdfTitle ?? "Course book"}</span>
-              <a className="btn btn-sm" href={`/api/buy/download?orderId=${order.id}&token=${order.token}&moduleId=${mod.id}`}>
-                Download
-              </a>
-            </li>
-          ))}
-          {course.courseContents.map((item) => (
-            <li key={item.id} className="list-row">
-              <span className="grow">{item.courseSubModule ? item.courseSubModule.title : item.title}</span>
-              <a className="btn btn-sm" href={`/api/buy/download?orderId=${order.id}&token=${order.token}&contentId=${item.id}`}>
-                Download
-              </a>
-            </li>
-          ))}
-        </ul>
-      </>
+      "You're all set",
+      <div className="stack" style={{ gap: 14 }}>
+        <p className="muted">
+          Thanks, {order.buyerName} — payment for {course.name} is confirmed. We&apos;ve emailed{" "}
+          <strong>{order.buyerEmail}</strong> your login details — your book is viewable inside your own account there,
+          not as a download.
+        </p>
+        <Link className="btn btn-gold" href="/auth" style={{ alignSelf: "flex-start" }}>
+          Log in
+        </Link>
+      </div>
     );
   }
 

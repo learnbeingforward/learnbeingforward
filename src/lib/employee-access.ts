@@ -11,6 +11,7 @@ export type EmployeePageKey =
   | "accounts.manage.colleges"
   | "accounts.manage.trainers"
   | "accounts.manage.admins"
+  | "accounts.manage.buyers"
   | "accounts.students"
   | "accounts.details"
   | "colleges.view"
@@ -99,9 +100,11 @@ export const EMPLOYEE_PAGE_CATALOG: CatalogGroup[] = [
           { key: "accounts.manage.colleges", label: "Reset college passwords" },
           { key: "accounts.manage.trainers", label: "Reset trainer passwords" },
           { key: "accounts.manage.admins", label: "Reset admin/employee passwords" },
+          { key: "accounts.manage.buyers", label: "Reset buyer passwords" },
         ],
       },
       { navLabel: "All Students", href: "/lms/company/students", permissions: [{ key: "accounts.students", label: "All Students" }] },
+      { navLabel: "Buyers", href: "/lms/company/buyers", permissions: [{ key: "accounts.manage.buyers", label: "Buyers" }] },
       {
         navLabel: "Colleges",
         href: "/lms/company/colleges",
@@ -196,7 +199,7 @@ const ALL_KEYS = new Set<string>(ALL_KEYS_LIST);
  * no stored account still relies on it.
  */
 const LEGACY_KEY_EXPANSIONS: Record<string, EmployeePageKey[]> = {
-  "accounts.manage": ["accounts.manage.students", "accounts.manage.colleges", "accounts.manage.trainers", "accounts.manage.admins"],
+  "accounts.manage": ["accounts.manage.students", "accounts.manage.colleges", "accounts.manage.trainers", "accounts.manage.admins", "accounts.manage.buyers"],
   "accounts.colleges": ["colleges.view"],
   "accounts.trainers": ["trainers.manage", "trainers.invoices"],
   "overview.notifications": [

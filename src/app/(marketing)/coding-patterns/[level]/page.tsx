@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { hasFullCodingPatternsAccess } from "@/lib/coding-patterns-access";
 import { CodingPatternViewer } from "@/components/lbf/CodingPatternViewer";
 
 const LEVELS: Record<string, string> = {
@@ -31,5 +32,7 @@ export default async function CodingPatternLevelPage({ params }: PageProps<"/cod
   const name = LEVELS[level];
   if (!name) notFound();
 
-  return <CodingPatternViewer level={level} name={name} />;
+  const unlocked = await hasFullCodingPatternsAccess();
+
+  return <CodingPatternViewer level={level} name={name} unlocked={unlocked} />;
 }

@@ -41,7 +41,7 @@ export default async function BuyOrdersPage() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <form action={confirmOrderPaid.bind(null, o.id)}>
-                    <button className="btn btn-success btn-sm" type="submit">Confirm paid &amp; email books</button>
+                    <button className="btn btn-success btn-sm" type="submit">Confirm paid &amp; create account</button>
                   </form>
                   <form action={cancelOrder.bind(null, o.id)}>
                     <button className="btn btn-sm" type="submit">Cancel</button>
@@ -61,7 +61,7 @@ export default async function BuyOrdersPage() {
               <li key={o.id} className="list-row">
                 <div className="grow">
                   <div className="strong">{o.buyerName} — {o.buyListing.course.name}</div>
-                  <div className="small muted">{o.buyerEmail} · ₹{o.amount}{o.emailSentAt && " · books emailed"}</div>
+                  <div className="small muted">{o.buyerEmail} · ₹{o.amount}{o.emailSentAt && " · login details emailed"}</div>
                 </div>
                 <span className={`pill ${o.status === "PAID" ? "success" : ""}`}>{o.status === "PAID" ? "Paid" : "Cancelled"}</span>
               </li>

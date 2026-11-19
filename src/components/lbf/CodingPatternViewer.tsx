@@ -4,16 +4,21 @@ import { useEffect, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { PublicHeader } from "./PublicHeader";
 
-export function CodingPatternViewer({ level, name }: { level: string; name: string }) {
+export function CodingPatternViewer({ level, name, unlocked }: { level: string; name: string; unlocked?: boolean }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Unlocked access is served from a protected route that re-checks purchase
+  // status on every request and injects the unlock flag itself — a plain
+  // query param on the public static file would be just as shareable as the
+  // link itself, which defeats the whole point.
+  const base = unlocked ? `/api/coding-patterns/${level}` : `/coding-patterns/${level}.html`;
   // Deep-links (e.g. from a QR code in the book: /coding-patterns/level-05#fast-slow)
   // land on this page with the anchor still in the URL — forward it into the
   // iframe so it opens straight to that pattern instead of the top of the level.
-  const [iframeSrc, setIframeSrc] = useState(`/coding-patterns/${level}.html`);
+  const [iframeSrc, setIframeSrc] = useState(base);
 
   useEffect(() => {
-    setIframeSrc(`/coding-patterns/${level}.html${window.location.hash}`);
-  }, [level]);
+    setIframeSrc(`${base}${window.location.hash}`);
+  }, [base]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

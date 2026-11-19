@@ -129,32 +129,18 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
 
       {showCodingPatterns && (
         <div>
-          <div className="split" style={{ margin: "32px 0 14px" }}>
-            <h2 className="label" style={{ margin: 0 }}>Coding Patterns</h2>
-            <Link href="/coding-patterns" className="small" style={{ fontWeight: 600, color: "var(--navy)" }}>
-              View all artifacts →
-            </Link>
-          </div>
+          <h2 className="label" style={{ margin: "32px 0 14px" }}>Coding Patterns</h2>
           <div className="grid" style={{ ["--min" as string]: "240px" }}>
-            {filteredLevels.map((level, i) => (
-              <Link
-                key={level.slug}
-                className="list-row"
-                style={{ textDecoration: "none", color: "inherit" }}
-                href={`/coding-patterns/${level.slug}`}
-              >
-                <span className="icon-box gold">
-                  <Icon name="grid" size={20} />
-                </span>
-                <span className="grow">
-                  <span className="h3" style={{ display: "block" }}>
-                    Level {String(i + 1).padStart(2, "0")} · {level.name}
-                  </span>
-                  <span className="muted small">Interactive DSA pattern visualiser</span>
-                </span>
-                <Icon name="chevR" size={16} />
-              </Link>
-            ))}
+            <Link className="list-row" style={{ textDecoration: "none", color: "inherit" }} href="/coding-patterns">
+              <span className="icon-box gold">
+                <Icon name="grid" size={20} />
+              </span>
+              <span className="grow">
+                <span className="h3" style={{ display: "block" }}>Coding Pattern Artifacts</span>
+                <span className="muted small">{CODING_PATTERN_LEVELS.length} interactive DSA pattern visualisers — first pattern free, rest need purchase</span>
+              </span>
+              <Icon name="chevR" size={16} />
+            </Link>
           </div>
         </div>
       )}
