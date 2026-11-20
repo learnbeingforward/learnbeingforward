@@ -204,9 +204,7 @@ export default async function CollegeBatchesPage({
                         {batch.enrollments.length}/{MANUAL_BATCH_CAP}
                       </span>
                     </div>
-                    <h3 className="h3">
-                      {batch.course.name} — {batch.name}
-                    </h3>
+                    <h3 className="h3">{batch.name}</h3>
                     <div className="progress" style={{ height: 6 }}>
                       <span style={{ width: `${pct}%` }} />
                     </div>

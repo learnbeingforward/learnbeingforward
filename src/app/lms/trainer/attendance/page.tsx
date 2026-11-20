@@ -64,7 +64,7 @@ export default async function TrainerAttendancePage({
                         </div>
                       </td>
                       <td>
-                        {s.batch.college.name} — {s.batch.course.name} — {s.batch.name}
+                        {s.batch.college.name} — {s.batch.name}
                       </td>
                       <td>{s.courseModule?.title ?? s.topic ?? "—"}</td>
                       <td>
@@ -119,7 +119,7 @@ export default async function TrainerAttendancePage({
       user={shellUser}
       crumb="Attendance › Mark attendance"
       title="Mark attendance"
-      subtitle={`${trainingSession.batch.college.name} — ${trainingSession.batch.course.name} — ${trainingSession.batch.name}`}
+      subtitle={`${trainingSession.batch.college.name} — ${trainingSession.batch.name}`}
       actions={
         <Link className="btn btn-ghost-light" href="/lms/trainer/attendance">
           <Icon name="arrowL" size={16} />

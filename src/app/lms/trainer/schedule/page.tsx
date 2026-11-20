@@ -49,7 +49,7 @@ export default async function TrainerSchedulePage() {
                       <div className="grow">
                         <div className="strong">{s.courseModule?.title ?? s.topic ?? "Topic TBD"}</div>
                         <div className="small muted">
-                          {s.batch.college.name} — {s.batch.course.name} — {s.batch.name}
+                          {s.batch.college.name} — {s.batch.name}
                         </div>
                       </div>
                       {s.attendanceTaken ? (
