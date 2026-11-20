@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PublicShell } from "@/components/lbf/PublicShell";
+import { canViewBuyListing } from "@/lib/buy-visibility";
 
 export const revalidate = 0;
 
@@ -16,8 +17,10 @@ export default async function BuyCoursePage({ params }: { params: Promise<{ cour
     },
   });
   if (!course || !course.buyListing || !course.buyListing.enabled) notFound();
+  if (!(await canViewBuyListing(course.buyListing))) notFound();
 
   const listing = course.buyListing;
+  const off = listing.mrp && listing.mrp > listing.price ? Math.round((1 - listing.price / listing.mrp) * 100) : 0;
   const moduleLockByModuleId = new Map(listing.previewLocks.filter((l) => l.courseModuleId).map((l) => [l.courseModuleId!, l]));
 
   return (
@@ -62,8 +65,18 @@ export default async function BuyCoursePage({ params }: { params: Promise<{ cour
         <aside className="side stack">
           <div className="card stack" style={{ gap: 14 }}>
             <div className="h3">Get this course</div>
-            <span style={{ fontWeight: 700, fontSize: 28, color: "var(--navy)" }}>₹{listing.price}</span>
-            <p className="small muted">One-time payment — books are emailed to you the moment payment is confirmed.</p>
+            <span style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 700, fontSize: 28, color: "var(--navy)" }}>₹{listing.price}</span>
+              {off > 0 && (
+                <>
+                  <span className="muted" style={{ textDecoration: "line-through" }}>
+                    ₹{listing.mrp}
+                  </span>
+                  <span className="pill success">{off}% off</span>
+                </>
+              )}
+            </span>
+            <p className="small muted">One-time payment — viewable inside your own account the moment payment is confirmed.</p>
             <Link className="btn btn-gold" href={`/buy/${course.slug}/checkout`}>
               Buy now
             </Link>

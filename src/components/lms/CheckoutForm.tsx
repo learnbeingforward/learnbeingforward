@@ -35,10 +35,14 @@ export function CheckoutForm({ listingId }: { listingId: string }) {
         <Label htmlFor="buyerPhone">Phone (optional)</Label>
         <Input id="buyerPhone" name="buyerPhone" className="mt-1.5" />
       </div>
+      <div>
+        <Label htmlFor="utr">UPI transaction ID (UTR)</Label>
+        <Input id="utr" name="utr" required pattern="\d{12}" maxLength={12} inputMode="numeric" placeholder="12-digit number from your UPI app" className="mt-1.5" />
+      </div>
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
       <Button type="submit" disabled={isPending} className="w-full bg-indigo text-white hover:bg-indigo/90">
         {isPending && <Loader2 className="size-4 animate-spin" />}
-        Continue to payment
+        I have paid — submit
       </Button>
     </form>
   );

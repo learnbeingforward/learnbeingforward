@@ -48,13 +48,23 @@ export async function updateBuyPaymentSettings(formData: FormData) {
 
 // ---------- Listings ----------
 
+function parseAudience(formData: FormData): { audience: "PUBLIC" | "STUDENTS" | "COLLEGES"; audienceCollegeIds: string[] | null } {
+  const raw = String(formData.get("audience") ?? "PUBLIC");
+  const audience = raw === "STUDENTS" || raw === "COLLEGES" ? raw : "PUBLIC";
+  const audienceCollegeIds = audience === "COLLEGES" ? formData.getAll("audienceCollegeIds").map(String) : null;
+  return { audience, audienceCollegeIds };
+}
+
 export async function createBuyListing(formData: FormData) {
   await requireCompany();
 
   const courseId = String(formData.get("courseId") ?? "");
   const priceInput = String(formData.get("price") ?? "").trim();
   const price = Number.parseInt(priceInput, 10);
+  const mrpInput = String(formData.get("mrp") ?? "").trim();
+  const mrp = mrpInput ? Number.parseInt(mrpInput, 10) : null;
   const headline = String(formData.get("headline") ?? "").trim() || null;
+  const { audience, audienceCollegeIds } = parseAudience(formData);
 
   if (!courseId) throw new Error("Select a course.");
   if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
@@ -64,7 +74,7 @@ export async function createBuyListing(formData: FormData) {
 
   const count = await prisma.buyListing.count();
   await prisma.buyListing.create({
-    data: { courseId, price, headline, order: count },
+    data: { courseId, price, mrp, headline, audience, audienceCollegeIds: audienceCollegeIds ?? undefined, order: count },
   });
 
   revalidateBuy();
@@ -75,12 +85,19 @@ export async function updateBuyListing(listingId: string, formData: FormData) {
 
   const priceInput = String(formData.get("price") ?? "").trim();
   const price = Number.parseInt(priceInput, 10);
+  const mrpInput = String(formData.get("mrp") ?? "").trim();
+  const mrp = mrpInput ? Number.parseInt(mrpInput, 10) : null;
   const headline = String(formData.get("headline") ?? "").trim() || null;
   const enabled = formData.get("enabled") === "on";
+  const featured = formData.get("featured") === "on";
+  const { audience, audienceCollegeIds } = parseAudience(formData);
 
   if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
 
-  await prisma.buyListing.update({ where: { id: listingId }, data: { price, headline, enabled } });
+  await prisma.buyListing.update({
+    where: { id: listingId },
+    data: { price, mrp, headline, enabled, featured, audience, audienceCollegeIds: audienceCollegeIds ?? undefined },
+  });
   revalidateBuy();
 }
 
@@ -161,33 +178,28 @@ export async function createCourseOrder(
   const buyerName = String(formData.get("buyerName") ?? "").trim();
   const buyerEmail = String(formData.get("buyerEmail") ?? "").trim();
   const buyerPhone = String(formData.get("buyerPhone") ?? "").trim() || null;
+  const utr = String(formData.get("utr") ?? "").replace(/\s/g, "");
 
   if (!buyerName || !buyerEmail) {
     return { ok: false, error: "Name and email are required." };
   }
+  if (!/^\d{12}$/.test(utr)) {
+    return { ok: false, error: "Enter the 12-digit UPI transaction ID (UTR) from your payment app." };
+  }
 
   const token = randomBytes(24).toString("hex");
   const order = await prisma.courseOrder.create({
-    data: { buyListingId: listingId, buyerName, buyerEmail, buyerPhone, amount: listing.price, token },
+    data: { buyListingId: listingId, buyerName, buyerEmail, buyerPhone, utr, amount: listing.price, token },
   });
 
-  return { ok: true, orderId: order.id, token };
-}
-
-export async function buyerClaimPaid(orderId: string, token: string) {
-  const order = await prisma.courseOrder.findUnique({ where: { id: orderId } });
-  if (!order || order.token !== token || order.status !== "PENDING") return;
-
-  await prisma.courseOrder.update({ where: { id: orderId }, data: { buyerClaimedPaidAt: new Date() } });
-
   const { notify } = await import("@/lib/notifications");
-  await notify("ADMIN", `A buyer marked a course order as paid — needs confirmation`, {
-    message: `${order.buyerName} (${order.buyerEmail}) — ₹${order.amount}`,
+  await notify("ADMIN", `New course order awaiting verification`, {
+    message: `${buyerName} (${buyerEmail}) — ₹${listing.price} — UTR ${utr}`,
     href: "/lms/company/edit-site/buy/orders",
     requiredKey: "overview.edit-site",
   });
 
-  revalidatePath(`/buy/order/${orderId}`);
+  return { ok: true, orderId: order.id, token };
 }
 
 /**
@@ -274,8 +286,47 @@ export async function confirmOrderPaid(orderId: string) {
   revalidatePath(`/buy/order/${orderId}`);
 }
 
-export async function cancelOrder(orderId: string) {
+export async function rejectOrder(orderId: string, formData: FormData) {
   await requireCompany();
-  await prisma.courseOrder.updateMany({ where: { id: orderId, status: "PENDING" }, data: { status: "CANCELLED" } });
+
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("Select a reason for rejecting this order.");
+
+  const order = await prisma.courseOrder.findUnique({ where: { id: orderId } });
+  if (!order || order.status !== "PENDING") return;
+
+  await prisma.courseOrder.update({ where: { id: orderId }, data: { status: "CANCELLED", rejectReason: reason } });
+  revalidatePath("/lms/company/edit-site/buy/orders");
+  revalidatePath(`/buy/order/${orderId}`);
+}
+
+/** Re-sends the "your purchase is ready" notice for an already-confirmed
+ * order — never a fresh password (none is retained after the first email),
+ * just the login URL and a pointer to "Forgot password" if needed. */
+export async function resendOrderEmail(orderId: string) {
+  await requireCompany();
+
+  const order = await prisma.courseOrder.findUnique({
+    where: { id: orderId },
+    include: { buyListing: { include: { course: true } } },
+  });
+  if (!order || order.status !== "PAID") return;
+
+  const loginUrl = "https://learnbeingforward.in/auth";
+  const lines = [
+    `Hi ${order.buyerName},`,
+    "",
+    `Here's your purchase again — ${order.buyListing.course.name}, viewable inside your account.`,
+    "",
+    `Login: ${loginUrl}`,
+    `Email: ${order.buyerEmail}`,
+    "",
+    "Forgotten your password? Use \"Forgot password\" on the login page.",
+    "",
+    "— Learn Being Forward",
+  ];
+
+  await sendMail({ to: order.buyerEmail, subject: `Your ${order.buyListing.course.name} purchase — resent`, text: lines.join("\n") });
+  await prisma.courseOrder.update({ where: { id: orderId }, data: { emailSentAt: new Date() } });
   revalidatePath("/lms/company/edit-site/buy/orders");
 }

@@ -26,9 +26,10 @@ const WHO_WE_TRAIN = [
 ] as const;
 
 export default async function HomePage() {
-  const [homeFeatures, allTechnologies] = await Promise.all([
+  const [homeFeatures, allTechnologies, featuredListings] = await Promise.all([
     prisma.homeFeature.findMany({ orderBy: { order: "asc" } }),
     prisma.technology.findMany({ orderBy: { order: "asc" } }),
+    prisma.buyListing.findMany({ where: { enabled: true, featured: true, audience: "PUBLIC" }, include: { course: true }, take: 4 }),
   ]);
 
   const marqueeTech = allTechnologies.filter((t) => MARQUEE_SLUGS.includes(t.slug));
@@ -154,6 +155,32 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {featuredListings.length > 0 && (
+        <section className="card section">
+          <div className="split" style={{ marginBottom: 14 }}>
+            <div className="eyebrow">Own the course</div>
+            <Link href="/buy" className="small" style={{ fontWeight: 600, color: "var(--navy)" }}>
+              See all books →
+            </Link>
+          </div>
+          <div className="grid" style={{ ["--min" as string]: "240px" }}>
+            {featuredListings.map((listing) => {
+              const off = listing.mrp && listing.mrp > listing.price ? Math.round((1 - listing.price / listing.mrp) * 100) : 0;
+              return (
+                <Link key={listing.id} className="box hover stack" style={{ gap: 8, textDecoration: "none", color: "inherit" }} href={`/buy/${listing.course.slug}`}>
+                  <h3 className="h3">{listing.course.name}</h3>
+                  {listing.headline && <p className="small muted">{listing.headline}</p>}
+                  <span style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                    <span style={{ fontWeight: 700, fontSize: 18, color: "var(--navy)" }}>₹{listing.price}</span>
+                    {off > 0 && <span className="pill success">{off}% off</span>}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section
         className="card section"

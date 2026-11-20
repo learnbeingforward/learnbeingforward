@@ -61,7 +61,7 @@ async function main() {
         name: moduleTitle,
         category: "Aptitude",
         domain: "APTITUDE",
-        shortDescription: `${moduleTitle} — placement aptitude training.`,
+        shortDescription: "Placement aptitude training",
         description: `Deep, interview-focused ${moduleTitle} training with worked examples and shortcuts.`,
         order: maxOrder,
       },

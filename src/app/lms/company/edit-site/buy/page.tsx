@@ -28,11 +28,12 @@ export default async function EditSiteBuyPage({
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
-  const [settings, listings, courses, pendingOrderCount] = await Promise.all([
+  const [settings, listings, courses, pendingOrderCount, colleges] = await Promise.all([
     prisma.siteSettings.findUnique({ where: { id: "singleton" } }),
     prisma.buyListing.findMany({ include: { course: true }, orderBy: { order: "asc" } }),
     prisma.course.findMany({ where: { buyListing: null, isPlaceholder: false }, orderBy: { name: "asc" } }),
     prisma.courseOrder.count({ where: { status: "PENDING" } }),
+    prisma.college.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (listingId) {
@@ -160,6 +161,7 @@ export default async function EditSiteBuyPage({
                 ))}
               </select>
               <input className="input" type="number" name="price" min={1} placeholder="Price (₹)" required />
+              <input className="input" type="number" name="mrp" min={1} placeholder="Original price (₹, optional)" />
               <input className="input" name="headline" placeholder="Headline (optional)" />
               <button className="btn btn-primary btn-sm" type="submit">Add listing</button>
             </form>
@@ -173,27 +175,61 @@ export default async function EditSiteBuyPage({
           <p className="empty">Nothing added yet.</p>
         ) : (
           <div className="stack" style={{ gap: 12 }}>
-            {listings.map((listing) => (
-              <div key={listing.id} className="box">
-                <div className="split" style={{ alignItems: "flex-start" }}>
-                  <div>
-                    <div className="strong">{listing.course.name}</div>
-                    <div className="small muted">{listing.headline}</div>
+            {listings.map((listing) => {
+              const audienceCollegeIds = Array.isArray(listing.audienceCollegeIds) ? (listing.audienceCollegeIds as unknown[]).map(String) : [];
+              return (
+                <div key={listing.id} className="box">
+                  <div className="split" style={{ alignItems: "flex-start" }}>
+                    <div>
+                      <div className="strong">{listing.course.name}</div>
+                      <div className="small muted">{listing.headline}</div>
+                    </div>
+                    <span className={`pill ${listing.enabled ? "success" : ""}`}>{listing.enabled ? "Live" : "Hidden"}</span>
                   </div>
-                  <span className={`pill ${listing.enabled ? "success" : ""}`}>{listing.enabled ? "Live" : "Hidden"}</span>
+                  <form action={updateBuyListing.bind(null, listing.id)} className="stack" style={{ gap: 10, marginTop: 12 }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      <input className="input" type="number" name="price" min={1} defaultValue={listing.price} placeholder="Price" style={{ width: 110 }} />
+                      <input className="input" type="number" name="mrp" min={1} defaultValue={listing.mrp ?? ""} placeholder="Original price" style={{ width: 130 }} />
+                      <input className="input" name="headline" defaultValue={listing.headline ?? ""} placeholder="Headline" style={{ flex: 1, minWidth: 160 }} />
+                    </div>
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+                      <label className="small" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input type="checkbox" name="enabled" defaultChecked={listing.enabled} /> Live
+                      </label>
+                      <label className="small" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input type="checkbox" name="featured" defaultChecked={listing.featured} /> Featured on Home
+                      </label>
+                    </div>
+                    <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+                      <span className="small muted">Who can see and buy it</span>
+                      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 6 }}>
+                        {(["PUBLIC", "STUDENTS", "COLLEGES"] as const).map((a) => (
+                          <label key={a} className="small" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <input type="radio" name="audience" value={a} defaultChecked={listing.audience === a} />
+                            {a === "PUBLIC" ? "Everyone" : a === "STUDENTS" ? "Logged-in students only" : "Students of chosen colleges"}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    {colleges.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {colleges.map((c) => (
+                          <label key={c.id} className="chip" style={{ cursor: "pointer" }}>
+                            <input type="checkbox" name="audienceCollegeIds" value={c.id} defaultChecked={audienceCollegeIds.includes(c.id)} style={{ marginRight: 6 }} />
+                            {c.name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button className="btn btn-sm" type="submit">Save</button>
+                      <Link className="btn btn-sm" href={`/lms/company/edit-site/buy?listingId=${listing.id}`}>Preview locks</Link>
+                      <DeleteButton action={deleteBuyListing.bind(null, listing.id)} />
+                    </div>
+                  </form>
                 </div>
-                <form action={updateBuyListing.bind(null, listing.id)} style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
-                  <input className="input" type="number" name="price" min={1} defaultValue={listing.price} style={{ width: 120 }} />
-                  <input className="input" name="headline" defaultValue={listing.headline ?? ""} placeholder="Headline" style={{ flex: 1, minWidth: 160 }} />
-                  <label className="small" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="checkbox" name="enabled" defaultChecked={listing.enabled} /> Live
-                  </label>
-                  <button className="btn btn-sm" type="submit">Save</button>
-                  <Link className="btn btn-sm" href={`/lms/company/edit-site/buy?listingId=${listing.id}`}>Preview locks</Link>
-                  <DeleteButton action={deleteBuyListing.bind(null, listing.id)} />
-                </form>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

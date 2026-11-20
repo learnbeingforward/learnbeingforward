@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { canViewBuyListing } from "@/lib/buy-visibility";
 import { prisma } from "@/lib/prisma";
 import { PublicShell } from "@/components/lbf/PublicShell";
 
@@ -13,6 +14,7 @@ export default async function BuyModulePage({ params }: { params: Promise<{ cour
     include: { buyListing: true },
   });
   if (!course || !course.buyListing || !course.buyListing.enabled) notFound();
+  if (!(await canViewBuyListing(course.buyListing))) notFound();
 
   const [mod, content, locks] = await Promise.all([
     prisma.courseModule.findUnique({ where: { id: moduleId } }),

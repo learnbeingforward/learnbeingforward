@@ -19,6 +19,23 @@ const DOMAIN_ICONS: Record<string, IconName> = {
   SOFT_SKILL: "message",
 };
 
+// Per-course icons, matching the design exactly — falls back to the domain's
+// default icon for any course slug not listed here.
+const COURSE_ICONS: Record<string, IconName> = {
+  "placement-training-program": "code",
+  "full-stack-development": "layers",
+  "frontend-development": "grid",
+  "backend-development": "settings",
+  "data-science-ai-fundamentals": "chart",
+  robotics: "target",
+  programming: "file",
+  "quantitative-aptitude": "target",
+  "logical-reasoning": "layers",
+  "verbal-reasoning": "book",
+  "non-verbal-reasoning": "grid",
+  "soft-skills": "message",
+};
+
 const TABS = [
   { key: "ALL", label: "All" },
   { key: "TECHNICAL", label: "Technical" },
@@ -33,7 +50,7 @@ const GROUP_LABELS: Record<string, string> = {
   SOFT_SKILL: "Soft skills",
 };
 
-export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
+export function CoursesExplorer({ courses, codingPatternsPrice }: { courses: ExplorerCourse[]; codingPatternsPrice: number }) {
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("ALL");
   const [query, setQuery] = useState("");
 
@@ -97,7 +114,7 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
                   <Link key={c.slug} className="box hover stack" style={{ gap: 12, textDecoration: "none", color: "inherit" }} href={`/courses/${c.slug}`}>
                     <div className="split">
                       <span className="icon-box navy">
-                        <Icon name={DOMAIN_ICONS[c.domain]} size={20} />
+                        <Icon name={COURSE_ICONS[c.slug] ?? DOMAIN_ICONS[c.domain]} size={20} />
                       </span>
                       {c.flagship && <span className="pill gold">Flagship</span>}
                     </div>
@@ -112,7 +129,7 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
                 {inGroup.map((c) => (
                   <Link key={c.slug} className="list-row" style={{ textDecoration: "none", color: "inherit" }} href={`/courses/${c.slug}`}>
                     <span className="icon-box gold">
-                      <Icon name={DOMAIN_ICONS[c.domain]} size={20} />
+                      <Icon name={COURSE_ICONS[c.slug] ?? DOMAIN_ICONS[c.domain]} size={20} />
                     </span>
                     <span className="grow">
                       <span className="h3" style={{ display: "block" }}>{c.name}</span>
@@ -129,18 +146,36 @@ export function CoursesExplorer({ courses }: { courses: ExplorerCourse[] }) {
 
       {showCodingPatterns && (
         <div>
-          <h2 className="label" style={{ margin: "32px 0 14px" }}>Coding Patterns</h2>
-          <div className="grid" style={{ ["--min" as string]: "240px" }}>
-            <Link className="list-row" style={{ textDecoration: "none", color: "inherit" }} href="/coding-patterns">
-              <span className="icon-box gold">
-                <Icon name="grid" size={20} />
-              </span>
-              <span className="grow">
-                <span className="h3" style={{ display: "block" }}>Coding Pattern Artifacts</span>
-                <span className="muted small">{CODING_PATTERN_LEVELS.length} interactive DSA pattern visualisers — first pattern free, rest need purchase</span>
-              </span>
-              <Icon name="chevR" size={16} />
-            </Link>
+          <h2 className="label" style={{ margin: "32px 0 14px" }}>Coding patterns</h2>
+          <div className="cp-feature">
+            <div className="cp-f-text">
+              <div className="cp-num" style={{ color: "var(--gold)" }}>
+                Interactive · 14 levels · 100 patterns
+              </div>
+              <h3>Coding Pattern Visualisers</h3>
+              <p>
+                Watch every DSA pattern run step by step, with the code line highlighted as it happens. The first
+                pattern in each level is free; the rest come with the Coding Patterns course.
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
+                <Link className="btn btn-gold" href="/coding-patterns">
+                  <Icon name="play" size={16} />
+                  Open Coding Patterns
+                </Link>
+                <Link className="btn cp-f-ghost" href="/buy/coding-patterns">
+                  <Icon name="cart" size={16} />
+                  Get the full course · ₹{codingPatternsPrice}
+                </Link>
+              </div>
+            </div>
+            <div className="cp-f-levels">
+              {filteredLevels.map((level, i) => (
+                <Link key={level.slug} className="cp-chip" href={`/coding-patterns/${level.slug}`}>
+                  <b>{String(i + 1).padStart(2, "0")}</b>
+                  {level.name}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}

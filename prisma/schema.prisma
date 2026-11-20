@@ -941,15 +941,28 @@ model Notification {
  * always come straight from the live CourseModule/CourseSubModule/
  * CourseContent rows, so editing real course content automatically reflects
  * here with nothing to keep in sync. */
+enum BuyAudience {
+  PUBLIC
+  STUDENTS
+  COLLEGES
+}
+
 model BuyListing {
-  id        String   @id @default(cuid())
-  courseId  String   @unique
-  course    Course   @relation(fields: [courseId], references: [id])
+  id        String      @id @default(cuid())
+  courseId  String      @unique
+  course    Course      @relation(fields: [courseId], references: [id])
   price     Int
-  headline  String?  @db.Text
-  enabled   Boolean  @default(true)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  // Original price shown struck through with a "N% off" badge when set and
+  // higher than price — null means no discount shown.
+  mrp       Int?
+  headline  String?     @db.Text
+  enabled   Boolean     @default(true)
+  featured  Boolean     @default(false)
+  audience  BuyAudience @default(PUBLIC)
+  // Only meaningful when audience is COLLEGES — array of College ids.
+  audienceCollegeIds Json?
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
 
   previewLocks BuyPreviewLock[]
   orders       CourseOrder[]
@@ -987,9 +1000,13 @@ model CourseOrder {
   buyerEmail         String
   buyerPhone         String?
   amount             Int
+  // The 12-digit UPI transaction ID the buyer enters at checkout — what the
+  // admin actually checks against their bank/UPI app before confirming.
+  utr                String?
   token              String      @unique
   status             OrderStatus @default(PENDING)
   buyerClaimedPaidAt DateTime?
+  rejectReason       String?
   paidAt             DateTime?
   emailSentAt        DateTime?
   createdAt          DateTime    @default(now())

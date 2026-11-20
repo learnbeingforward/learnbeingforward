@@ -11,7 +11,10 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 export default async function CoursesPage() {
-  const courses = await prisma.course.findMany({ where: { isPlaceholder: false }, orderBy: { order: "asc" } });
+  const [courses, codingPatternsListing] = await Promise.all([
+    prisma.course.findMany({ where: { isPlaceholder: false }, orderBy: { order: "asc" } }),
+    prisma.buyListing.findFirst({ where: { course: { slug: "coding-patterns" } }, select: { price: true } }),
+  ]);
 
   const explorerCourses: ExplorerCourse[] = courses.map((c) => ({
     slug: c.slug,
@@ -36,7 +39,7 @@ export default async function CoursesPage() {
       }}
     >
       <section className="card lift">
-        <CoursesExplorer courses={explorerCourses} />
+        <CoursesExplorer courses={explorerCourses} codingPatternsPrice={codingPatternsListing?.price ?? 499} />
       </section>
     </PublicShell>
   );
