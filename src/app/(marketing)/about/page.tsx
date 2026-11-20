@@ -54,12 +54,9 @@ export default function AboutPage() {
           className="section box"
           style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", background: "var(--surface)", border: 0 }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/founder-lohit-kumar.webp"
-            alt="Lohit Kumar, Founder & Lead Trainer"
-            style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", flex: "none" }}
-          />
+          <div className="avatar lg" aria-hidden="true">
+            LK
+          </div>
           <div style={{ flex: "1 1 420px" }}>
             <div className="eyebrow" style={{ color: "var(--gold-text)" }}>
               Founder &amp; lead trainer

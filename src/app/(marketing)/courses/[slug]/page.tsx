@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { parseJsonArray } from "@/lib/json-array";
 import { PublicShell } from "@/components/lbf/PublicShell";
 import { Icon } from "@/components/lbf/icons";
+import { CourseDetailTabs } from "@/components/lbf/CourseDetailTabs";
 
 export const revalidate = 0;
 
@@ -78,37 +79,39 @@ export default async function CourseDetailPage({ params }: PageProps<"/courses/[
             </p>
           )}
 
-          {trackTitles.map((trackTitle) => {
-            const mods = course!.modules.filter((m) => m.trackTitle === trackTitle);
-            return (
-              <div key={trackTitle} style={{ marginTop: trackTitle === trackTitles[0] ? 0 : 28 }}>
-                <h2 className="label">{trackTitle}</h2>
-                <div className="stack" style={{ gap: 12, marginTop: 12 }}>
-                  {mods.map((mod, i) => {
-                    const topics = parseJsonArray(mod.topics);
-                    const globalIndex = course!.modules.findIndex((m) => m.id === mod.id) + 1;
-                    return (
-                      <details key={mod.id} className="box" open={i === 0 && trackTitle === trackTitles[0]}>
-                        <summary className="split" style={{ cursor: "pointer", listStyle: "none" }}>
-                          <span className="h3">
-                            {String(globalIndex).padStart(2, "0")} · {mod.title}
-                          </span>
-                          <span className="pill">{topics.length} topics</span>
-                        </summary>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
-                          {topics.map((t) => (
-                            <span key={t} className="chip">
-                              {t}
+          <CourseDetailTabs>
+            {trackTitles.map((trackTitle) => {
+              const mods = course!.modules.filter((m) => m.trackTitle === trackTitle);
+              return (
+                <div key={trackTitle} style={{ marginTop: trackTitle === trackTitles[0] ? 0 : 28 }}>
+                  <h2 className="label">{trackTitle}</h2>
+                  <div className="stack" style={{ gap: 12, marginTop: 12 }}>
+                    {mods.map((mod, i) => {
+                      const topics = parseJsonArray(mod.topics);
+                      const globalIndex = course!.modules.findIndex((m) => m.id === mod.id) + 1;
+                      return (
+                        <details key={mod.id} className="box" open={i === 0 && trackTitle === trackTitles[0]}>
+                          <summary className="split" style={{ cursor: "pointer", listStyle: "none" }}>
+                            <span className="h3">
+                              {String(globalIndex).padStart(2, "0")} · {mod.title}
                             </span>
-                          ))}
-                        </div>
-                      </details>
-                    );
-                  })}
+                            <span className="pill">{topics.length} topics</span>
+                          </summary>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                            {topics.map((t) => (
+                              <span key={t} className="chip">
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </CourseDetailTabs>
         </section>
 
         <aside className="side stack">
@@ -123,6 +126,15 @@ export default async function CourseDetailPage({ params }: PageProps<"/courses/[
                 <div className="strong">
                   {course.modules.length} modules · {trackTitles.length} track{trackTitles.length !== 1 ? "s" : ""}
                 </div>
+              </div>
+            </div>
+            <div className="list-row">
+              <span className="icon-box">
+                <Icon name="clock" size={18} />
+              </span>
+              <div className="grow">
+                <div className="label">Duration</div>
+                <div>[Weeks / hours]</div>
               </div>
             </div>
             <div className="list-row">

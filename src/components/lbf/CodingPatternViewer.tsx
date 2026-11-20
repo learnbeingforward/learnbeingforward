@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Maximize2, Minimize2 } from "lucide-react";
-import { PublicHeader } from "./PublicHeader";
+import Link from "next/link";
+import { PublicShell } from "./PublicShell";
+import { Icon } from "./icons";
 
 export function CodingPatternViewer({ level, name, unlocked }: { level: string; name: string; unlocked?: boolean }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -28,25 +29,45 @@ export function CodingPatternViewer({ level, name, unlocked }: { level: string; 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  return (
-    <div className="lbf-scope">
-      {!isFullscreen && <PublicHeader active="courses" heroContent={<></>} bandStyle={{ paddingBottom: 22 }} />}
-      <div style={isFullscreen ? { position: "fixed", inset: 0, zIndex: 999, background: "#fff" } : undefined}>
-        <iframe
-          src={iframeSrc}
-          title={`${name} visualiser`}
-          style={{ width: "100%", height: isFullscreen ? "100vh" : "85vh", border: 0, display: "block" }}
-        />
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => setIsFullscreen((v) => !v)}
-          style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}
-        >
-          {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          {isFullscreen ? "Exit full screen" : "Full screen"}
+  if (isFullscreen) {
+    return (
+      <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "#fff" }}>
+        <iframe src={iframeSrc} title={`${name} visualiser`} style={{ width: "100%", height: "100vh", border: 0, display: "block" }} />
+        <button type="button" className="btn btn-sm" onClick={() => setIsFullscreen(false)} style={{ position: "fixed", top: 12, right: 12, zIndex: 1000 }}>
+          <Icon name="x" size={14} />
+          Exit full screen
         </button>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <PublicShell
+      header={{
+        active: "courses",
+        heroContent: (
+          <div className="container band-hero">
+            <div className="eyebrow">
+              <Link href="/coding-patterns" style={{ color: "inherit" }}>
+                Coding Patterns
+              </Link>{" "}
+              › Visualiser
+            </div>
+            <h1>Pattern visualiser</h1>
+            <p>Pick a pattern, then play it or step through one line at a time.</p>
+          </div>
+        ),
+      }}
+    >
+      <div className="lift">
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+          <button type="button" className="btn btn-sm" onClick={() => setIsFullscreen(true)}>
+            <Icon name="grid" size={14} />
+            Full screen
+          </button>
+        </div>
+        <iframe src={iframeSrc} title={`${name} visualiser`} style={{ width: "100%", height: "80vh", border: 0, display: "block", borderRadius: 16 }} />
+      </div>
+    </PublicShell>
   );
 }

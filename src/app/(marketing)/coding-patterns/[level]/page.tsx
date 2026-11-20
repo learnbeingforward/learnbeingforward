@@ -24,7 +24,8 @@ export async function generateMetadata({ params }: PageProps<"/coding-patterns/[
   const { level } = await params;
   const name = LEVELS[level];
   if (!name) return {};
-  return { title: `${name} — Coding Pattern Artifacts` };
+  const num = level.replace("level-", "");
+  return { title: `Level ${num} · ${name}` };
 }
 
 export default async function CodingPatternLevelPage({ params }: PageProps<"/coding-patterns/[level]">) {
