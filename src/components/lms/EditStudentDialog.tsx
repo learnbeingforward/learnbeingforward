@@ -50,9 +50,9 @@ export function EditStudentDialog({ student }: { student: EditableStudent }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button size="sm" variant="outline" className="border-border text-indigo">
-            <Pencil className="size-3.5" /> Edit
-          </Button>
+          <button className="btn btn-primary btn-sm" type="button">
+            <Pencil className="size-3.5" /> Edit details
+          </button>
         }
       />
       <DialogContent className="sm:max-w-md">

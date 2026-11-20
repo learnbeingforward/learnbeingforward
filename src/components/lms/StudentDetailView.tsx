@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/lbf/icons";
 import { EditStudentDialog } from "@/components/lms/EditStudentDialog";
 import { deleteStudentAccount } from "@/lib/actions/accounts";
 import { certificationBadge } from "@/lib/college-data";
@@ -48,12 +47,53 @@ export function StudentDetailView({
    * side is authorized to call it, so college callers must leave this off. */
   canDelete?: boolean;
 }) {
+  const initials = student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="rounded-xl border border-border bg-white p-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-indigo">{student.name}</h2>
-          <div className="flex items-center gap-2">
+    <div className="row">
+      <section className="card side">
+        <div className="split" style={{ marginBottom: 18 }}>
+          <h2 className="h2">Profile</h2>
+        </div>
+        <div className="stack" style={{ gap: 18 }}>
+          <div className="stat-inline">
+            <span className="avatar lg">{initials}</span>
+            <div>
+              <div className="h3">{student.name}</div>
+              <div className="small muted">{student.email}</div>
+            </div>
+          </div>
+          <div className="grid" style={{ ["--min" as string]: "160px" }}>
+            <div>
+              <div className="label">USN</div>
+              <div className="strong" style={{ marginTop: 4 }}>{student.usn ?? "—"}</div>
+            </div>
+            <div>
+              <div className="label">Father&apos;s name</div>
+              <div className="strong" style={{ marginTop: 4 }}>{student.fatherName ?? "—"}</div>
+            </div>
+            <div>
+              <div className="label">Branch</div>
+              <div className="strong" style={{ marginTop: 4 }}>{student.branch ?? "—"}</div>
+            </div>
+            <div>
+              <div className="label">Semester</div>
+              <div className="strong" style={{ marginTop: 4 }}>{student.semester ?? "—"}</div>
+            </div>
+            <div>
+              <div className="label">CV</div>
+              <div className="strong" style={{ marginTop: 4 }}>
+                {student.cvUrl ? (
+                  <a href={student.cvUrl} target="_blank" rel="noopener noreferrer">
+                    View CV
+                  </a>
+                ) : (
+                  <span className="muted">Not uploaded</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", borderTop: "1px solid var(--border)", paddingTop: 16 }}>
             <EditStudentDialog
               student={{
                 id: student.id,
@@ -66,93 +106,74 @@ export function StudentDetailView({
             />
             {canDelete && (
               <form action={deleteStudentAccount.bind(null, student.id)}>
-                <Button type="submit" size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
-                  Delete Student Account
-                </Button>
+                <button className="btn btn-sm btn-danger" type="submit">
+                  <Icon name="trash" size={16} />
+                  Delete student account
+                </button>
               </form>
             )}
           </div>
         </div>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground">Email</dt>
-            <dd className="text-indigo">{student.email}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">USN</dt>
-            <dd className="text-indigo">{student.usn ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Father&apos;s Name</dt>
-            <dd className="text-indigo">{student.fatherName ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Branch</dt>
-            <dd className="text-indigo">{student.branch ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Semester</dt>
-            <dd className="text-indigo">{student.semester ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">CV</dt>
-            <dd>
-              {student.cvUrl ? (
-                <a href={student.cvUrl} target="_blank" rel="noopener noreferrer" className="text-indigo underline">
-                  View CV
-                </a>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </dd>
-          </div>
-        </dl>
-      </div>
+      </section>
 
-      <div className="rounded-xl border border-border bg-white">
-        <div className="border-b border-border p-6">
-          <p className="text-sm font-semibold text-indigo">Enrollments ({student.enrollments.length})</p>
-          <p className="mt-1 text-xs text-muted-foreground">Click a course to see session-by-session progress.</p>
+      <section className="card grow">
+        <div className="split" style={{ marginBottom: 18 }}>
+          <h2 className="h2">Enrollments ({student.enrollments.length})</h2>
         </div>
+        <p className="small muted" style={{ margin: "-8px 0 14px" }}>
+          Click a course to see session-by-session attendance.
+        </p>
         {student.enrollments.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">Not enrolled in any course yet.</p>
+          <p className="muted">Not enrolled in any course yet.</p>
         ) : (
-          <div className="divide-y divide-border">
-            {student.enrollments.map((e) => (
-              <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`${basePath}?studentId=${student.id}&enrollmentId=${e.id}`}
-                    className="block transition-colors hover:text-indigo/80"
-                  >
-                    <p className="text-sm font-medium text-indigo">{e.courseName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Trainer: {e.trainerName ?? "Not yet assigned"} &middot; {e.present}/{e.total} classes attended
-                    </p>
-                  </Link>
-                  {e.batchId ? (
-                    batchLinkBase ? (
-                      <Link
-                        href={batchLinkBase(e.batchId, e.batchCollegeId)}
-                        className="mt-1 inline-block text-xs font-medium text-indigo underline underline-offset-2"
-                      >
-                        View Batch: {e.batchName}
-                      </Link>
-                    ) : (
-                      <p className="mt-1 text-xs text-muted-foreground">Batch: {e.batchName}</p>
-                    )
-                  ) : (
-                    <p className="mt-1 text-xs font-medium text-amber-700">Not placed in a training batch yet</p>
+          <div className="stack" style={{ gap: 12 }}>
+            {student.enrollments.map((e) => {
+              const badge = certificationBadge(e.certificationStatus, e.eligible);
+              const progressTone = e.pct >= 75 ? "success" : "danger";
+              return (
+                <Link key={e.id} className="box enr" href={`${basePath}?studentId=${student.id}&enrollmentId=${e.id}`}>
+                  <div className="split" style={{ flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+                    <div>
+                      <div className="h3">{e.courseName}</div>
+                      <div className="small muted">
+                        Trainer: {e.trainerName ?? "Not yet assigned"} · {e.present}/{e.total} classes attended
+                      </div>
+                      {e.batchId ? (
+                        <div className="small muted">Batch: {e.batchName}</div>
+                      ) : (
+                        <div className="small muted">Not placed in a training batch yet</div>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span className={`pill ${badge.pillClass}`}>{badge.label}</span>
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <div className={`progress ${progressTone}`} style={{ width: 120 }}>
+                            <span style={{ width: `${e.pct}%` }} />
+                          </div>
+                          <span className="small strong">{e.pct}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {!e.batchId && e.total > 0 && (
+                    <div className="alert warning" style={{ marginTop: 12, padding: "8px 12px" }}>
+                      <Icon name="target" size={16} />
+                      <span>
+                        No trainer or batch is linked, but {e.total} classes are recorded — link the batch so the record is complete.
+                      </span>
+                    </div>
                   )}
-                </div>
-                <Badge className={certificationBadge(e.certificationStatus, e.eligible).className}>
-                  {e.pct}% · {certificationBadge(e.certificationStatus, e.eligible).label}
-                </Badge>
-              </div>
-            ))}
+                  <span className="small strong" style={{ color: "var(--navy)", marginTop: 10, display: "inline-flex", gap: 4, alignItems: "center" }}>
+                    Session-by-session progress
+                    <Icon name="arrowR" size={14} />
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

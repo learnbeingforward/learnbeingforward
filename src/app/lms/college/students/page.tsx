@@ -135,9 +135,7 @@ export default async function CollegeStudentsPage({
                         {row.present}/{row.total} ({row.pct}%)
                       </td>
                       <td>
-                        <span className={`pill ${badge.className.includes("green") ? "success" : badge.className.includes("gold") ? "gold" : "warning"}`}>
-                          {badge.label}
-                        </span>
+                        <span className={`pill ${badge.pillClass}`}>{badge.label}</span>
                       </td>
                       <td>{row.cvUrl ? <a href={row.cvUrl} target="_blank" rel="noopener noreferrer">View CV</a> : "—"}</td>
                     </tr>

@@ -8,12 +8,12 @@ import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
  * makes an already-issued certificate look permanently unapproved to the college. */
 export function certificationBadge(certificationStatus: string, eligible: boolean) {
   if (certificationStatus === "ISSUED") {
-    return { label: "Certificate Issued", className: "bg-green-100 text-green-700 hover:bg-green-100" };
+    return { label: "Certificate issued", pillClass: "success" };
   }
   if (eligible) {
-    return { label: "Eligible — Awaiting Admin Approval", className: "bg-gold/20 text-indigo hover:bg-gold/20" };
+    return { label: "Eligible — awaiting approval", pillClass: "gold" };
   }
-  return { label: "Not Yet Eligible", className: "bg-amber-100 text-amber-700 hover:bg-amber-100" };
+  return { label: "Not yet eligible", pillClass: "warning" };
 }
 
 export type StudentRow = {
