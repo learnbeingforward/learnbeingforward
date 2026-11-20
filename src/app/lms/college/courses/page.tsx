@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
@@ -37,13 +36,6 @@ export default async function CollegeCoursesPage() {
   const candidatesByCourse: Record<string, { id: string; name: string; usn: string | null; branch: string | null }[]> = {};
   for (const course of allCourses) {
     candidatesByCourse[course.id] = activeStudents.filter((s) => !enrolledSet.has(`${s.id}::${course.id}`) && !pendingSet.has(`${s.id}::${course.id}`));
-  }
-
-  const studentsByCourse = new Map<string, { name: string; studentId: string }[]>();
-  for (const row of rows) {
-    const list = studentsByCourse.get(row.courseName) ?? [];
-    list.push({ name: row.studentName, studentId: row.studentId });
-    studentsByCourse.set(row.courseName, list);
   }
 
   return (
@@ -105,28 +97,6 @@ export default async function CollegeCoursesPage() {
           )}
         </section>
       </div>
-
-      {byCourse.size > 0 && (
-        <section className="card">
-          <h2 className="h2" style={{ marginBottom: 18 }}>
-            Students by course
-          </h2>
-          <div className="stack" style={{ gap: 16 }}>
-            {Array.from(byCourse.entries()).map(([course]) => (
-              <div key={course}>
-                <p className="strong">{course}</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                  {(studentsByCourse.get(course) ?? []).map((s, i) => (
-                    <Link key={`${s.studentId}-${i}`} className="chip" style={{ textDecoration: "none" }} href={`/lms/college/students?studentId=${s.studentId}`}>
-                      {s.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </AppShell>
   );
 }

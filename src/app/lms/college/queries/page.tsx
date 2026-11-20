@@ -53,24 +53,57 @@ export default async function CollegeQueriesPage() {
 
       {pastRequests.length > 0 && (
         <section className="card">
-          <h2 className="h2" style={{ marginBottom: 18 }}>
-            Your requests
-          </h2>
-          <ul className="list">
-            {pastRequests.map((req) => (
-              <li key={req.id} className="list-row">
-                <div className="grow">
-                  <div className="strong">
-                    {req.enrollment.student.name} — {req.enrollment.course.name}
-                  </div>
-                  <div className="small muted">{req.reason}</div>
-                </div>
-                <span className={`pill ${req.status === "APPROVED" ? "success" : req.status === "REJECTED" ? "danger" : "warning"}`}>
-                  {req.status === "PENDING" ? "Pending" : req.status === "APPROVED" ? "Approved" : "Rejected"}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="split" style={{ marginBottom: 18 }}>
+            <div>
+              <h2 className="h2">Your requests</h2>
+              <p className="subtitle">Attendance exceptions you sent to Learn Being Forward.</p>
+            </div>
+          </div>
+          <div className="table-wrap">
+            <table className="table m-cards" style={{ minWidth: 760 }}>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Course</th>
+                  <th>Reason</th>
+                  <th>Sent</th>
+                  <th>Decision</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pastRequests.map((req) => {
+                  const initials = req.enrollment.student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                  return (
+                    <tr key={req.id}>
+                      <td data-label="Student">
+                        <div className="stat-inline">
+                          <span className="avatar sm">{initials}</span>
+                          <div>
+                            <div className="strong">{req.enrollment.student.name}</div>
+                            {req.enrollment.student.usn && <div className="small muted">USN: {req.enrollment.student.usn}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Course">{req.enrollment.course.name}</td>
+                      <td data-label="Reason">{req.reason}</td>
+                      <td data-label="Sent">{req.requestedAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</td>
+                      <td data-label="Decision">
+                        <span className={`pill ${req.status === "APPROVED" ? "success" : req.status === "REJECTED" ? "danger" : "warning"}`}>
+                          {req.status === "PENDING" ? "Waiting" : req.status === "APPROVED" ? "Approved" : "Rejected"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="alert info" style={{ marginTop: 14 }}>
+            <span>
+              New requests need a reason of at least 20 characters and, for medical reasons, a document — so every
+              exception certificate has a clear record.
+            </span>
+          </div>
         </section>
       )}
     </AppShell>

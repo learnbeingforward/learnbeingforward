@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { requestAttendanceException } from "@/lib/actions/attendance-exceptions";
 
 export function RequestExceptionForm({
@@ -21,45 +19,68 @@ export function RequestExceptionForm({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const action = requestAttendanceException.bind(null, enrollmentId);
+  const initials = studentName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   if (sent) {
     return (
-      <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-        Request sent for {studentName} — {courseName}.
-      </div>
+      <li className="box" style={{ padding: 16 }}>
+        <div className="alert success">
+          <span>Request sent for {studentName} — {courseName}.</span>
+        </div>
+      </li>
     );
   }
 
   return (
-    <form
-      action={async (formData) => {
-        setError(null);
-        try {
-          await action(formData);
-          setSent(true);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Couldn't send the request.");
-        }
-      }}
-      className="rounded-xl border border-border bg-white p-4"
-    >
-      <p className="font-medium text-indigo">{studentName}</p>
-      {studentUsn && <p className="text-xs text-muted-foreground">USN: {studentUsn}</p>}
-      <p className="mt-1 text-sm text-muted-foreground">
-        {courseName} &middot; {pct}% attendance
-      </p>
-      <Textarea
-        name="reason"
-        required
-        minLength={20}
-        rows={3}
-        placeholder="Reason the student couldn't attend classes (at least 20 characters)..."
-        className="mt-3"
-      />
-      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
-      <Button type="submit" size="sm" className="mt-3 w-full bg-indigo text-white hover:bg-indigo/90">
-        Send Request
-      </Button>
-    </form>
+    <li className="box" style={{ padding: 16 }}>
+      <div className="split" style={{ gap: 12 }}>
+        <div className="stat-inline">
+          <span className="avatar sm">{initials}</span>
+          <div>
+            <div className="strong">{studentName}</div>
+            <div className="small muted">
+              {studentUsn && `USN: ${studentUsn} · `}
+              {courseName}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="progress gold" style={{ width: 100 }}>
+            <span style={{ width: `${pct}%` }} />
+          </div>
+          <strong>{pct}%</strong>
+        </div>
+      </div>
+      <form
+        action={async (formData) => {
+          setError(null);
+          try {
+            await action(formData);
+            setSent(true);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Couldn't send the request.");
+          }
+        }}
+        className="row"
+        style={{ marginTop: 12, gap: 10 }}
+      >
+        <div className="grow">
+          <textarea
+            className="textarea"
+            name="reason"
+            required
+            minLength={20}
+            rows={2}
+            placeholder="Reason the student couldn't attend classes (at least 20 characters)…"
+          />
+          {error && <span className="error-text">{error}</span>}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <button className="btn btn-primary btn-sm" type="submit">
+            Send request
+          </button>
+        </div>
+      </form>
+    </li>
   );
 }

@@ -1,16 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Icon } from "@/components/lbf/icons";
 import { requestBulkEnrollment } from "@/lib/actions/enrollment-requests";
 
 type Candidate = { id: string; name: string; usn: string | null; branch: string | null };
@@ -31,7 +22,7 @@ export function BulkEnrollStudentsForm({
   const branches = useMemo(() => {
     const map = new Map<string, Candidate[]>();
     for (const c of candidates) {
-      const key = c.branch?.trim() || "No Branch Set";
+      const key = c.branch?.trim() || "No branch set";
       const list = map.get(key) ?? [];
       list.push(c);
       map.set(key, list);
@@ -76,92 +67,74 @@ export function BulkEnrollStudentsForm({
   }
 
   return (
-    <div className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div>
-        <Label htmlFor="bulk-enroll-course">Course</Label>
-        <Select
+    <div className="stack" style={{ gap: 14 }}>
+      <label className="field">
+        <span>Course</span>
+        <select
+          className="select"
           value={courseId}
-          onValueChange={(v) => {
-            setCourseId(String(v));
+          onChange={(e) => {
+            setCourseId(e.target.value);
             setSelected(new Set());
             setResult(null);
           }}
         >
-          <SelectTrigger id="bulk-enroll-course" className="mt-1.5 w-full max-w-sm">
-            <SelectValue placeholder="Select a course">
-              {(value: string | null) => courses.find((c) => c.id === value)?.name ?? "Select a course"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {courses.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          <option value="">Select a course</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {courseId && (
         <>
           {candidates.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Every student is already enrolled in or has a pending request for this course.
-            </p>
+            <p className="muted">Every student is already enrolled in or has a pending request for this course.</p>
           ) : (
-            <div className="space-y-4">
-              <p className="text-sm font-medium text-indigo">
-                {selected.size} of {candidates.length} selected
-              </p>
-              <div className="max-h-96 space-y-4 overflow-y-auto rounded-lg border border-border p-4">
-                {branches.map(([branch, branchStudents]) => {
-                  const allSelected = branchStudents.every((s) => selected.has(s.id));
-                  return (
-                    <div key={branch}>
-                      <label className="flex items-center gap-2 text-sm font-semibold text-indigo">
-                        <input
-                          type="checkbox"
-                          checked={allSelected}
-                          onChange={() => toggleBranch(branchStudents)}
-                          className="size-4 accent-indigo"
-                        />
-                        {branch} ({branchStudents.length})
+            <>
+              {branches.map(([branch, branchStudents]) => {
+                const allSelected = branchStudents.every((s) => selected.has(s.id));
+                return (
+                  <div key={branch} className="box" style={{ padding: 14 }}>
+                    <div className="split">
+                      <label className="check" style={{ fontWeight: 700 }}>
+                        <input type="checkbox" checked={allSelected} onChange={() => toggleBranch(branchStudents)} />
+                        {branch}
                       </label>
-                      <div className="mt-2 grid gap-1.5 pl-6 sm:grid-cols-2">
-                        {branchStudents.map((s) => (
-                          <label key={s.id} className="flex items-center gap-2 text-sm text-indigo">
-                            <input
-                              type="checkbox"
-                              checked={selected.has(s.id)}
-                              onChange={() => toggle(s.id)}
-                              className="size-4 accent-indigo"
-                            />
-                            {s.name}
-                            {s.usn && <span className="text-xs text-muted-foreground">({s.usn})</span>}
-                          </label>
-                        ))}
-                      </div>
+                      <span className="small muted">select all · {branchStudents.length}</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      {branchStudents.map((s) => (
+                        <label key={s.id} className="chip" style={{ gap: 6 }}>
+                          <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggle(s.id)} style={{ accentColor: "var(--navy)" }} />
+                          {s.name}
+                          {s.usn && ` (${s.usn})`}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
 
               {result && (
-                <p className="flex items-center gap-1.5 text-sm text-green-700">
-                  <CheckCircle2 className="size-4" /> {result.message}
-                </p>
+                <div className="alert success">
+                  <Icon name="check" size={18} />
+                  <span>{result.message}</span>
+                </div>
               )}
 
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isPending || selected.size === 0}
-                className="bg-indigo text-white hover:bg-indigo/90"
-              >
-                {isPending && <Loader2 className="size-4 animate-spin" />}
-                Request Enrollment for {selected.size} Student{selected.size !== 1 ? "s" : ""}
-              </Button>
-            </div>
+              <div className="split">
+                <span className="small muted">
+                  <strong style={{ color: "var(--text)" }}>{selected.size} student{selected.size !== 1 ? "s" : ""}</strong> selected
+                </span>
+                <button className="btn btn-primary" type="button" onClick={handleSubmit} disabled={isPending || selected.size === 0}>
+                  <Icon name="arrowR" size={16} />
+                  {isPending ? "Requesting…" : "Request enrollment"}
+                </button>
+              </div>
+            </>
           )}
         </>
       )}
