@@ -31,9 +31,13 @@ export default async function CompanyAttendancePage({
     return { enrollment: e, total, present, pct };
   });
 
+  // Leave out students with 0 classes held (e.g. an approved attendance
+  // exception) when averaging — they have no real attendance number yet, and
+  // an implicit 0% understated the average for everyone else in the course.
   function chartFor(rowSet: typeof rows) {
     const byCourse = new Map<string, { count: number; totalPct: number }>();
     for (const row of rowSet) {
+      if (row.total === 0) continue;
       const key = row.enrollment.course.name;
       const entry = byCourse.get(key) ?? { count: 0, totalPct: 0 };
       entry.count += 1;
@@ -162,7 +166,8 @@ export default async function CompanyAttendancePage({
     return status !== "ISSUED" && eligible;
   });
   const issuedCount = rows.filter((r) => r.enrollment.certification?.status === "ISSUED").length;
-  const avgAttendance = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.pct, 0) / rows.length) : 0;
+  const rowsWithClasses = rows.filter((r) => r.total > 0);
+  const avgAttendance = rowsWithClasses.length > 0 ? Math.round(rowsWithClasses.reduce((s, r) => s + r.pct, 0) / rowsWithClasses.length) : 0;
   const chart = chartFor(rows);
 
   return (

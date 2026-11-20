@@ -130,13 +130,29 @@ export async function getStudentDetail(studentId: string) {
   };
 }
 
+/** `count` is every enrolled student (for an "N students" label); `avgPct` is
+ * the attendance average computed only over students who've actually had at
+ * least one class — a student with 0 classes held (e.g. an approved
+ * attendance exception) has no real attendance number yet, and folding their
+ * implicit 0% into the average understated it for everyone else. */
 export function summarizeByCourse(rows: StudentRow[]) {
-  const byCourse = new Map<string, { count: number; totalPct: number }>();
+  const byCourse = new Map<string, { count: number; avgPct: number }>();
+  const totals = new Map<string, { totalPct: number; withClasses: number }>();
   for (const row of rows) {
-    const entry = byCourse.get(row.courseName) ?? { count: 0, totalPct: 0 };
+    const entry = byCourse.get(row.courseName) ?? { count: 0, avgPct: 0 };
     entry.count += 1;
-    entry.totalPct += row.pct;
     byCourse.set(row.courseName, entry);
+
+    if (row.total > 0) {
+      const t = totals.get(row.courseName) ?? { totalPct: 0, withClasses: 0 };
+      t.totalPct += row.pct;
+      t.withClasses += 1;
+      totals.set(row.courseName, t);
+    }
+  }
+  for (const [course, entry] of byCourse) {
+    const t = totals.get(course);
+    entry.avgPct = t && t.withClasses > 0 ? Math.round(t.totalPct / t.withClasses) : 0;
   }
   return byCourse;
 }

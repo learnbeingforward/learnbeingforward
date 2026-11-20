@@ -16,7 +16,11 @@ export default async function CollegeDashboardPage() {
   const certificatesIssued = rows.filter((r) => r.certificationStatus === "ISSUED").length;
 
   const totalStudents = students.length;
-  const avgAttendance = rows.length > 0 ? Math.round(rows.reduce((sum, r) => sum + r.pct, 0) / rows.length) : 0;
+  // Leave out students with 0 classes held (e.g. an approved attendance
+  // exception) — they have no real attendance number yet, and including an
+  // implicit 0% understated the average for everyone else.
+  const rowsWithClasses = rows.filter((r) => r.total > 0);
+  const avgAttendance = rowsWithClasses.length > 0 ? Math.round(rowsWithClasses.reduce((sum, r) => sum + r.pct, 0) / rowsWithClasses.length) : 0;
   const courseEntries = Array.from(byCourse.entries());
 
   const shellUser = { name: college?.name ?? "College", subtitle: "College admin" };
@@ -69,7 +73,7 @@ export default async function CollegeDashboardPage() {
             </h2>
             <div className="bar-chart" role="img" aria-label="Average attendance by course">
               {courseEntries.map(([name, data]) => {
-                const pct = Math.round(data.totalPct / data.count);
+                const pct = data.avgPct;
                 return (
                   <div key={name} className="b">
                     <div className="track">
@@ -101,7 +105,7 @@ export default async function CollegeDashboardPage() {
                         {name}
                       </span>
                       <span className="small muted">
-                        {data.count} student{data.count !== 1 ? "s" : ""} · {Math.round(data.totalPct / data.count)}% avg
+                        {data.count} student{data.count !== 1 ? "s" : ""} · {data.avgPct}% avg
                       </span>
                     </span>
                     <Icon name="chevR" size={16} />

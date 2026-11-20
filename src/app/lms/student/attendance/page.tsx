@@ -18,7 +18,7 @@ export default async function StudentAttendancePage() {
 
   const enrollments = await prisma.enrollment.findMany({
     where: { studentId: userId },
-    include: { course: true, attendanceRecords: true, certification: true },
+    include: { course: true, attendanceRecords: true, certification: true, trainer: true },
     orderBy: { enrolledAt: "asc" },
   });
 
@@ -100,7 +100,9 @@ export default async function StudentAttendancePage() {
                     <span>
                       {enrollment.certification.overrideApproved
                         ? "Certificate issued through an attendance exception your college requested and Learn Being Forward approved."
-                        : "Certificate issued and approved by your trainer."}
+                        : enrollment.trainer
+                          ? `Certificate issued and approved — your attendance with ${enrollment.trainer.name} met the requirement.`
+                          : "Certificate issued and approved."}
                     </span>
                     <Link className="btn btn-success btn-sm" href={`/lms/student/certificate/${enrollment.id}`}>
                       <Icon name="download" size={16} />

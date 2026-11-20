@@ -45,7 +45,16 @@ export default async function StudentDashboardPage({
       orderBy: { enrolledAt: "asc" },
     }),
     prisma.enrollmentRequest.findMany({ where: { studentId: userId, status: "PENDING" }, include: { course: true } }),
-    prisma.assessmentAssignment.count({ where: { studentId: userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } } }),
+    // Only count assignments whose assessment window hasn't closed yet — an
+    // ASSIGNED/IN_PROGRESS assignment for an assessment that already closed
+    // isn't something the student can still act on.
+    prisma.assessmentAssignment.count({
+      where: {
+        studentId: userId,
+        status: { in: ["ASSIGNED", "IN_PROGRESS"] },
+        assessment: { OR: [{ availableUntil: null }, { availableUntil: { gte: new Date() } }] },
+      },
+    }),
   ]);
 
   const batchIds = enrollments.map((e) => e.batchId).filter((id): id is string => id !== null);
@@ -66,8 +75,12 @@ export default async function StudentDashboardPage({
     const eligible = pct >= ATTENDANCE_THRESHOLD || !!e.certification?.overrideApproved;
     return { enrollment: e, total, present, pct, eligible };
   });
+  // Leave out courses with 0 classes held (e.g. an approved attendance
+  // exception) — there's no real attendance number for them yet, and an
+  // implicit 0% understated the overall average for every other course.
+  const statsWithClasses = withStats.filter((s) => s.total > 0);
   const overallPct =
-    withStats.length > 0 ? Math.round(withStats.reduce((sum, s) => sum + s.pct, 0) / withStats.length) : 0;
+    statsWithClasses.length > 0 ? Math.round(statsWithClasses.reduce((sum, s) => sum + s.pct, 0) / statsWithClasses.length) : 0;
   const next = upcomingSessions[0];
 
   return (

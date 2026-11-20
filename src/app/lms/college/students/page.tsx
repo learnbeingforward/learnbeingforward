@@ -152,12 +152,16 @@ export default async function CollegeStudentsPage({
   }
 
   if (branch) {
-    const semesters = new Map<string, number>();
+    // Dedupe by student — rows is one row per enrollment, so a student with
+    // two enrollments in the same branch would otherwise be counted twice.
+    const semesterStudents = new Map<string, Set<string>>();
     for (const r of rows) {
       if ((r.branch ?? "Unspecified") !== branch) continue;
       const key = String(r.semester ?? "Unspecified");
-      semesters.set(key, (semesters.get(key) ?? 0) + 1);
+      if (!semesterStudents.has(key)) semesterStudents.set(key, new Set());
+      semesterStudents.get(key)!.add(r.studentId);
     }
+    const semesters = new Map<string, number>(Array.from(semesterStudents.entries()).map(([k, s]) => [k, s.size]));
     return shell(
       "students",
       "Students › Browse by branch",
@@ -184,17 +188,25 @@ export default async function CollegeStudentsPage({
     );
   }
 
-  const branches = new Map<string, number>();
+  // Dedupe by student — rows is one row per enrollment, so a student enrolled
+  // in two courses would otherwise be counted twice in their branch's total
+  // (this is what made the branch counts here disagree with Profile's, which
+  // counts students directly).
+  const branchStudents = new Map<string, Set<string>>();
+  const allStudentIds = new Set<string>();
   for (const r of rows) {
     const key = r.branch ?? "Unspecified";
-    branches.set(key, (branches.get(key) ?? 0) + 1);
+    if (!branchStudents.has(key)) branchStudents.set(key, new Set());
+    branchStudents.get(key)!.add(r.studentId);
+    allStudentIds.add(r.studentId);
   }
+  const branches = new Map<string, number>(Array.from(branchStudents.entries()).map(([k, s]) => [k, s.size]));
 
   return shell(
     "students",
     "Students › Browse by branch",
     "Students",
-    `${rows.length} enrollments across ${branches.size} branches.`,
+    `${allStudentIds.size} students across ${branches.size} branches.`,
     <section className="card">
       <div className="toolbar">
         <label className="search">

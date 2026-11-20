@@ -127,7 +127,8 @@ export const SUPER_ADMIN_NAV: NavConfig = {
 export const TRAINER_NAV: NavConfig = {
   label: "Trainer",
   groups: [
-    { key: "details", label: "Personal Details", icon: "user", pages: [{ key: "details", label: "Personal Details", href: "/lms/trainer" }] },
+    { key: "dashboard", label: "Dashboard", icon: "home", pages: [{ key: "dashboard", label: "Dashboard", href: "/lms/trainer" }] },
+    { key: "details", label: "Personal Details", icon: "user", pages: [{ key: "details", label: "Personal Details", href: "/lms/trainer/details" }] },
     { key: "batches", label: "My Batches", icon: "users", pages: [{ key: "batches", label: "My Batches", href: "/lms/trainer/batches" }] },
     { key: "schedule", label: "Schedule", icon: "calendar", pages: [{ key: "schedule", label: "Schedule", href: "/lms/trainer/schedule" }] },
     { key: "attendance", label: "Attendance", icon: "check", pages: [{ key: "attendance", label: "Attendance", href: "/lms/trainer/attendance" }] },

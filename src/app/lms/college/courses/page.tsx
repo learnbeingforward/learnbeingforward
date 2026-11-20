@@ -84,7 +84,7 @@ export default async function CollegeCoursesPage() {
           ) : (
             <ul className="list">
               {Array.from(byCourse.entries()).map(([course, data]) => {
-                const pct = Math.round(data.totalPct / data.count);
+                const pct = data.avgPct;
                 return (
                   <li key={course} className="box" style={{ padding: 14 }}>
                     <div className="split">

@@ -37,8 +37,10 @@ export default async function TrainerBatchesPage({
       );
     }
 
+    const now = new Date();
     const completed = batch.trainingSessions.filter((s) => s.attendanceTaken);
-    const upcoming = batch.trainingSessions.filter((s) => !s.attendanceTaken);
+    const overdue = batch.trainingSessions.filter((s) => !s.attendanceTaken && s.sessionDate < now);
+    const upcoming = batch.trainingSessions.filter((s) => !s.attendanceTaken && s.sessionDate >= now);
 
     return (
       <AppShell nav={TRAINER_NAV} active="batches" user={shellUser} crumb="My Batches" title={batch.name} subtitle={`${batch.college.name} — ${batch.course.name}`}>
@@ -62,6 +64,26 @@ export default async function TrainerBatchesPage({
             </ul>
           )}
         </section>
+        {overdue.length > 0 && (
+          <section className="card">
+            <h2 className="h2" style={{ color: "var(--danger)" }}>
+              Overdue — needs attendance ({overdue.length})
+            </h2>
+            <ul className="list" style={{ marginTop: 12 }}>
+              {overdue.map((s) => (
+                <li key={s.id} className="list-row">
+                  <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
+                  <span className="small muted">
+                    {format(s.sessionDate, "MMM d, yyyy")} · Slot {s.slotNumber} ({s.startTime}–{s.endTime})
+                  </span>
+                  <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
+                    Mark now
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section className="card">
           <h2 className="h2" style={{ color: "var(--warning-text)" }}>
             Upcoming sessions ({upcoming.length})
@@ -93,9 +115,11 @@ export default async function TrainerBatchesPage({
   const active = batches.filter((b) => !b.completed);
   const done = batches.filter((b) => b.completed);
 
+  const now = new Date();
   const card = (b: (typeof batches)[number]) => {
     const completedCount = b.trainingSessions.filter((s) => s.attendanceTaken).length;
-    const upcomingCount = b.trainingSessions.length - completedCount;
+    const overdueCount = b.trainingSessions.filter((s) => !s.attendanceTaken && s.sessionDate < now).length;
+    const upcomingCount = b.trainingSessions.length - completedCount - overdueCount;
     const totalModules = b.course.modules.length;
     const modulesCovered = new Set(b.trainingSessions.filter((s) => s.attendanceTaken).map((s) => s.courseModuleId)).size;
     const pct = totalModules > 0 ? Math.round((modulesCovered / totalModules) * 100) : 0;
@@ -130,6 +154,14 @@ export default async function TrainerBatchesPage({
               {upcomingCount}
             </div>
           </div>
+          {overdueCount > 0 && (
+            <div className="tile warning" style={{ padding: 12 }}>
+              <div className="label">Overdue</div>
+              <div className="value" style={{ fontSize: 20, color: "var(--danger)" }}>
+                {overdueCount}
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <div className="split small">

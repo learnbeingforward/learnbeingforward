@@ -68,11 +68,15 @@ export default async function TrainerAttendancePage({
                       </td>
                       <td>{s.courseModule?.title ?? s.topic ?? "—"}</td>
                       <td>
-                        <span className="pill warning">Pending</span>
+                        {s.sessionDate < new Date() ? (
+                          <span className="pill danger">Overdue</span>
+                        ) : (
+                          <span className="pill warning">Pending</span>
+                        )}
                       </td>
                       <td className="actions">
                         <Link className="btn btn-primary btn-sm" href={`/lms/trainer/attendance?sessionId=${s.id}`}>
-                          Mark attendance
+                          {s.sessionDate < new Date() ? "Mark now" : "Mark attendance"}
                         </Link>
                       </td>
                     </tr>
