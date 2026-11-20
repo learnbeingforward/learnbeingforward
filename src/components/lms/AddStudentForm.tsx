@@ -1,18 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Icon } from "@/components/lbf/icons";
 import { createStudentAccount, type CreateAccountState } from "@/lib/actions/accounts";
 import { BRANCH_OPTIONS } from "@/lib/constants";
 
@@ -26,131 +15,104 @@ export function AddStudentForm({ colleges }: { colleges?: College[] }) {
 
   if (state?.ok && state.roster) {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-6">
-        <div className="flex items-center gap-2 text-green-700">
-          <CheckCircle2 className="size-5" />
-          <p className="font-semibold">Student added to roster</p>
-        </div>
-        <p className="text-sm text-green-800">
-          <span className="font-mono font-semibold">{state.email}</span> can now sign up on the
-          login page — their name, email, and college must match exactly what you entered here.
-          Once they sign up, approve their registration under &ldquo;New Registrations&rdquo; in
-          the Company dashboard before they can request courses.
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.location.reload()}
-          className="border-green-300 text-green-700"
-        >
-          Add another
-        </Button>
+      <div className="alert success">
+        <Icon name="check" size={18} />
+        <span>
+          <strong>Student added to roster.</strong> <span className="mono">{state.email}</span> can now sign up on the
+          login page — their name, email and college must match exactly what you entered here. Once they sign up,
+          approve their registration under &ldquo;New Registrations&rdquo; in the Company dashboard before they can
+          request courses.
+        </span>
       </div>
     );
   }
 
   if (state?.ok) {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-6">
-        <div className="flex items-center gap-2 text-green-700">
-          <CheckCircle2 className="size-5" />
-          <p className="font-semibold">Student account created</p>
-        </div>
-        <p className="text-sm text-green-800">
-          Share these credentials with the student — this password will not be shown again.
-        </p>
-        <div className="rounded-lg bg-white px-4 py-3 text-sm">
-          <p>
-            <span className="text-muted-foreground">Email:</span>{" "}
-            <span className="font-mono font-semibold text-indigo">{state.email}</span>
-          </p>
-          <p>
-            <span className="text-muted-foreground">Password:</span>{" "}
-            <span className="font-mono font-semibold text-indigo">{state.password}</span>
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.location.reload()}
-          className="border-green-300 text-green-700"
-        >
-          Add another
-        </Button>
+      <div className="alert success">
+        <Icon name="check" size={18} />
+        <span>
+          <strong>Student account created.</strong> Share these credentials with the student — this password will
+          not be shown again. Email: <span className="mono">{state.email}</span> · Password: <span className="mono">{state.password}</span>
+        </span>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="name">
-            Full Name
-            <RequiredMark />
-          </Label>
-          <Input id="name" name="name" required className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="email">
-            Email
-            <RequiredMark />
-          </Label>
-          <Input id="email" name="email" type="email" required className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="usn">USN / Roll Number (optional)</Label>
-          <Input id="usn" name="usn" className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="fatherName">Father&apos;s Name (optional)</Label>
-          <Input id="fatherName" name="fatherName" className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="branch">Branch (optional)</Label>
-          <Select name="branch">
-            <SelectTrigger className="mt-1.5 w-full">
-              <SelectValue placeholder="Select branch" />
-            </SelectTrigger>
-            <SelectContent>
-              {BRANCH_OPTIONS.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="semester">Semester (optional)</Label>
-          <Input id="semester" name="semester" type="number" min="1" max="8" className="mt-1.5" />
-        </div>
-
-        {colleges && (
-          <div className="sm:col-span-2">
-            <Label htmlFor="collegeId">College (optional)</Label>
-            <Select name="collegeId">
-              <SelectTrigger className="mt-1.5 w-full">
-                <SelectValue placeholder="Select college" />
-              </SelectTrigger>
-              <SelectContent>
-                {colleges.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+    <form action={formAction} className="stack" style={{ gap: 16 }}>
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          <span>
+            Full name <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="text" name="name" required />
+        </label>
+        <label className="field">
+          <span>
+            Email <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="email" name="email" required />
+        </label>
+      </div>
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          <span>USN / roll number</span>
+          <input className="input" type="text" name="usn" />
+        </label>
+        <label className="field">
+          <span>Father&apos;s name</span>
+          <input className="input" type="text" name="fatherName" />
+        </label>
+      </div>
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          <span>Branch</span>
+          <select className="select" name="branch" defaultValue="">
+            <option value="">Select branch</option>
+            {BRANCH_OPTIONS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Semester</span>
+          <select className="select" name="semester" defaultValue="">
+            <option value="">—</option>
+            {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {colleges && (
+        <label className="field">
+          <span>College</span>
+          <select className="select" name="collegeId" defaultValue="">
+            <option value="">Select college</option>
+            {colleges.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
-      <Button type="submit" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Create Student Account
-      </Button>
+      {state?.error && <span className="error-text">{state.error}</span>}
+
+      <div className="split">
+        <span />
+        <button className="btn btn-primary" type="submit" disabled={isPending}>
+          <Icon name="plus" size={16} />
+          {isPending ? "Adding…" : "Add to roster"}
+        </button>
+      </div>
     </form>
   );
 }

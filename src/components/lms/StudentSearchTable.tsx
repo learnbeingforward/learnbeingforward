@@ -1,19 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Icon } from "@/components/lbf/icons";
 
 export type SearchableStudent = {
   id: string;
@@ -30,13 +19,7 @@ export type SearchableStudent = {
   cvUrl: string | null;
 };
 
-type SortKey = "name" | "attendance" | "semester";
-
-const SORTERS: Record<SortKey, (a: SearchableStudent, b: SearchableStudent) => number> = {
-  name: (a, b) => a.name.localeCompare(b.name),
-  attendance: (a, b) => b.pct - a.pct,
-  semester: (a, b) => (b.semester ?? -1) - (a.semester ?? -1),
-};
+const ATTENDANCE_FILTERS = ["any", "below75", "eligible", "issued"] as const;
 
 export function StudentSearchTable({
   rows,
@@ -46,101 +29,136 @@ export function StudentSearchTable({
   showCollege?: boolean;
 }) {
   const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [branch, setBranch] = useState("all");
+  const [semester, setSemester] = useState("all");
+  const [course, setCourse] = useState("all");
+  const [attendance, setAttendance] = useState<(typeof ATTENDANCE_FILTERS)[number]>("any");
   const pathname = usePathname();
+
+  const branches = useMemo(() => Array.from(new Set(rows.map((r) => r.branch).filter((b): b is string => !!b))).sort(), [rows]);
+  const semesters = useMemo(() => Array.from(new Set(rows.map((r) => r.semester).filter((s): s is number => !!s))).sort((a, b) => a - b), [rows]);
+  const courses = useMemo(() => Array.from(new Set(rows.map((r) => r.courseName))).sort(), [rows]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = q ? rows.filter((r) => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)) : rows;
-    return [...base].sort(SORTERS[sortKey]);
-  }, [rows, query, sortKey]);
+    return rows.filter((r) => {
+      if (q && !r.name.toLowerCase().includes(q) && !r.email.toLowerCase().includes(q)) return false;
+      if (branch !== "all" && r.branch !== branch) return false;
+      if (semester !== "all" && String(r.semester) !== semester) return false;
+      if (course !== "all" && r.courseName !== course) return false;
+      if (attendance === "below75" && r.pct >= 75) return false;
+      if (attendance === "eligible" && !(r.eligible && r.certificationStatus !== "ISSUED")) return false;
+      if (attendance === "issued" && r.certificationStatus !== "ISSUED") return false;
+      return true;
+    });
+  }, [rows, query, branch, semester, course, attendance]);
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or email"
-            className="pl-9"
-          />
-        </div>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          Sort by
-          <select
-            className="rounded-md border border-border bg-white px-2 py-1.5 text-sm text-foreground"
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-          >
-            <option value="name">Name (A–Z)</option>
-            <option value="attendance">Attendance (high–low)</option>
-            <option value="semester">Semester (high–low)</option>
-          </select>
-        </label>
-      </div>
-      <div className="rounded-xl border border-border bg-white">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              {showCollege && <TableHead>College</TableHead>}
-              <TableHead>Branch</TableHead>
-              <TableHead>Semester</TableHead>
-              <TableHead>Course</TableHead>
-              <TableHead>Attendance</TableHead>
-              <TableHead>CV</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-medium text-indigo">
-                  <Link href={`${pathname}?studentId=${r.studentId}`} className="underline underline-offset-2 hover:text-indigo/70">
-                    {r.name}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{r.email}</TableCell>
-                {showCollege && <TableCell className="text-muted-foreground">{r.collegeName}</TableCell>}
-                <TableCell className="text-muted-foreground">{r.branch ?? "—"}</TableCell>
-                <TableCell className="text-muted-foreground">{r.semester ?? "—"}</TableCell>
-                <TableCell className="text-muted-foreground">{r.courseName}</TableCell>
-                <TableCell>
-                  <Badge
-                    className={
-                      r.certificationStatus === "ISSUED"
-                        ? "bg-green-100 text-green-700 hover:bg-green-100"
-                        : r.eligible
-                          ? "bg-gold/20 text-indigo hover:bg-gold/20"
-                          : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                    }
-                  >
-                    {r.pct}%{r.certificationStatus === "ISSUED" ? " · Issued" : r.eligible ? " · Eligible" : ""}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {r.cvUrl ? (
-                    <a href={r.cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo underline">
-                      View
-                    </a>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
+    <>
+      <div className="toolbar">
+        <div className="filters">
+          <label className="search">
+            <Icon name="search" size={16} />
+            <input
+              className="input"
+              type="search"
+              placeholder="Search by name or email"
+              aria-label="Search by name or email"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <select className="select" value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <option value="all">All branches</option>
+            {branches.map((b) => (
+              <option key={b} value={b}>{b}</option>
             ))}
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={showCollege ? 8 : 7} className="text-center text-sm text-muted-foreground">
-                  No students match your search.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+          </select>
+          <select className="select" value={semester} onChange={(e) => setSemester(e.target.value)}>
+            <option value="all">All semesters</option>
+            {semesters.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select className="select" value={course} onChange={(e) => setCourse(e.target.value)}>
+            <option value="all">All courses</option>
+            {courses.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <select className="select" value={attendance} onChange={(e) => setAttendance(e.target.value as typeof attendance)}>
+            <option value="any">Any attendance</option>
+            <option value="below75">Below 75%</option>
+            <option value="eligible">Eligible</option>
+            <option value="issued">Issued</option>
+          </select>
+        </div>
       </div>
-    </div>
+      <div className="table-wrap">
+        <table className="table m-cards" style={{ minWidth: 1000 }}>
+          <thead>
+            <tr>
+              <th>Student</th>
+              {showCollege && <th>College</th>}
+              <th>Branch</th>
+              <th>Sem</th>
+              <th>Course</th>
+              <th>Attendance</th>
+              <th>CV</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => {
+              const initials = r.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+              return (
+                <tr key={r.id}>
+                  <td data-label="Student">
+                    <div className="stat-inline">
+                      <span className="avatar sm">{initials}</span>
+                      <div>
+                        <a className="strong" href={`${pathname}?studentId=${r.studentId}`}>
+                          {r.name}
+                        </a>
+                        <div className="small muted">{r.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  {showCollege && <td data-label="College">{r.collegeName}</td>}
+                  <td data-label="Branch">{r.branch ?? "—"}</td>
+                  <td data-label="Sem">{r.semester ?? "—"}</td>
+                  <td data-label="Course">{r.courseName}</td>
+                  <td data-label="Attendance">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div className={`progress${r.pct < 75 ? " gold" : ""}`} style={{ width: 80 }}>
+                        <span style={{ width: `${r.pct}%` }} />
+                      </div>
+                      {r.pct}%
+                      {r.certificationStatus === "ISSUED" && <span className="pill success">Issued</span>}
+                      {r.certificationStatus !== "ISSUED" && r.eligible && <span className="pill warning">Eligible</span>}
+                    </div>
+                  </td>
+                  <td data-label="CV">
+                    {r.cvUrl ? (
+                      <a href={r.cvUrl} target="_blank" rel="noopener noreferrer">
+                        View
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={showCollege ? 7 : 6} className="muted" style={{ textAlign: "center" }}>
+                  No students match your search.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
