@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Loader2, Paperclip } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { Icon } from "@/components/lbf/icons";
 
 export function FileUploadField({
   name,
@@ -51,33 +50,40 @@ export function FileUploadField({
   }
 
   return (
-    <div>
-      <Label htmlFor={`${name}-file`}>{label}</Label>
+    <div className="field">
+      {label}
       <input type="hidden" name={name} value={url} />
       {typeFieldName && <input type="hidden" name={typeFieldName} value={fileType} />}
-      <div className="mt-1.5 flex items-center gap-3">
-        <label
-          htmlFor={`${name}-file`}
-          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm text-indigo hover:bg-cream"
-        >
-          <Paperclip className="size-4" />
-          {url ? "Replace file" : "Choose file"}
-        </label>
+      <div className="box" style={{ borderStyle: "dashed", display: "flex", gap: 12, alignItems: "center", background: "var(--surface)" }}>
+        <Icon name="file" size={20} />
+        <span className="grow small">
+          {status === "uploading" ? (
+            "Uploading…"
+          ) : url ? (
+            <>
+              Uploaded —{" "}
+              <label htmlFor={`${name}-file`} className="link-btn" style={{ cursor: "pointer" }}>
+                replace
+              </label>
+            </>
+          ) : (
+            <>
+              Drop a file or{" "}
+              <label htmlFor={`${name}-file`} className="link-btn" style={{ cursor: "pointer" }}>
+                browse
+              </label>
+            </>
+          )}
+        </span>
         <input
           id={`${name}-file`}
           type="file"
           accept={category === "photo" ? ".jpg,.jpeg,.png,.webp" : ".pdf,.ppt,.pptx,.doc,.docx"}
-          className="hidden"
+          style={{ display: "none" }}
           onChange={handleChange}
         />
-        {status === "uploading" && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-        {status === "idle" && url && (
-          <span className="flex items-center gap-1 text-xs text-green-700">
-            <CheckCircle2 className="size-3.5" /> Uploaded
-          </span>
-        )}
       </div>
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      {error && <span className="error-text">{error}</span>}
     </div>
   );
 }

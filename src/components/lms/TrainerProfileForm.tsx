@@ -1,12 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RequiredMark } from "@/components/ui/required-mark";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateTrainerProfile, type UpdateTrainerProfileState } from "@/lib/actions/trainers";
 
@@ -28,80 +22,96 @@ export function TrainerProfileForm({ trainer }: { trainer: Trainer }) {
     updateTrainerProfile,
     null
   );
+  const initials = trainer.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <Label>Name</Label>
-          <Input value={trainer.name} disabled className="mt-1.5 bg-cream" />
-        </div>
-        <div>
-          <Label>Email</Label>
-          <Input value={trainer.email ?? ""} disabled className="mt-1.5 bg-cream" />
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone (optional)</Label>
-          <Input id="phone" name="phone" defaultValue={trainer.phone ?? ""} className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Hourly Rate</Label>
-          <Input value={`₹${trainer.hourlyRate}/hr`} disabled className="mt-1.5 bg-cream" />
-        </div>
+    <form action={formAction}>
+      <div className="row">
+        <section className="card grow">
+          <div className="split" style={{ marginBottom: 18 }}>
+            <h2 className="h2">Personal details</h2>
+          </div>
+          <div className="stack" style={{ gap: 16 }}>
+            <div className="stat-inline">
+              <span className="avatar lg">{initials}</span>
+              <div>
+                <div className="h3">{trainer.name}</div>
+                <div className="small muted">{trainer.email}</div>
+              </div>
+            </div>
+            <div className="grid" style={{ ["--min" as string]: "220px" }}>
+              <label className="field">
+                <span>
+                  Name <span className="req" aria-hidden="true">*</span>
+                </span>
+                <input className="input" type="text" value={trainer.name} disabled />
+              </label>
+              <label className="field">
+                <span>Email</span>
+                <input className="input" type="email" value={trainer.email ?? ""} disabled />
+                <span className="hint">Ask the admin to change your login email.</span>
+              </label>
+              <label className="field">
+                <span>Phone</span>
+                <input className="input" type="tel" name="phone" defaultValue={trainer.phone ?? ""} />
+              </label>
+              <label className="field">
+                <span>Hourly rate</span>
+                <input className="input" value={`₹${trainer.hourlyRate} / hr`} disabled />
+                <span className="hint">Set by the company admin.</span>
+              </label>
+            </div>
+            <label className="field">
+              <span>About you</span>
+              <textarea className="textarea" name="bio" rows={4} defaultValue={trainer.bio ?? ""} />
+              <span className="hint">Shown to admins when assigning batches.</span>
+            </label>
+            <FileUploadField name="cvUrl" label="CV / resume" category="cv" defaultUrl={trainer.cvUrl} />
+          </div>
+        </section>
+
+        <section className="card side">
+          <div className="split" style={{ marginBottom: 18 }}>
+            <h2 className="h2">Bank details (for invoice payments)</h2>
+          </div>
+          <div className="alert warning" style={{ marginBottom: 16 }}>
+            <span>
+              Account holder, account number and IFSC are <strong>required before you can generate an invoice</strong>.
+            </span>
+          </div>
+          <div className="stack" style={{ gap: 14 }}>
+            <label className="field">
+              <span>
+                Account holder name <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="text" name="bankAccountName" defaultValue={trainer.bankAccountName ?? ""} />
+            </label>
+            <label className="field">
+              <span>
+                Account number <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="text" name="bankAccountNumber" defaultValue={trainer.bankAccountNumber ?? ""} />
+            </label>
+            <label className="field">
+              <span>
+                IFSC code <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="text" name="bankIfsc" defaultValue={trainer.bankIfsc ?? ""} />
+            </label>
+            <label className="field">
+              <span>Bank name</span>
+              <input className="input" type="text" name="bankName" defaultValue={trainer.bankName ?? ""} />
+            </label>
+          </div>
+        </section>
       </div>
 
-      <div>
-        <Label htmlFor="bio">About You (optional)</Label>
-        <Textarea id="bio" name="bio" rows={4} defaultValue={trainer.bio ?? ""} className="mt-1.5" />
+      <div className="actionbar">
+        <span>{state?.ok && "Saved."}{state?.error && <span className="error-text">{state.error}</span>}</span>
+        <button className="btn btn-primary" type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Save changes"}
+        </button>
       </div>
-
-      <FileUploadField name="cvUrl" label="CV / Resume (optional)" category="cv" defaultUrl={trainer.cvUrl} />
-
-      <div>
-        <p className="mb-1 text-sm font-semibold text-indigo">Bank Details (for invoice payments)</p>
-        <p className="mb-3 text-xs text-muted-foreground">
-          Account holder name, account number, and IFSC are required before you can generate an invoice.
-        </p>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="bankAccountName">
-              Account Holder Name
-              <RequiredMark />
-            </Label>
-            <Input id="bankAccountName" name="bankAccountName" defaultValue={trainer.bankAccountName ?? ""} className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="bankAccountNumber">
-              Account Number
-              <RequiredMark />
-            </Label>
-            <Input id="bankAccountNumber" name="bankAccountNumber" defaultValue={trainer.bankAccountNumber ?? ""} className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="bankIfsc">
-              IFSC Code
-              <RequiredMark />
-            </Label>
-            <Input id="bankIfsc" name="bankIfsc" defaultValue={trainer.bankIfsc ?? ""} className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="bankName">Bank Name (optional)</Label>
-            <Input id="bankName" name="bankName" defaultValue={trainer.bankName ?? ""} className="mt-1.5" />
-          </div>
-        </div>
-      </div>
-
-      {state?.ok && (
-        <p className="flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Saved.
-        </p>
-      )}
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-
-      <Button type="submit" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Save
-      </Button>
     </form>
   );
 }
