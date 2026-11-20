@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getLucideIcon } from "@/lib/lucide-catalog";
-import { getIconByName } from "@/lib/icon-catalog";
 import { PublicShell } from "@/components/lbf/PublicShell";
 import { Icon } from "@/components/lbf/icons";
+import { CODING_PATTERN_LEVELS } from "@/lib/coding-patterns";
 
 export const revalidate = 0;
 
@@ -26,10 +26,9 @@ const WHO_WE_TRAIN = [
 ] as const;
 
 export default async function HomePage() {
-  const [homeFeatures, allTechnologies, featuredListings] = await Promise.all([
+  const [homeFeatures, allTechnologies] = await Promise.all([
     prisma.homeFeature.findMany({ orderBy: { order: "asc" } }),
     prisma.technology.findMany({ orderBy: { order: "asc" } }),
-    prisma.buyListing.findMany({ where: { enabled: true, featured: true, audience: "PUBLIC" }, include: { course: true }, take: 4 }),
   ]);
 
   const marqueeTech = allTechnologies.filter((t) => MARQUEE_SLUGS.includes(t.slug));
@@ -99,42 +98,10 @@ export default async function HomePage() {
             </div>
             <Link href="/technologies">See all technologies →</Link>
           </div>
-          <div style={{ position: "relative", overflow: "hidden", marginTop: 20, borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-            <div
-              style={{
-                position: "absolute",
-                inset: "0 auto 0 0",
-                width: 64,
-                zIndex: 1,
-                background: "linear-gradient(to right, var(--card), transparent)",
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                inset: "0 0 0 auto",
-                width: 64,
-                zIndex: 1,
-                background: "linear-gradient(to left, var(--card), transparent)",
-                pointerEvents: "none",
-              }}
-            />
-            <div className="animate-marquee" style={{ display: "flex", width: "max-content", padding: "20px 0" }}>
-              {[...techChips, ...techChips].map((t, i) => {
-                const LogoIcon = getIconByName(t.iconName);
-                return (
-                  <div
-                    key={`${t.id}-${i}`}
-                    title={t.name}
-                    style={{ display: "flex", flexShrink: 0, width: 130, flexDirection: "column", alignItems: "center", gap: 8, padding: "0 16px" }}
-                  >
-                    {LogoIcon && <LogoIcon size={40} color="var(--navy)" />}
-                    <span className="small muted" style={{ textAlign: "center" }}>{t.name}</span>
-                  </div>
-                );
-              })}
-            </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+            {techChips.map((t) => (
+              <span key={t.id} className="chip">{t.name}</span>
+            ))}
           </div>
         </div>
 
@@ -155,32 +122,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {featuredListings.length > 0 && (
-        <section className="card section">
-          <div className="split" style={{ marginBottom: 14 }}>
-            <div className="eyebrow">Own the course</div>
-            <Link href="/buy" className="small" style={{ fontWeight: 600, color: "var(--navy)" }}>
-              See all books →
-            </Link>
-          </div>
-          <div className="grid" style={{ ["--min" as string]: "240px" }}>
-            {featuredListings.map((listing) => {
-              const off = listing.mrp && listing.mrp > listing.price ? Math.round((1 - listing.price / listing.mrp) * 100) : 0;
-              return (
-                <Link key={listing.id} className="box hover stack" style={{ gap: 8, textDecoration: "none", color: "inherit" }} href={`/buy/${listing.course.slug}`}>
-                  <h3 className="h3">{listing.course.name}</h3>
-                  {listing.headline && <p className="small muted">{listing.headline}</p>}
-                  <span style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                    <span style={{ fontWeight: 700, fontSize: 18, color: "var(--navy)" }}>₹{listing.price}</span>
-                    {off > 0 && <span className="pill success">{off}% off</span>}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       <section
         className="card section"
@@ -209,6 +150,35 @@ export default async function HomePage() {
           <Link className="btn btn-ghost-light" href="/courses">
             Explore courses
           </Link>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="cp-feature" style={{ margin: 0 }}>
+          <div className="cp-f-text">
+            <div className="cp-num" style={{ color: "var(--gold)" }}>New · free to try</div>
+            <h3>See DSA patterns move</h3>
+            <p>14 levels of interactive visualisers — step through each pattern with the code highlighted. Start with the free pattern in any level.</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
+              <Link className="btn btn-gold" href="/coding-patterns">
+                Open Coding Patterns
+              </Link>
+              <Link className="btn cp-f-ghost" href="/courses">
+                All courses
+              </Link>
+            </div>
+          </div>
+          <div className="cp-f-levels">
+            {CODING_PATTERN_LEVELS.slice(0, 6).map((level, i) => (
+              <Link key={level.slug} className="cp-chip" href={`/coding-patterns/${level.slug}`}>
+                <b>{String(i + 1).padStart(2, "0")}</b>
+                {level.name}
+              </Link>
+            ))}
+            <Link className="cp-chip" href="/coding-patterns">
+              <b>+8</b>more levels
+            </Link>
+          </div>
         </div>
       </section>
     </PublicShell>

@@ -181,17 +181,17 @@ async function main() {
       description: "Hands-on training in languages and frameworks that make students job-ready developers.",
     },
     {
-      icon: "Brain",
+      icon: "Target",
       title: "Aptitude & Soft-Skills Training",
       description: "Quantitative, logical and verbal reasoning alongside communication and interview readiness.",
     },
     {
-      icon: "GraduationCap",
+      icon: "Building2",
       title: "Placement Support & Campus Partnerships",
       description: "Direct campus partnerships that connect classroom training to real placement outcomes.",
     },
     {
-      icon: "Building2",
+      icon: "Briefcase",
       title: "Corporate Onboarding Training",
       description: "Structured onboarding programs that get corporate freshers productive, faster.",
     },
