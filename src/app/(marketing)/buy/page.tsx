@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PublicShell } from "@/components/lbf/PublicShell";
+import { Icon } from "@/components/lbf/icons";
 import { canViewBuyListing } from "@/lib/buy-visibility";
 
 export const revalidate = 0;
@@ -8,7 +9,7 @@ export const revalidate = 0;
 export default async function BuyCatalogPage() {
   const all = await prisma.buyListing.findMany({
     where: { enabled: true },
-    include: { course: true },
+    include: { course: { include: { _count: { select: { modules: true } } } } },
     orderBy: [{ featured: "desc" }, { order: "asc" }],
   });
   const visible = await Promise.all(
@@ -21,46 +22,80 @@ export default async function BuyCatalogPage() {
       header={{
         active: "buy",
         eyebrow: "Buy",
-        title: "Own the course, at your own pace",
-        description: "Full course books and guides, delivered to your email the moment payment is confirmed.",
+        title: (
+          <>
+            Own the course, <em>at your own pace</em>
+          </>
+        ),
+        description: "Full course books and guides, emailed to you the moment your payment is confirmed. Read the free preview pages before you buy.",
       }}
     >
-      <div className="row lift">
-        <section className="card grow">
-          {listings.length === 0 ? (
-            <p className="empty">Nothing available to buy right now — check back soon.</p>
-          ) : (
-            <div className="grid" style={{ ["--min" as string]: "260px" }}>
-              {listings.map((listing) => {
-                const off = listing.mrp && listing.mrp > listing.price ? Math.round((1 - listing.price / listing.mrp) * 100) : 0;
-                return (
-                  <Link key={listing.id} className="box hover stack" style={{ gap: 10, textDecoration: "none", color: "inherit", position: "relative" }} href={`/buy/${listing.course.slug}`}>
-                    {listing.featured && (
-                      <span className="pill gold" style={{ position: "absolute", top: 14, right: 14 }}>
-                        Featured
+      <section className="card lift">
+        {listings.length === 0 ? (
+          <p className="empty">New course books are on their way.</p>
+        ) : (
+          <div className="by-grid">
+            {listings.map((listing) => {
+              const off = listing.mrp && listing.mrp > listing.price ? Math.round((1 - listing.price / listing.mrp) * 100) : 0;
+              return (
+                <Link key={listing.id} className="by-a" style={{ textDecoration: "none" }} href={`/buy/${listing.course.slug}`}>
+                  <article className="by-card">
+                    <div className="by-cover">
+                      <span>
+                        <Icon name="book" size={28} />
                       </span>
-                    )}
-                    <h3 className="h3">{listing.course.name}</h3>
-                    {listing.headline && <p className="small muted">{listing.headline}</p>}
-                    <span style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                      <span style={{ fontWeight: 700, fontSize: 22, color: "var(--navy)" }}>₹{listing.price}</span>
-                      {off > 0 && (
-                        <>
-                          <span className="muted" style={{ textDecoration: "line-through" }}>
-                            ₹{listing.mrp}
-                          </span>
-                          <span className="pill success">{off}% off</span>
-                        </>
-                      )}
-                    </span>
-                    <span className="small" style={{ fontWeight: 600, color: "var(--navy)" }}>View &amp; preview →</span>
-                  </Link>
-                );
-              })}
+                      <b>{listing.course.name}</b>
+                      <small>{listing.course._count.modules} course books</small>
+                      {off > 0 && <em>{off}% off</em>}
+                    </div>
+                    <div className="by-cbody">
+                      <h3>{listing.course.name}</h3>
+                      <p>{listing.headline}</p>
+                      <div className="by-price">
+                        <b>₹{listing.price}</b>
+                        {off > 0 && <s>₹{listing.mrp}</s>}
+                      </div>
+                      <span className="by-link">View &amp; preview →</span>
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="grid" style={{ ["--min" as string]: "220px" }}>
+          <div className="stat-inline">
+            <span className="icon-box gold">
+              <Icon name="eye" size={18} />
+            </span>
+            <div>
+              <div className="strong">Preview first</div>
+              <div className="small muted">Free pages from every book</div>
             </div>
-          )}
-        </section>
-      </div>
+          </div>
+          <div className="stat-inline">
+            <span className="icon-box gold">
+              <Icon name="money" size={18} />
+            </span>
+            <div>
+              <div className="strong">Pay by UPI</div>
+              <div className="small muted">Any UPI app, one-time payment</div>
+            </div>
+          </div>
+          <div className="stat-inline">
+            <span className="icon-box gold">
+              <Icon name="mail" size={18} />
+            </span>
+            <div>
+              <div className="strong">Books by email</div>
+              <div className="small muted">Sent once payment is verified</div>
+            </div>
+          </div>
+        </div>
+      </section>
     </PublicShell>
   );
 }
