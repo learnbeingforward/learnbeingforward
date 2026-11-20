@@ -44,6 +44,15 @@ export function PublicHeader({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
+    document.body.dataset.layout = "public";
+    document.body.dataset.active = active;
+    return () => {
+      delete document.body.dataset.layout;
+      delete document.body.dataset.active;
+    };
+  }, [active]);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setDrawerOpen(false);
     }
@@ -57,43 +66,41 @@ export function PublicHeader({
   }, [drawerOpen]);
 
   return (
-    <div data-layout="public">
+    <>
       <header className={`band${tall ? " tall" : ""}`} style={bandStyle}>
         <div className="container">
-          <div className="app-top">
-            <Link className="brand" href="/">
-              <Icon name="cap" size={26} />
-              <span className="wm">
-                Learn Being <span>Forward</span>
-              </span>
+          <Link className="brand" href="/">
+            <Icon name="cap" size={26} />
+            <span className="wm">
+              Learn Being <span>Forward</span>
+            </span>
+          </Link>
+
+          <nav className="nav" aria-label="Main">
+            {LINKS.map((l) => (
+              <Link key={l.key} href={l.href} className={l.key === active ? "active" : ""}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="nav-actions">
+            <Link className="btn btn-ghost-light btn-sm" href="/auth">
+              Login
             </Link>
-
-            <nav className="nav" aria-label="Main">
-              {LINKS.map((l) => (
-                <Link key={l.key} href={l.href} className={l.key === active ? "active" : ""}>
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="nav-actions">
-              <Link className="btn btn-ghost-light btn-sm" href="/auth">
-                Login
-              </Link>
-              <Link className="btn btn-gold btn-sm" href="/auth?mode=signup">
-                Sign Up
-              </Link>
-            </div>
-
-            <button
-              className="m-burger"
-              type="button"
-              aria-label="Open menu"
-              aria-expanded={drawerOpen}
-              onClick={() => setDrawerOpen(true)}
-            >
-              <Icon name="menu" size={22} />
-            </button>
+            <Link className="btn btn-gold btn-sm" href="/auth?mode=signup">
+              Sign Up
+            </Link>
           </div>
+
+          <button
+            className="m-burger"
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen(true)}
+          >
+            <Icon name="menu" size={22} />
+          </button>
         </div>
         {heroContent ?? (
           <div className="container band-hero">
@@ -142,6 +149,6 @@ export function PublicHeader({
           </p>
         </div>
       </aside>
-    </div>
+    </>
   );
 }

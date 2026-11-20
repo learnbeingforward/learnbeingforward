@@ -214,9 +214,12 @@ export default async function CompanyDashboardPage({
         <section className="card side">
           <div className="split" style={{ marginBottom: 18 }}>
             <h2 className="h2">Recent decisions</h2>
+            <Link className="btn btn-sm" href="/lms/company/requests">
+              View all
+            </Link>
           </div>
           <ul className="list">
-            {recentDecided.slice(0, 3).map((req) => (
+            {recentDecided.map((req) => (
               <li key={req.id} className="list-row">
                 <div className="grow">
                   <div className="stat-inline">
@@ -233,12 +236,6 @@ export default async function CompanyDashboardPage({
             ))}
             {recentDecided.length === 0 && <p className="muted">Nothing decided yet.</p>}
           </ul>
-          {recentDecided.length > 3 && (
-            <Link className="list-row" href="/lms/company/requests" style={{ marginTop: 8, justifyContent: "center", fontWeight: 600 }}>
-              View all decisions
-              <Icon name="chevR" size={16} />
-            </Link>
-          )}
         </section>
       </div>
 

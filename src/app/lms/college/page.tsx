@@ -76,14 +76,9 @@ export default async function CollegeDashboardPage() {
                 const pct = data.avgPct;
                 return (
                   <div key={name} className="b">
-                    <div className="track">
-                      <span className={pct >= 75 ? "gold" : ""} style={{ height: `${pct}%` }} />
-                    </div>
-                    <div className="label">
-                      {name.split(" ")[0]}
-                      <br />
-                      <strong style={{ color: "var(--text)" }}>{pct}%</strong>
-                    </div>
+                    <span className={pct >= 75 ? "gold" : ""} style={{ height: `${pct}%` }} />
+                    {name.split(" ")[0]}
+                    <strong style={{ color: "var(--text)" }}>{pct}%</strong>
                   </div>
                 );
               })}

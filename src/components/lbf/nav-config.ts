@@ -133,6 +133,7 @@ export const TRAINER_NAV: NavConfig = {
     { key: "schedule", label: "Schedule", icon: "calendar", pages: [{ key: "schedule", label: "Schedule", href: "/lms/trainer/schedule" }] },
     { key: "attendance", label: "Attendance", icon: "check", pages: [{ key: "attendance", label: "Attendance", href: "/lms/trainer/attendance" }] },
     { key: "content", label: "Content", icon: "upload", pages: [{ key: "content", label: "Content", href: "/lms/trainer/content" }] },
+    { key: "mou", label: "MOU", icon: "file", pages: [{ key: "mou", label: "MOU", href: "/lms/trainer/mou" }] },
     { key: "invoice", label: "Invoice", icon: "money", pages: [{ key: "invoice", label: "Invoice", href: "/lms/trainer/invoice" }] },
   ],
 };

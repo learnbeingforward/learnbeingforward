@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Icon } from "./icons";
-import { FooterLogoDrift } from "@/components/brand/FooterLogoDrift";
 
 export function SiteFooter() {
   return (
@@ -44,10 +43,7 @@ export function SiteFooter() {
             </ul>
           </div>
         </div>
-      </div>
-      <FooterLogoDrift />
-      <div className="container">
-        <div className="bottom" style={{ borderTop: "none", marginTop: 0 }}>
+        <div className="bottom">
           <span>© {new Date().getFullYear()} Learn Being Forward</span>
           <span>Privacy · Terms</span>
         </div>

@@ -64,11 +64,9 @@ export default async function TrainerDashboardPage() {
             <div className="label">Active batches</div>
             <div className="value">{activeBatches}</div>
           </div>
-          <div className={overdueSessions.length > 0 ? "tile warning" : "tile"}>
+          <div className={overdueSessions.length > 0 ? "tile danger" : "tile"}>
             <div className="label">Attendance to mark</div>
-            <div className="value" style={overdueSessions.length > 0 ? { color: "var(--danger)" } : undefined}>
-              {overdueSessions.length}
-            </div>
+            <div className="value">{overdueSessions.length}</div>
             {overdueSessions.length > 0 && (
               <div className="delta">oldest from {format(overdueSessions[0].sessionDate, "MMM d")}</div>
             )}

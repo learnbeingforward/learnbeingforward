@@ -11,10 +11,10 @@ export function PublicShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="lbf-scope">
+    <>
       <PublicHeader {...header} />
       <main className="container">{children}</main>
       <SiteFooter />
-    </div>
+    </>
   );
 }

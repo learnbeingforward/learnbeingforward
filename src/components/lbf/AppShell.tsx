@@ -14,13 +14,13 @@ const SHORT_LABEL: Record<string, string> = {
   "Query from Student": "Queries",
 };
 
-/** The redesigned portal shell — navy app-band (brand, role pill, bell,
- * user chip, logout) + top nav groups + gold sub-nav pills + page head,
- * then a white card lifted over the band. On phones: a compact top bar, a
- * bottom tab bar (first four sections + "More"), and a slide-in drawer with
- * every section and page — matching assets/layout.js's app-layout exactly.
- * Used by every non-assessment logged-in page; the assessment pages keep
- * DashboardShell as-is. */
+/** The portal shell — navy app-band (brand, role pill, bell, user chip,
+ * logout) + top nav groups + gold sub-nav pills + page head, then page
+ * content in <main>. On phones: a compact top bar, a bottom tab bar (first
+ * four sections + "More"), and a slide-in drawer with every section and
+ * page — ported element-for-element from design/rendered/super-admin/dashboard.html.
+ * Page content supplies its own <section className="card"> block(s); this
+ * shell only wraps them in the <main class="container"><div class="lift stack">. */
 export function AppShell({
   nav,
   active,
@@ -46,6 +46,18 @@ export function AppShell({
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const group = nav.groups.find((g) => g.pages.some((p) => p.key === active)) ?? nav.groups[0];
+  const roleKey = nav.label.toLowerCase().replace(/\s+/g, "-");
+
+  useEffect(() => {
+    document.body.dataset.layout = "app";
+    document.body.dataset.role = roleKey;
+    document.body.dataset.active = active;
+    return () => {
+      delete document.body.dataset.layout;
+      delete document.body.dataset.role;
+      delete document.body.dataset.active;
+    };
+  }, [roleKey, active]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -77,7 +89,7 @@ export function AppShell({
     .slice(0, 2);
 
   return (
-    <div className="lbf-scope" data-layout="app">
+    <>
       <SessionGuard />
       <header className="app-band">
         <div className="container">
@@ -147,7 +159,7 @@ export function AppShell({
       </header>
 
       <main className="container">
-        <section className="card lift stack">{children}</section>
+        <div className="lift stack">{children}</div>
       </main>
 
       <p className="app-footer">Powered by Learn Being Forward</p>
@@ -223,6 +235,6 @@ export function AppShell({
           </button>
         </div>
       </aside>
-    </div>
+    </>
   );
 }
