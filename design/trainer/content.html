@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Content | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="app" data-role="trainer" data-active="content">
+<header class="app-band"><div class="container">
+<div id="topbar"></div>
+<div class="page-head"><div><div class="crumb">Content</div><h1>Content</h1><p>Share what you've taught. Everything goes to the company admin for approval first.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<section class="card "><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Send course content to eligible students</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><p class="muted" style="margin-bottom:14px">Pick a batch to see which students hit the attendance threshold, choose modules, and submit for approval.</p><div class="grid" style="--min:280px"><label class="field"><span>Batch</span><select class="select"><option>Select a batch</option><option>Sunrise — Backend Development — Batch 1</option></select></label></div><div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th></th><th>Student</th><th>Attendance</th><th>Eligible</th></tr></thead><tbody><tr><td><input type="checkbox" checked aria-label="Select"></td><td>Riya Patel</td><td>100%</td><td><span class="pill success">Yes</span></td></tr><tr><td><input type="checkbox" aria-label="Select"></td><td>Rohan Kumar</td><td>50%</td><td><span class="pill warning">Below threshold</span></td></tr></tbody></table></div><div class="split" style="margin-top:14px"><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip">Server Frameworks ✓</span><span class="chip">REST API Design</span></div><button class="btn btn-primary" type="button" ><svg width="16" height="16" aria-hidden="true"><use href="#i-arrowR"/></svg>Send for approval</button></div></section><div class="row"><section class="card grow"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Upload new content</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="stack" style="gap:14px"><label class="field"><span>Title <span class="req" aria-hidden="true">*</span></span><input class="input" type="text"></label><label class="field"><span>Description <span class="req" aria-hidden="true">*</span></span><textarea class="textarea" rows="3"></textarea></label><div class="grid" style="--min:200px"><label class="field"><span>Course <span class="req" aria-hidden="true">*</span></span><select class="select"><option>Select course</option><option>Backend Development</option></select></label><label class="field"><span>Module <span class="req" aria-hidden="true">*</span></span><select class="select"><option>Select module</option><option>Server Frameworks</option></select></label></div><div class="field">File (PDF, PPT or Word)<div class="box" style="border-style:dashed;text-align:center;background:var(--surface)"><svg width="20" height="20" aria-hidden="true"><use href="#i-upload"/></svg><div class="small">Drop a file or <button class="link-btn" type="button">browse</button></div></div></div><button class="btn btn-primary" type="button" ><svg width="16" height="16" aria-hidden="true"><use href="#i-upload"/></svg>Upload</button></div></section><section class="card side"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Your content (0)</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="empty"><span class="icon-box gold" style="margin:0 auto 10px;width:48px;height:48px;border-radius:50%"><svg width="22" height="22" aria-hidden="true"><use href="#i-file"/></svg></span><div class="h3" style="color:var(--text)">Nothing uploaded yet.</div><p class="small muted" style="margin-top:6px">Uploads show here with status: Pending review → Sent to students.</p></div></section></div>
+</div></main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/layout.js"></script>
+
+</body>
+</html>

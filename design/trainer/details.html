@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Personal Details | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="app" data-role="trainer" data-active="details">
+<header class="app-band"><div class="container">
+<div id="topbar"></div>
+<div class="page-head"><div><div class="crumb">Trainer dashboard</div><h1>Welcome back, Demo Trainer</h1><p>Keep your details and bank info up to date — invoices need them.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<section class="card"><div class="grid" style="--min:180px"><div class="tile "><div class="label">Active batches</div><div class="value">1</div></div><div class="tile gold"><div class="label">Upcoming sessions</div><div class="value">2</div></div><div class="tile warning"><div class="label">Attendance pending</div><div class="value">2</div></div><div class="tile "><div class="label">Ready to invoice</div><div class="value">₹0</div></div></div></section><div class="row"><section class="card grow"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Personal details</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="stack" style="gap:16px"><div class="stat-inline"><span class="avatar lg">DT</span><div><div class="h3">Demo Trainer</div><div class="small muted">demo.trainer@learnbeingforward.in</div></div></div><div class="grid" style="--min:220px"><label class="field"><span>Name <span class="req" aria-hidden="true">*</span></span><input class="input" type="text" value="Demo Trainer"></label><label class="field"><span>Email</span><input class="input" type="email" value="demo.trainer@learnbeingforward.in"><span class="hint">Ask the admin to change your login email.</span></label><label class="field"><span>Phone</span><input class="input" type="tel"></label><label class="field"><span>Hourly rate</span><input class="input" value="₹1,000 / hr" disabled><span class="hint">Set by the company admin.</span></label></div><label class="field"><span>About you</span><textarea class="textarea" rows="4"></textarea><span class="hint">Shown to admins when assigning batches.</span></label><div class="field">CV / resume<div class="box" style="border-style:dashed;display:flex;gap:12px;align-items:center;background:var(--surface)"><svg width="20" height="20" aria-hidden="true"><use href="#i-file"/></svg><span class="grow small">Drop a PDF or <button class="link-btn" type="button">browse</button></span></div></div></div></section><section class="card side"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Bank details (for invoice payments)</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="alert warning" style="margin-bottom:16px"><svg width="18" height="18" aria-hidden="true"><use href="#i-money"/></svg><span>Account holder, account number and IFSC are <strong>required before you can generate an invoice</strong>.</span></div><div class="stack" style="gap:14px"><label class="field"><span>Account holder name <span class="req" aria-hidden="true">*</span></span><input class="input" type="text"></label><label class="field"><span>Account number <span class="req" aria-hidden="true">*</span></span><input class="input" type="text"></label><label class="field"><span>IFSC code <span class="req" aria-hidden="true">*</span></span><input class="input" type="text"></label><label class="field"><span>Bank name</span><input class="input" type="text"></label></div></section></div><div class="actionbar"><span></span><button class="btn btn-primary" type="button" >Save changes</button></div>
+</div></main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/layout.js"></script>
+
+</body>
+</html>

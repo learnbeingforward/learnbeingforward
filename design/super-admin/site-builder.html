@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Site Builder · Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{--navy:#1C2B4A;--navy-2:#24365C;--navy-3:#2E4370;--gold:#C9973C;--gold-soft:#F6EBD3;--gold-text:#8A6420;--cream:#FAF7F0;--surface:#F4F1E8;--text:#1E2533;--muted:#5D6472;--on-navy:#B7C1D6;--border:#E4DFD3;--border-2:#CFC8B8;
+--success:#1F8A4C;--success-soft:#E5F4EB;--success-text:#166534;--warning-soft:#FFF3E0;--warning-text:#92400E;--danger:#B91C1C;--danger-soft:#FDECEC;--danger-text:#7F1D1D;--info:#1E4FBF;--info-soft:#EAF0FC;--info-text:#1E3A8A;
+--shadow:0 8px 30px rgba(28,43,74,.12);--font:'Poppins',system-ui,sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:var(--font);background:var(--cream);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--navy);font-weight:600}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+h1,h2,h3,h4,p{margin:0}
+.muted{color:var(--muted)}.small{font-size:12px}.strong{font-weight:600}.mono{font-family:var(--mono)}
+.label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hidden{display:none!important}
+
+/* buttons, pills, inputs */
+.btn{height:40px;padding:0 16px;border-radius:6px;border:1px solid var(--border-2);background:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap;text-decoration:none;color:var(--text)}
+.btn:hover{border-color:var(--navy)}
+.btn-primary{background:var(--navy);border-color:var(--navy);color:#fff}.btn-primary:hover{background:var(--navy-2)}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:var(--navy)}.btn-gold:hover{background:#D6A54B}
+.btn-ghost{background:transparent;border-color:var(--navy-3);color:#fff}.btn-ghost:hover{border-color:#fff}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn-danger-o{color:var(--danger);border-color:#F1B4B4}
+.btn-sm{height:32px;padding:0 10px;font-size:11px}
+.btn-icon{width:32px;height:32px;padding:0}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--surface);color:#3B4252;white-space:nowrap}
+.pill.success{background:var(--success-soft);color:var(--success-text)}.pill.warning{background:var(--warning-soft);color:var(--warning-text)}.pill.danger{background:var(--danger-soft);color:var(--danger)}.pill.info{background:var(--info-soft);color:var(--info)}.pill.gold{background:var(--gold-soft);color:var(--gold-text)}.pill.navy{background:var(--navy);color:#fff}
+.input,.select,.textarea{width:100%;height:38px;border:1px solid var(--border-2);border-radius:8px;padding:0 10px;font-size:13px;background:#fff}
+.textarea{height:auto;padding:8px 10px;resize:vertical}
+.input.error{border-color:var(--danger)}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(201,151,60,.3)}
+.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#3B4252}
+.field .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px;font-weight:400;cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--navy);margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--border-2);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{height:32px;padding:0 12px;border:0;border-left:1px solid var(--border-2);background:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.seg button:first-child{border-left:0}.seg button[aria-pressed=true]{background:var(--navy);color:#fff;font-weight:600}
+.seg.dark{border-color:var(--navy-3);background:transparent}.seg.dark button{color:#D5DCEA;border-color:var(--navy-3)}.seg.dark button[aria-pressed=true]{background:var(--gold);color:var(--navy)}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;font-size:13px}
+.alert.info{background:var(--info-soft);color:var(--info-text)}.alert.success{background:var(--success-soft);color:var(--success-text)}.alert.warning{background:var(--warning-soft);color:#7C2D12}.alert.danger{background:var(--danger-soft);color:var(--danger-text)}.alert.gold{background:var(--gold-soft);color:#5C4214}
+.card{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:24px}
+.box{border:1px solid var(--border);border-radius:12px;background:#fff;padding:16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(var(--min,240px),1fr))}
+.split{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--navy);color:var(--gold);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none}
+.icon-box{width:36px;height:36px;border-radius:9px;background:var(--gold-soft);color:var(--gold-text);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.icon-box.navy{background:var(--navy);color:var(--gold)}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+.t th{background:var(--surface);text-align:left;padding:10px 14px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.t td{padding:11px 14px;border-top:1px solid var(--border);vertical-align:middle}
+.t-wrap{border:1px solid var(--border);border-radius:10px;overflow:auto;background:#fff}
+.kbd{font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid var(--border-2);border-radius:4px;background:#fff}
+
+/* ---------------- app shell ---------------- */
+.app-band{background:var(--navy);color:#fff;padding:14px 24px 0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:#fff;text-decoration:none}
+.brand .f{color:var(--gold)}.brand svg{color:var(--gold)}
+.brand .sep{width:1px;height:22px;background:var(--navy-3);margin:0 4px}
+.brand .sb{font-weight:600;color:#D5DCEA;font-size:14px}
+.role-pill{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--gold);color:var(--navy)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:3px 10px 3px 3px;border-radius:999px;background:var(--navy-2);font-size:12px}
+.user-chip .avatar{background:var(--gold);color:var(--navy);width:30px;height:30px}
+.tabsbar{display:flex;gap:4px;margin-top:12px;overflow-x:auto}
+.tabsbar button{height:42px;padding:0 14px;border:0;background:none;color:#D5DCEA;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:8px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tabsbar button:hover{color:#fff}
+.tabsbar button[aria-selected=true]{color:#fff;font-weight:700;border-bottom-color:var(--gold)}
+.tabsbar .count{background:var(--navy-3);border-radius:999px;padding:1px 7px;font-size:11px}
+.view{padding:24px;max-width:1360px;margin:0 auto}
+.view-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.view-head h1{font-size:24px}
+
+/* ---------------- editor ---------------- */
+.editor{display:grid;grid-template-columns:300px 1fr 320px;grid-template-rows:auto minmax(0,1fr);height:calc(100vh - 112px);min-height:620px}
+.edbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);grid-column:1/-1}
+.edbar .pname{font-weight:700;font-size:15px;border:1px dashed transparent;border-radius:6px;padding:2px 6px}
+.edbar .pname:hover{border-color:var(--border-2)}
+.edbar .saved{font-size:12px;color:var(--success-text);display:inline-flex;gap:6px;align-items:center}
+.lib,.props{background:#fff;overflow:auto;border-right:1px solid var(--border)}
+.props{border-right:0;border-left:1px solid var(--border)}
+.lib-tabs{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.lib-tabs button{flex:1;height:42px;border:0;background:none;font-size:12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer}
+.lib-tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--gold)}
+.lib-search{padding:12px;position:sticky;top:42px;background:#fff;z-index:2;border-bottom:1px solid var(--border)}
+.lib-group{border-bottom:1px solid var(--border)}
+.lib-group>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px}
+.lib-group>summary::-webkit-details-marker{display:none}
+.lib-group>summary .chev{margin-left:auto;transition:transform .15s}
+.lib-group[open]>summary .chev{transform:rotate(90deg)}
+.lib-page{padding:0 12px 10px}
+.lib-page .pg{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 2px 6px}
+.lib-item{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:6px;background:#fff;cursor:grab;user-select:none;font-size:12.5px}
+.lib-item:hover{border-color:var(--gold);box-shadow:0 3px 10px rgba(28,43,74,.08)}
+.lib-item:active{cursor:grabbing}
+.lib-item .ic{width:28px;height:28px;border-radius:7px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--navy);flex:none}
+.lib-item .nm{flex:1;min-width:0;line-height:1.25}
+.lib-item .nm small{display:block;color:var(--muted);font-size:10.5px}
+.lib-item .add{width:26px;height:26px;border-radius:6px;border:1px solid var(--border-2);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+.lib-item .add:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.lib-item.lock{opacity:.6}
+.layouts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.layout-tile{border:1px solid var(--border);border-radius:9px;padding:10px;cursor:grab;background:#fff;text-align:center;font-size:11px;font-weight:600}
+.layout-tile:hover{border-color:var(--gold)}
+.layout-tile .lt{display:grid;gap:4px;height:34px;margin-bottom:6px}
+.layout-tile .lt span{background:var(--gold-soft);border:1px dashed var(--gold);border-radius:4px}
+
+.stage{overflow:auto;background:#ECE7DA;padding:24px;position:relative}
+.stage .frame{margin:0 auto;background:var(--cream);box-shadow:0 10px 40px rgba(28,43,74,.18);border-radius:10px;overflow:hidden;transition:width .25s;min-height:600px}
+.cv-band{background:var(--navy);color:#fff;padding:12px 22px 70px}
+.cv-top{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.cv-menu{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--navy-3)}
+.cv-menu span{padding:5px 10px;border-radius:999px;font-size:11.5px;color:#D5DCEA}
+.cv-menu span.on{background:var(--navy-3);color:#fff;box-shadow:inset 0 -2px 0 var(--gold)}
+.cv-title{margin-top:18px}
+.cv-title [contenteditable]{outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px;border:1px dashed transparent}
+.cv-title [contenteditable]:hover{border-color:var(--navy-3)}
+.cv-title [contenteditable]:focus{border-color:var(--gold);background:var(--navy-2)}
+.cv-title h2{font-size:22px;color:#fff}.cv-title p{color:var(--on-navy);font-size:13px}
+.cv-body{margin:-50px 18px 0;padding-bottom:30px;position:relative}
+.cv-row{position:relative;margin-bottom:4px;border-radius:12px;border:1.5px dashed transparent;padding:4px}
+.cv-row:hover{border-color:var(--border-2)}
+.cv-row.sel{border-color:var(--gold);border-style:solid}
+.row-tools{position:absolute;top:-14px;left:12px;display:none;gap:4px;z-index:3;background:var(--navy);border-radius:7px;padding:3px}
+.cv-row:hover>.row-tools,.cv-row.sel>.row-tools{display:flex}
+.row-tools button{height:24px;min-width:24px;border:0;background:transparent;color:#fff;border-radius:5px;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 6px}
+.row-tools button:hover{background:var(--navy-3)}
+.cv-cols{display:grid;gap:14px}
+.cv-col{min-width:0;border-radius:10px;min-height:60px}
+.cv-col.drag-over-col{background:rgba(201,151,60,.08)}
+.blk{position:relative;user-select:none;-webkit-user-select:none;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(28,43,74,.08);padding:16px;outline:2px solid transparent;transition:outline-color .1s;cursor:pointer}
+.blk:hover{outline-color:#E8D3A8}
+.blk.sel{outline-color:var(--gold)}
+.blk.warn{box-shadow:0 0 0 2px #F59E0B inset}
+.blk.dragging{opacity:.35}
+.blk-tools{position:absolute;top:-13px;right:10px;display:none;gap:2px;background:var(--navy);border-radius:7px;padding:3px;z-index:4}
+.blk:hover .blk-tools,.blk.sel .blk-tools{display:flex}
+.blk-tools button{width:24px;height:24px;border:0;background:none;color:#fff;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.blk-tools button:hover{background:var(--navy-3)}
+.blk-tools .grip{cursor:grab}
+.blk-tag{position:absolute;top:-10px;left:12px;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--gold);color:var(--navy);padding:2px 7px;border-radius:999px;display:none}
+.blk.sel .blk-tag,.blk:hover .blk-tag{display:block}
+.warn-strip{margin:-16px -16px 12px;padding:6px 12px;background:#FFF3E0;color:#7C2D12;font-size:11.5px;border-radius:12px 12px 0 0;display:flex;gap:6px;align-items:center}
+.dz{height:14px;border-radius:6px;margin:1px 0;transition:background .12s,height .12s}
+.dz.over{height:46px;background:rgba(201,151,60,.15);border:2px dashed var(--gold)}
+.dz.row-dz.over{height:56px}
+body.dragging .dz{background:rgba(28,43,74,.05)}
+body.dragging .row-tools,body.dragging .blk-tools,body.dragging .blk-tag{display:none!important}
+body.dragging .dz.over{height:46px;background:rgba(201,151,60,.18)}
+.col-empty{border:1.5px dashed var(--border-2);border-radius:10px;min-height:90px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:10px;background:rgba(255,255,255,.5)}
+.col-empty.over{border-color:var(--gold);background:rgba(201,151,60,.12);color:var(--gold-text)}
+.page-empty{background:#fff;border:2px dashed var(--border-2);border-radius:14px;padding:50px 20px;text-align:center;color:var(--muted)}
+.page-empty.over{border-color:var(--gold);background:var(--gold-soft)}
+.device-tablet .cv-cols{grid-template-columns:1fr!important}
+.device-phone .cv-cols{grid-template-columns:1fr!important}
+.device-phone .cv-menu{display:none}
+
+/* mini renderers inside blocks */
+.m-title{font-weight:700;font-size:14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.m-tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.m-tile{background:var(--surface);border-radius:9px;padding:12px}
+.m-tile b{display:block;font-size:20px;margin-top:4px}
+.m-tile.g{background:var(--gold-soft)}.m-tile.s{background:var(--success-soft)}
+.m-bars{display:flex;align-items:flex-end;gap:8px;height:110px}
+.m-bars i{display:block;width:100%;max-width:28px;background:var(--navy);border-radius:5px 5px 0 0}
+.m-bars i.g{background:var(--gold)}
+.m-list{display:flex;flex-direction:column;gap:6px}
+.m-li{display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:8px;padding:8px 10px;font-size:12px}
+.m-li .grow{flex:1;min-width:0}
+.m-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.m-table th{background:var(--surface);text-align:left;padding:7px 9px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.m-table td{padding:7px 9px;border-top:1px solid var(--border)}
+.m-form{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.m-field{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:600}
+.m-input{height:34px;border:1px solid var(--border-2);border-radius:7px;background:#fff;display:flex;align-items:center;padding:0 9px;color:#9AA0AA;font-weight:400;font-size:12px}
+.m-cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.m-card{border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px}
+.m-ring{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.m-ring span{width:58px;height:58px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.m-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.m-cal div{height:38px;border:1px solid var(--border);border-radius:5px;font-size:9.5px;padding:3px;background:#fff}
+.m-cal div em{display:block;font-style:normal;background:var(--gold-soft);color:var(--gold-text);border-radius:3px;margin-top:2px;padding:0 2px;font-size:8.5px;font-weight:600}
+.m-progress{height:7px;border-radius:999px;background:#E8E3D7;overflow:hidden}.m-progress i{display:block;height:100%;background:var(--success)}
+.m-upload{border:1.5px dashed var(--border-2);border-radius:10px;padding:18px;text-align:center;background:var(--surface);font-size:12px;color:var(--muted)}
+.m-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.m-tabs span{padding:7px 10px;font-size:12px;color:var(--muted)}.m-tabs span.on{border-bottom:2px solid var(--gold);color:var(--text);font-weight:700}
+.m-img{height:140px;border-radius:10px;background:repeating-linear-gradient(45deg,#EFEAE0,#EFEAE0 10px,#F6F2EA 10px,#F6F2EA 20px);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+.data-chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--info-text);background:var(--info-soft);border-radius:999px;padding:2px 8px;font-weight:600}
+
+/* copy & remove (trim) */
+.trim{display:grid;grid-template-columns:290px 1fr 320px;grid-template-rows:auto minmax(0,1fr);height:calc(100vh - 112px);min-height:620px}
+.ttree{padding:8px 6px}
+.tnode{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px}
+.tnode.on{background:var(--gold-soft)}
+.tnode .tname{flex:1;min-width:0;display:flex;gap:8px;align-items:center;border:0;background:none;text-align:left;cursor:pointer;font-size:13px;font-weight:600;padding:6px 0}
+.tnode .tname span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tel{background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(28,43,74,.08);padding:14px 16px}
+.tel-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tel-items{display:flex;flex-wrap:wrap;gap:8px}
+.tel-items.tiles .titem,.tel-items.chart .titem{flex:1 1 140px;flex-direction:column;align-items:flex-start;background:var(--surface)}
+.tel-items.table .titem{background:var(--surface);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tel-items.list .titem,.tel-items.form .titem{flex:1 1 100%}
+.tel-items.cards .titem{flex:1 1 180px;min-height:60px}
+.titem{position:relative;display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:9px;padding:9px 34px 9px 12px;font-size:13px;background:#fff}
+.titem b{font-size:18px}
+.titem .btn{margin-left:auto}
+.titem-x{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:0;background:var(--danger-soft);color:var(--danger);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.titem-x:hover{background:var(--danger);color:#fff}
+.tel-items.tiles .titem-x,.tel-items.chart .titem-x{top:12px;transform:none}
+.titem:has(.btn-primary){padding-right:12px}
+.link-go{position:absolute;top:50%;right:34px;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:1px solid var(--border-2);background:#fff;color:var(--navy);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tel-items.tiles .link-go{top:12px;transform:none}
+.link-crumb{background:none;border:0;color:var(--gold);cursor:pointer;font:inherit;padding:0;text-decoration:underline}
+.sysrow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border)}
+.sysrow:hover{background:#FCFBF7}
+.tabs-row{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:14px 0 6px;overflow-x:auto}
+.tabs-row button{height:40px;padding:0 12px;border:0;background:none;border-bottom:2px solid transparent;cursor:pointer;font-size:13px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;color:var(--muted)}
+.tabs-row button[aria-selected=true]{border-bottom-color:var(--gold);color:var(--text);font-weight:700}
+.tabs-row .count{background:var(--surface);border-radius:999px;padding:0 7px;font-size:11px}
+/* AI create */
+.ai-steps{display:flex;gap:8px;flex-wrap:wrap}
+.ai-step{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;background:#fff;font-size:13px;color:var(--muted);box-shadow:0 2px 8px rgba(28,43,74,.06)}
+.ai-step span{width:26px;height:26px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.ai-step.on{color:var(--text);font-weight:700}.ai-step.on span{background:var(--navy);color:#fff}
+.ai-step.done span{background:var(--success);color:#fff}
+.cap-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.cap{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;text-align:left;font-size:13px}
+.cap span{flex:1}.cap:hover{border-color:var(--gold)}
+.cap.on{border-color:var(--navy);background:#F5F7FB;font-weight:600}
+.cap.on svg:last-child{color:var(--success)}
+/* password eye */
+.pw-wrap{position:relative;display:block;flex:1;min-width:0}
+.pw-wrap .input{padding-right:42px;width:100%}
+.pw-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:30px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.pw-eye:hover{color:var(--navy);background:var(--surface)}
+.pw-eye[aria-pressed=true]{color:var(--navy)}
+@media(max-width:1100px){.trim{grid-template-columns:260px 1fr}.trim .props{grid-column:1/-1}}
+@media(max-width:760px){.trim{grid-template-columns:1fr;height:auto}}
+/* sub-items: delete + reorder inside a section */
+.sub{position:relative;border-radius:9px}
+.sub-x{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--danger);color:#fff;border:2px solid #fff;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:5;padding:0;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.blk.sel .sub-x,.sub:hover>.sub-x{display:flex}
+.blk.sel .sub{outline:1px dashed var(--border-2);outline-offset:2px;cursor:grab}
+.sub.subover{outline:2px dashed var(--gold)!important;background:rgba(201,151,60,.1)}
+.m-bars>.sub{flex:1;height:100%;display:flex}
+.m-bars .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;font-size:10px;color:var(--muted)}
+.m-table th .sub{display:inline-block;padding-right:4px}
+.item-row{display:flex;gap:6px;align-items:center}
+.item-row .input,.item-row .select{height:32px;font-size:12.5px}
+.item-row>span:first-child{width:16px;font-size:11px;text-align:right}
+/* props panel */
+.props-head{padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.props-sec{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px}
+.props-sec .label{margin-bottom:-4px}
+.toggle{display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:10px}
+.toggle input{appearance:none;width:36px;height:20px;border-radius:999px;background:#D7D1C4;position:relative;cursor:pointer;flex:none;transition:background .15s}
+.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.toggle input:checked{background:var(--navy)}.toggle input:checked::after{left:18px}
+.outline-item{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:7px;font-size:12px;cursor:pointer}
+.outline-item:hover{background:var(--surface)}.outline-item.on{background:var(--gold-soft);font-weight:600}
+
+/* preview overlay */
+.overlay{position:fixed;inset:0;background:rgba(20,28,46,.6);z-index:50;display:flex;flex-direction:column}
+.ov-bar{background:var(--navy);color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ov-body{flex:1;overflow:auto;padding:24px;background:#ECE7DA}
+.modal-wrap{position:fixed;inset:0;background:rgba(20,28,46,.55);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:48px 16px;overflow:auto}
+.modal{background:#fff;border-radius:14px;box-shadow:var(--shadow);width:100%;max-width:560px;padding:26px}
+.modal.wide{max-width:760px}
+.modal h2{font-size:20px}
+.modal .foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.danger-head{display:flex;gap:12px;align-items:flex-start}
+.danger-head .icon-box{background:var(--danger-soft);color:var(--danger);width:44px;height:44px;border-radius:50%}
+.impact{list-style:none;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:8px}
+.impact li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--danger-soft);border-radius:8px;font-size:13px;color:var(--danger-text)}
+.choice{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.choice label{border:1.5px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.choice label:hover{border-color:var(--gold)}
+.choice input{position:absolute;opacity:0}
+.choice label:has(input:checked){border-color:var(--navy);background:#F7F8FB;box-shadow:inset 0 0 0 1px var(--navy)}
+.toast-wrap{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;animation:up .2s}
+.toast.warn{background:#7C2D12}
+@keyframes up{from{transform:translateY(10px);opacity:0}}
+.menu-tree .mi{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:#fff;margin-bottom:6px}
+.menu-tree .mi.child{margin-left:34px;background:var(--surface)}
+.menu-tree .mi input{border:0;background:transparent;font-weight:600;font-size:13px;flex:1;min-width:80px;padding:4px;border-radius:5px}
+.menu-tree .mi input:focus{outline:2px solid var(--gold)}
+.menu-tree .mi.dragover{border-color:var(--gold);box-shadow:0 -3px 0 var(--gold)}
+.ghost-note{font-size:11.5px;color:var(--muted);margin-top:4px}
+.portal-card{display:flex;flex-direction:column;gap:10px}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:18px}
+.kpi{background:#fff;border-radius:12px;padding:16px;box-shadow:0 4px 16px rgba(28,43,74,.06)}
+.kpi b{display:block;font-size:24px;margin-top:4px}
+.shortcuts{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+@media(max-width:1100px){.editor{grid-template-columns:260px 1fr;}.props{grid-column:1/-1;border-left:0;border-top:1px solid var(--border);max-height:none}}
+@media(max-width:760px){.editor{grid-template-columns:1fr;height:auto}.lib{max-height:320px}}
+/* m-sb-fix */@media (max-width:900px){.tabsbar{flex-wrap:wrap;overflow:visible!important}.tabsbar>*{flex:1 1 auto}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast-wrap" id="toasts" aria-live="polite"></div>
+<div id="modal-root"></div>
+
+<script>
+/* =====================================================================
+   Learn Being Forward — Site Builder (interactive design prototype)
+   Everything lives in one state object. In the real build, this state is
+   the JSON your backend stores per page / portal / user.
+   ===================================================================== */
+const ICONS={cap:'<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',plus:'<path d="M12 5v14M5 12h14"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',down:'<path d="M12 5v14M5 12l7 7 7-7"/>',grip:'<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.5.7 4 2.8 4 6"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',building:'<path d="M3 21h18M5 21V5l7-3 7 3v16M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/>',briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',home:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',layers:'<path d="M12 2l10 5-10 5L2 7z"/><path d="M2 12l10 5 10-5M2 17l10 5 10-5"/>',book:'<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',table:'<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M3 15h18M9 4v16"/>',form:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',check:'<path d="M5 12l5 5L20 7"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',text:'<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',heading:'<path d="M6 4v16M18 4v16M6 12h12"/>',image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',button:'<rect x="3" y="8" width="18" height="8" rx="4"/>',alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 18h.01"/>',grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',money:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/>',award:'<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',code:'<path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/>',file:'<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/>',message:'<path d="M4 5h16v11H8l-4 4z"/>',bell:'<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/>',undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',redo:'<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>',monitor:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',tablet:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/>',phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',chevR:'<path d="M9 6l6 6-6 6"/>',arrowL:'<path d="M19 12H5M11 6l-6 6 6 6"/>',sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',divider:'<path d="M3 12h18"/>',tabs:'<path d="M3 7h6V4h6v3h6v13H3z"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',logout:'<path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/>',rows:'<rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/>'};
+const ic=(n,s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||ICONS.grid}</svg>`;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=p=>p+Math.random().toString(36).slice(2,8);
+const now=()=>new Date().toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const COURSES=['All courses','Java & DSA','Full-Stack Development','Backend Development','Frontend Development','Data Science / AI Fundamentals','Robotics'];
+
+/* ---------- BLOCK CATALOGUE: every section on the live site + basics ---------- */
+/* roles = which portals may use it. data = where it reads from (auto-scoped per portal). */
+const ALL=['public','super-admin','college','trainer','student'], PRIV=['super-admin','college','trainer','student'], STAFF=['super-admin','college'];
+const CAT=[
+ // Student
+ ['stu-welcome','Welcome header & summary tiles','student','Dashboard','tiles',PRIV,'Enrollments, attendance','home'],
+ ['stu-course','Enrolled course card (attendance ring)','student','Dashboard','ring',['student','college','super-admin'],'Enrollments + attendance','award'],
+ ['stu-placement','Placement support banner','student','Dashboard','alert',['student','college','super-admin'],'Certificate eligibility','briefcase'],
+ ['stu-attchart','Attendance across courses','student','Attendance','chart',PRIV,'Attendance','chart'],
+ ['stu-cert','Course attendance + certificate','student','Attendance','tiles',['student','college','super-admin'],'Attendance, certificates','award'],
+ ['stu-sessions','Session-by-session attendance','student','Course progress','table',PRIV,'Sessions, attendance','table'],
+ ['stu-catalog','Course catalogue + request enrollment','student','Browse Courses','cards',['student','public','college'],'Courses, enrollment requests','book'],
+ ['stu-materials','Module materials (locked / request / download)','student','Content','list',['student','trainer','super-admin'],'Course content, access requests','file'],
+ ['stu-assess','Assigned assessments','student','Assessments','cards',['student','college','super-admin'],'Assessments','code'],
+ ['stu-profile','Student profile form + CV','student','Profile','form',['student','college','super-admin'],'Student profile','user'],
+ // College
+ ['col-tiles','College summary tiles','college','Overview','tiles',['college','super-admin'],'Students, attendance','home'],
+ ['col-attchart','Average attendance by course','college','Overview','chart',['college','super-admin','trainer'],'Attendance','chart'],
+ ['col-breakdown','Breakdown by course','college','Overview','list',['college','super-admin'],'Enrollments','list'],
+ ['col-branches','Students by branch','college','Students','cards',['college','super-admin'],'Students','users'],
+ ['col-students','Students table (search, filters, export)','college','Students','table',['college','super-admin','trainer'],'Students','table'],
+ ['col-addstudent','Add student (single + Excel)','college','Students','form',['college','super-admin'],'Student roster','plus'],
+ ['col-enroll','Bulk enroll students in a course','college','Courses','list',['college','super-admin'],'Enrollment requests','book'],
+ ['col-batches','Batch cards','college','Batches','cards',['college','super-admin','trainer'],'Batches','layers'],
+ ['col-exceptions','Attendance exception requests','college','Query from Student','list',['college','super-admin'],'Exception requests','message'],
+ ['col-contracts','Contracts waiting for decision','college','Contracts','list',['college','super-admin'],'Contracts, invoices','file'],
+ ['col-results','Shared assessment results','college','Assessment Data','table',['college','super-admin'],'Assessment results','chart'],
+ // Trainer
+ ['tr-tiles','Trainer summary tiles','trainer','Personal Details','tiles',['trainer','super-admin'],'Batches, sessions, invoices','home'],
+ ['tr-bank','Bank details form','trainer','Personal Details','form',['trainer','super-admin'],'Trainer profile','money'],
+ ['tr-batches','My batches','trainer','My Batches','cards',['trainer','super-admin','college'],'Batches','users'],
+ ['tr-schedule','Schedule list','trainer','Schedule','list',['trainer','super-admin','college','student'],'Sessions','calendar'],
+ ['tr-mark','Mark attendance (present / absent)','trainer','Attendance','list',['trainer','super-admin'],'Attendance','check'],
+ ['tr-upload','Upload content for approval','trainer','Content','upload',['trainer','super-admin'],'Trainer content','upload'],
+ ['tr-invoice','Invoice summary + generate','trainer','Invoice','tiles',['trainer'],'Sessions, rates','money'],
+ // Super admin
+ ['sa-requests','Enrollment requests by college','super-admin','Requests','list',['super-admin'],'Enrollment requests','list'],
+ ['sa-notifs','Notifications feed','super-admin','Notifications','list',PRIV,'Notifications','bell'],
+ ['sa-certq','Certificate queue (issue)','super-admin','Attendance','table',['super-admin'],'Certificates','award'],
+ ['sa-training','Training request form','super-admin','Colleges','form',['super-admin'],'Contracts','briefcase'],
+ ['sa-invoice','Generate college invoice','super-admin','Colleges','list',['super-admin'],'Invoices','money'],
+ ['sa-calendar','Training schedule calendar','super-admin','Schedule','calendar',['super-admin','trainer','college','student'],'Sessions','calendar'],
+ ['sa-reset','Reset passwords','super-admin','Manage Accounts','form',['super-admin'],'Accounts','key'],
+ ['sa-access','Employee access checkboxes','super-admin','Employee Access','list',['super-admin'],'Permissions','shield'],
+ ['sa-assess','Assessment categories','super-admin','Assessments','cards',['super-admin'],'Assessments','code'],
+ ['sa-subs','Assessment submissions table','super-admin','Submissions','table',['super-admin','college'],'Submissions','table'],
+ // Public site
+ ['pub-hero','Hero banner (title + 2 buttons)','public','Home','hero',['public'],'—','home'],
+ ['pub-stats','Stats strip','public','Home','tiles',['public'],'—','chart'],
+ ['pub-pillars','"What we do" pillars','public','Home','cards',['public'],'Site content','grid'],
+ ['pub-courses','Course cards','public','Courses','cards',['public','student'],'Courses','book'],
+ ['pub-team','Trainer profiles','public','Team','cards',['public'],'Employees','users'],
+ ['pub-contact','Contact form','public','Contact','form',['public'],'Messages','message'],
+].map(([id,name,portal,page,kind,roles,data,icon])=>({id,name,portal,page,kind,roles,data,icon}));
+const BASICS=[
+ ['b-heading','Heading','heading','heading'],['b-text','Paragraph text','text','text'],['b-button','Button','button','button'],['b-image','Image','image','image'],
+ ['b-alert','Notice / alert','alert','alert'],['b-divider','Divider','divider','divider'],['b-tiles','Stat tiles','tiles','grid'],['b-table','Data table','table','table'],
+ ['b-cards','Card grid','cards','grid'],['b-tabs','Tabs','tabs','tabs'],['b-form','Form (save new data)','form','form'],['b-upload','File upload','upload','upload'],['b-calendar','Calendar','calendar','calendar'],['b-timeline','Timeline','list','history'],
+].map(([id,name,kind,icon])=>({id,name,portal:'basic',page:'Basics',kind,roles:ALL,data:'',icon}));
+const FIELDS=[['f-text','Text input','Text'],['f-number','Number','Number'],['f-dropdown','Dropdown','Dropdown'],['f-date','Date','Date'],['f-file','File','File'],['f-check','Checkbox','Checkbox'],['f-long','Long text','Long text'],['f-email','Email','Email'],['f-phone','Phone','Phone']]
+ .map(([id,name,ftype])=>({id,name,portal:'field',page:'Form fields',kind:'field',ftype,roles:ALL,data:'',icon:'form'}));
+const BY_ID=Object.fromEntries([...CAT,...BASICS,...FIELDS].map(c=>[c.id,c]));
+BY_ID['x-copied']={id:'x-copied',name:'Copied section',portal:'basic',page:'Copied',kind:'copied',roles:ALL,data:'',icon:'copy'};
+const LAYOUTS={'1':[1],'2':[1,1],'2a':[2,1],'2b':[1,2],'3':[1,1,1],'4':[1,1,1,1]};
+const LAYOUT_NAMES={'1':'Full width','2':'Two halves','2a':'Wide + narrow','2b':'Narrow + wide','3':'Three columns','4':'Four columns'};
+
+/* ---------- STATE ---------- */
+function seed(){
+ const P=(id,name,builtin,basedOn,scope,icon)=>({id,name,builtin,basedOn,scope,icon});
+ const mkRows=(...specs)=>specs.map(([lay,...cols])=>({id:uid('r'),layout:lay,cols:cols.map(list=>({id:uid('c'),blocks:list.map(t=>newBlock(t))}))}));
+ return {
+  portals:[P('public','Public website',true,null,'Anyone visiting the site','globe'),P('super-admin','Super Admin',true,null,'All colleges, trainers and students','shield'),
+   P('college','College',true,null,"This college's own students",'building'),P('trainer','Trainer',true,null,"This trainer's own batches",'briefcase'),
+   P('student','Student',true,null,'The logged-in student only','user'),P('placement','Placement Officer',false,'college',"Students of the colleges assigned to them",'target')],
+  menus:{
+   'public':[{id:'m1',label:'Home',icon:'home',sys:1,children:[]},{id:'m2',label:'Courses',icon:'book',sys:1,children:[]},{id:'m3',label:'Technologies',icon:'code',sys:1,children:[]},{id:'m4',label:'About',icon:'user',sys:1,children:[]},{id:'m5',label:'Team',icon:'users',sys:1,children:[]},{id:'m6',label:'Contact',icon:'message',sys:1,children:[]}],
+   'super-admin':[{id:'s1',label:'Overview',icon:'home',sys:1,children:[]},{id:'s2',label:'Accounts',icon:'users',sys:1,children:[]},{id:'s3',label:'Registrations & Approvals',icon:'list',sys:1,children:[]},{id:'s4',label:'Assessments',icon:'code',sys:1,children:[]},{id:'s5',label:'Course Content',icon:'book',sys:1,children:[]},{id:'s6',label:'Site Builder',icon:'layers',sys:1,children:[]},{id:'s7',label:'Profile',icon:'user',sys:1,children:[]}],
+   'college':[{id:'c1',label:'Overview',icon:'home',sys:1,children:[]},{id:'c2',label:'Students',icon:'users',sys:1,children:[]},{id:'c3',label:'Courses',icon:'book',sys:1,children:[]},{id:'c4',label:'Batches',icon:'layers',sys:1,children:[]},{id:'c5',label:'Query from Student',icon:'message',sys:1,children:[]},{id:'c6',label:'Contracts',icon:'file',sys:1,children:[]},{id:'c7',label:'Assessment Data',icon:'chart',sys:1,children:[]},{id:'c8',label:'Profile',icon:'user',sys:1,children:[]}],
+   'trainer':[{id:'t1',label:'Personal Details',icon:'user',sys:1,children:[]},{id:'t2',label:'My Batches',icon:'users',sys:1,children:[]},{id:'t3',label:'Schedule',icon:'calendar',sys:1,children:[]},{id:'t4',label:'Attendance',icon:'check',sys:1,children:[]},{id:'t5',label:'Content',icon:'upload',sys:1,children:[]},{id:'t6',label:'Invoice',icon:'money',sys:1,children:[{id:'t6a',label:'Weekly Report',pageId:'p3'}]}],
+   'student':[{id:'u1',label:'My Dashboard',icon:'home',sys:1,children:[]},{id:'u2',label:'Attendance',icon:'check',sys:1,children:[]},{id:'u3',label:'Browse Courses',icon:'book',sys:1,children:[]},{id:'u4',label:'Content',icon:'file',sys:1,children:[]},{id:'u5',label:'Assessments',icon:'code',sys:1,children:[]},{id:'u6',label:'Profile',icon:'user',sys:1,children:[]},{id:'u7',label:'Internships',icon:'briefcase',pageId:'p1',children:[]}],
+   'placement':[{id:'pl1',label:'Placement Dashboard',icon:'target',pageId:'p2',children:[]}]
+  },
+  pages:[
+   {id:'p1',name:'Internship Tracker',subtitle:'Log internships and offers in one place.',portal:'student',icon:'briefcase',status:'Draft',updated:'14 Nov, 18:20',records:0,
+    rows:mkRows(['1',['stu-welcome']],['2a',['b-form'],['b-alert']],['1',['b-table']])},
+   {id:'p2',name:'Placement Dashboard',subtitle:'Readiness of students across your assigned colleges.',portal:'placement',icon:'target',status:'Published',updated:'13 Nov, 11:05',records:0,
+    rows:mkRows(['1',['col-tiles']],['2a',['col-attchart'],['col-breakdown']],['1',['col-students']])},
+   {id:'p3',name:'Weekly Trainer Report',subtitle:'Submit a short report for each week of training.',portal:'trainer',icon:'file',status:'Published',updated:'12 Nov, 16:40',records:14,
+    rows:mkRows(['2a',['b-form'],['tr-schedule']])},
+  ],
+  users:[
+   {id:'u-1',name:'Aadhya Joshi',email:'aadhya.joshi6@extradata.in',portal:'student',org:'Crestview College of Engineering',status:'Active',records:46},
+   {id:'u-2',name:'Demo Trainer',email:'demo.trainer@learnbeingforward.in',portal:'trainer',org:'Learn Being Forward',status:'Active',records:22},
+   {id:'u-3',name:'Crestview Admin',email:'admin@crestview.edu',portal:'college',org:'Crestview College of Engineering',status:'Active',records:60},
+   {id:'u-4',name:'Rahul Sharma',email:'placements@learnbeingforward.in',portal:'placement',org:'Crestview, Pinnacle',status:'Active',records:3},
+   {id:'u-5',name:'Sneha R',email:'sneha.r@learnbeingforward.in',portal:'super-admin',org:'Employee · Assessments only',status:'Active',records:5},
+  ],
+  history:[{t:'14 Nov, 18:20',who:'Lohit Kumar',what:'Saved draft of “Internship Tracker”',page:'p1'},{t:'13 Nov, 11:05',who:'Lohit Kumar',what:'Published “Placement Dashboard”',page:'p2'},{t:'13 Nov, 10:40',who:'Lohit Kumar',what:'Created portal “Placement Officer” (based on College)'},{t:'12 Nov, 16:40',who:'Lohit Kumar',what:'Published “Weekly Trainer Report”',page:'p3'}],
+ };
+}
+const TILE_DEFAULTS={'stu-welcome':[['Enrolled courses','2'],['Overall attendance','90%'],['Next class','Mon 9:30'],['Assessments due','0']],'col-tiles':[['Students enrolled','60'],['Average attendance','66%'],['Courses active','6'],['Certificates issued','12']],'tr-tiles':[['Active batches','1'],['Upcoming sessions','2'],['Attendance pending','2'],['Ready to invoice','₹0']],'stu-cert':[['Classes held','20'],['Attended','18'],['Upcoming','14'],['Attendance','90%']],'tr-invoice':[['Sessions ready','0'],['Total hours','0'],['Rate','₹1,000/hr'],['Total','₹0']],'pub-stats':[['Languages taught','6+'],['Frameworks','10+'],['Colleges trained','75+'],['Students placement-ready','1000s']]};
+function defaultItems(b){const c=BY_ID[b.type];const mk=(l,v,t)=>({id:uid('i'),label:l,value:v,type:t||'Text'});
+ const sample=c.portal==='student'?['Java & DSA','Full-Stack Development','Backend Development']:c.portal==='college'?['Crestview — CSE','Information Technology','Mechanical Engineering']:c.portal==='trainer'?['Riya Patel','Riya Agarwal','Rohan Kumar']:c.portal==='public'?['Programming & Full-Stack','Aptitude & Soft Skills','Placement Support']:['Crestview College','Pinnacle Institute','Global Institute'];
+ switch(c.kind){
+  case 'tiles':return (TILE_DEFAULTS[b.type]||[['Metric one','0'],['Metric two','0'],['Metric three','0'],['Metric four','0']]).map(([l,v])=>mk(l,v));
+  case 'chart':return [['Java',90],['FSD',66],['Backend',73],['Frontend',58],['Data',75],['Robotics',61]].map(([l,v])=>mk(l,String(v)));
+  case 'table':return (b.type==='b-table'?['Company','Role','Stipend','Start date','Status']:c.portal==='student'?['Date','Session','Module','Status']:c.portal==='super-admin'?['Student','College','Course','Status']:c.portal==='trainer'?['Student','Batch','Attendance','Status']:['Student','Branch','Course','Attendance']).map(l=>mk(l));
+  case 'form':return (b.type==='b-form'?[['Company name','Text'],['Role','Text'],['Stipend (₹/month)','Number'],['Start date','Date'],['Offer letter','File']]:b.type==='tr-bank'?[['Account holder','Text'],['Account number','Number'],['IFSC code','Text'],['Bank name','Text']]:b.type==='sa-reset'?[['Account email','Email'],['New password','Text']]:b.type==='pub-contact'?[['Name','Text'],['Email','Email'],['Message','Long text']]:b.type==='col-addstudent'?[['Full name','Text'],['Email','Email'],['USN','Text'],['Branch','Dropdown']]:b.type==='sa-training'?[['College','Dropdown'],['Course','Dropdown'],['Training type','Dropdown'],['Start date','Date']]:[['Full name','Text'],['Email','Email'],['Branch','Dropdown'],['Semester','Dropdown']]).map(([l,t])=>mk(l,'',t));
+  case 'list':return sample.map(l=>mk(l));
+  case 'cards':return (b.type==='stu-catalog'||b.type==='pub-courses'?['Java & DSA','Full-Stack Development','Frontend Development']:b.type==='sa-assess'?['Aptitude','Technical aptitude','Coding']:sample).map(l=>mk(l));
+ }return null;}
+function itemsOf(b){if(!Array.isArray(b.props.items))b.props.items=defaultItems(b)||[];return b.props.items;}
+function sub(b,i,inner,preview){if(preview)return inner;const it=b.props.items[i];return `<div class="sub" draggable="true" data-subb="${b.id}" data-subi="${i}">${inner}<button class="sub-x" data-subdel="${b.id}:${i}" aria-label="Remove ${esc(it.label)}" title="Remove ${esc(it.label)}">${ic('x',11)}</button></div>`;}
+function noItems(b,preview){return !preview&&!b.props.items.length?`<div class="col-empty" style="min-height:56px">All items removed — add them back from the settings panel on the right.</div>`:'';}
+function newBlock(type){const c=BY_ID[type];const b={id:uid('b'),type,props:{title:c.kind==='field'?c.name:c.name,showTitle:c.kind!=='heading'&&c.kind!=='divider'&&c.kind!=='hero',course:'All courses'}};
+ if(c.kind==='heading')b.props.text='Section heading';if(c.kind==='text')b.props.text='Write a short description for this part of the page.';
+ if(c.kind==='button'){b.props.label='Open';b.props.style='Primary';}if(c.kind==='alert')b.props.text=c.portal==='basic'?'Add an important note for users here.':'';if(c.kind==='alert')b.props.tone='gold';
+ if(type==='b-form'){b.props.submit='Save';b.props.saveTo='New data set: Internships';}
+  if(c.kind==='field'){b.props.label=c.name;b.props.required=false;b.props.ftype=c.ftype;b.props.options='Option 1, Option 2';}
+ if(type==='b-table'){b.props.search=true;b.props.export=true;}
+ itemsOf(b);
+ return b;}
+
+let S; try{S=JSON.parse(localStorage.getItem('lbf-sitebuilder')||'null')}catch(e){S=null}
+if(!S||!S.pages)S=seed();
+const save=()=>{try{localStorage.setItem('lbf-sitebuilder',JSON.stringify(S))}catch(e){}};
+const UI={view:'ai',pageId:null,sel:null,libTab:'sections',libQ:'',device:'desktop',undo:[],redo:[],openGroups:{student:1,basic:1}};
+const portal=id=>S.portals.find(p=>p.id===id)||{name:id,scope:'',icon:'grid'};
+const roleOf=id=>{const p=portal(id);return p.builtin?p.id:p.basedOn};
+const curPage=()=>S.pages.find(p=>p.id===UI.pageId);
+
+/* ---------- toasts & modals ---------- */
+function toast(msg,warn){const t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.innerHTML=ic(warn?'alert':'check')+esc(msg);const w=document.getElementById('toasts');while(w.children.length>1)w.firstChild.remove();w.append(t);setTimeout(()=>t.remove(),3200);}
+function modal(html,wide){const r=document.getElementById('modal-root');r.innerHTML=`<div class="modal-wrap" role="dialog" aria-modal="true"><div class="modal ${wide?'wide':''}">${html}</div></div>`;
+ r.querySelector('.modal-wrap').addEventListener('mousedown',e=>{if(e.target.classList.contains('modal-wrap'))closeModal()});enhancePw(r);const f=r.querySelector('input,select,textarea,button');f&&f.focus();return r;}
+function closeModal(){document.getElementById('modal-root').innerHTML='';}
+
+/* ---------- mini renderers (what each block looks like) ---------- */
+function scopeText(page){const p=portal(page.portal);return p.scope;}
+function renderBlock(b,page,preview){
+ const c=BY_ID[b.type];if(!c)return '';const p=b.props;const role=roleOf(page.portal);
+ const sample=c.portal==='student'?['Java & DSA','Full-Stack Development','Backend Development']:c.portal==='college'?['Crestview — CSE','Information Technology','Mechanical Engineering']:c.portal==='trainer'?['Backend — Batch 1','Server Frameworks','REST API Design']:['Crestview College','Pinnacle Institute','Global Institute'];
+ const title=p.showTitle&&p.title?`<div class="m-title"><span>${esc(p.title)}${p.readOnly?' <span class="pill" style="margin-left:6px">View only</span>':''}</span>${c.data&&c.data!=='—'&&!preview?`<span class="data-chip">${ic('link',11)}${esc(c.data)}</span>`:''}</div>`:'';
+ let body='';
+ switch(c.kind){
+  case 'heading':body=`<h3 style="font-size:${p.size==='Small'?16:p.size==='Large'?26:20}px;text-align:${(p.align||'Left').toLowerCase()}">${esc(p.text)}</h3>`;break;
+  case 'text':body=`<p class="muted" style="font-size:13.5px">${esc(p.text)}</p>`;break;
+  case 'button':body=`<span class="btn ${p.style==='Gold'?'btn-gold':p.style==='Outline'?'':'btn-primary'}">${esc(p.label)}</span>`;break;
+  case 'image':body=`<div class="m-img">${ic('image',18)}&nbsp;${esc(p.alt||'Image')}</div>`;break;
+  case 'divider':body='<hr style="border:0;border-top:1px solid var(--border);margin:4px 0">';break;
+  case 'alert':{const tone=p.tone||'gold';body=`<div class="alert ${tone}">${ic(c.icon,16)}<span>${esc(p.text||({'stu-placement':'Placement support is unlocked — keep your CV up to date.'}[b.type]||'Notice text'))}</span></div>`;break;}
+  case 'hero':body=`<div style="background:var(--navy);border-radius:10px;padding:26px;text-align:center;color:#fff"><div class="label" style="color:var(--gold)">Placement-focused training</div><div style="font-size:24px;font-weight:700;margin-top:6px">Learn Being <span style="color:var(--gold)">Future-Ready</span></div><div class="row" style="justify-content:center;margin-top:12px"><span class="btn btn-gold btn-sm">Explore courses</span><span class="btn btn-ghost btn-sm">Partner with us</span></div></div>`;break;
+  case 'tiles':{const it=itemsOf(b);body=`<div class="m-tiles">${it.map((x,i)=>sub(b,i,`<div class="m-tile ${i===1?'s':i===2?'g':''}"><span class="label">${esc(x.label)}</span><b>${esc(x.value||'—')}</b></div>`,preview)).join('')}</div>`+noItems(b,preview);break;}
+  case 'chart':{const it=itemsOf(b);body=`<div class="m-bars">${it.map((x,i)=>sub(b,i,`<div class="bar"><i class="${(+x.value)>=75?'g':''}" style="height:${Math.max(4,Math.min(100,+x.value||0))}%"></i>${esc(x.label)}</div>`,preview)).join('')}</div>`+noItems(b,preview);break;}
+  case 'ring':body=`<div class="row" style="gap:16px;flex-wrap:nowrap"><div class="m-ring" style="background:conic-gradient(var(--success) 324deg,#E8E3D7 0)"><span>90%</span></div><div><div class="label">Enrolled course</div><div style="font-weight:700;font-size:16px">${esc(p.course!=='All courses'?p.course:'Java & DSA')}</div><div class="small muted">Trainer: Anil Deshmukh · 18/20 classes</div><span class="pill success" style="margin-top:6px">Certification: Eligible</span></div></div>`;break;
+  case 'table':{const it=itemsOf(b);body=`${p.search?'<div class="m-input" style="margin-bottom:8px;max-width:240px">'+ic('search',13)+'&nbsp;Search…</div>':''}${it.length?`<div class="t-wrap"><table class="m-table"><thead><tr>${it.map((x,i)=>`<th>${sub(b,i,esc(x.label),preview)}</th>`).join('')}</tr></thead><tbody>${[0,1,2].map(r=>`<tr>${it.map((x,j)=>`<td>${j===it.length-1?(r===2?'<span class="pill warning">Pending</span>':'<span class="pill success">Done</span>'):j===0?['Aadhya Joshi','Varun Kumar','Riya Patel'][r]:'—'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:''}`+noItems(b,preview);break;}
+  case 'list':{const it=itemsOf(b);body=`<div class="m-list">${it.map((x,i)=>sub(b,i,`<div class="m-li"><span class="avatar" style="width:26px;height:26px;font-size:10px">${esc(x.label[0]||'?')}</span><span class="grow"><b>${esc(x.label)}</b><br><span class="muted">${b.type==='tr-mark'?'USN: SU26CS0'+(19+i):'Updated today'}</span></span>${b.type==='tr-mark'?'<span class="seg"><button aria-pressed="true">Present</button><button>Absent</button></span>':b.type==='stu-materials'?['<span class="pill success">Download</span>','<span class="pill warning">Requested</span>','<span class="pill">Locked</span>'][i%3]:'<span class="pill">View</span>'}</div>`,preview)).join('')}</div>`+noItems(b,preview);break;}
+  case 'cards':{const it=itemsOf(b);body=`<div class="m-cards">${it.map((x,i)=>sub(b,i,`<div class="m-card"><span class="icon-box navy" style="width:28px;height:28px">${ic(c.icon,14)}</span><div style="font-weight:700;margin-top:8px">${esc(x.label)}</div><div class="muted small">Short description</div></div>`,preview)).join('')}</div>`+noItems(b,preview);break;}
+  case 'form':{const it=itemsOf(b);body=`<div class="m-form">${it.map((x,i)=>sub(b,i,`<label class="m-field">${esc(x.label)}<span class="m-input">${x.type==='Dropdown'?'Select…':x.type==='Date'?'dd / mm / yyyy':x.type==='File'?ic('upload',12)+'&nbsp;Choose file':x.type==='Number'?'0':x.type==='Checkbox'?'☐ Yes':''}</span></label>`,preview)).join('')}</div>`+noItems(b,preview)+`<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">${b.type==='b-form'&&!preview?`<span class="data-chip">${ic('table',11)}Saves to: ${esc((p.saveTo||'').replace('New data set: ',''))}</span>`:'<span></span>'}<span class="btn btn-primary btn-sm">${esc(p.submit||'Save')}</span></div>`;break;}
+  case 'copied':{const it=itemsOf(b),k=p.kindOrig;const W=(i,inner)=>sub(b,i,inner,preview);
+   if(k==='tiles'||k==='chart')body=`<div class="m-tiles">${it.map((x,i)=>W(i,`<div class="m-tile ${i===1?'s':i===2?'g':''}"><span class="label">${esc(x.label)}</span><b>${esc(x.value||'—')}${k==='chart'?'%':''}</b></div>`)).join('')}</div>`;
+   else if(k==='table')body=it.length?`<div class="t-wrap"><table class="m-table"><thead><tr>${it.map((x,i)=>`<th>${W(i,esc(x.label))}</th>`).join('')}</tr></thead><tbody>${[0,1].map(()=>`<tr>${it.map(()=>'<td>—</td>').join('')}</tr>`).join('')}</tbody></table></div>`:'';
+   else if(k==='form')body=`<div class="m-form">${it.map((x,i)=>W(i,`<label class="m-field">${esc(x.label)}<span class="m-input"></span></label>`)).join('')}</div>`;
+   else if(k==='cards')body=`<div class="m-cards">${it.map((x,i)=>W(i,`<div class="m-card"><div style="font-weight:700">${esc(x.label)}</div>${x.value?`<div class="muted small">${esc(x.value)}</div>`:''}</div>`)).join('')}</div>`;
+   else if(k==='list'||k==='ring')body=`<div class="m-list">${it.map((x,i)=>W(i,`<div class="m-li"><span class="grow"><b>${esc(x.label)}</b>${x.value?' · '+esc(x.value):''}</span></div>`)).join('')}</div>`;
+   else if(k==='alert'||k==='text')body=`<div class="alert gold">${ic('alert',15)}<span>${esc(p.title)}</span></div>`;
+   else if(k==='search')body=`<div class="m-input" style="max-width:260px">${ic('search',13)}&nbsp;Search…</div>`;
+   else if(k==='upload')body=`<div class="m-upload">${ic('upload',18)}<div>Drop a file or browse</div></div>`;
+   else if(k==='calendar')body=`<div class="m-cal">${Array.from({length:14},(_,i)=>`<div>${i+2}</div>`).join('')}</div>`;
+   else body=`<div class="row" style="gap:8px">${it.map((x,i)=>W(i,`<span class="${k==='buttons'||k==='hero'?'btn btn-sm '+(i===0?'btn-primary':''):'chip'}">${esc(x.label)}</span>`)).join('')}</div>`;
+   body+=noItems(b,preview);break;}
+  case 'field':{const t=p.ftype;body=`<label class="m-field">${esc(p.label)}${p.required?' <span style="color:var(--danger)">*</span>':''}<span class="m-input">${t==='Dropdown'?esc((p.options||'').split(',')[0]||'Select'):t==='Checkbox'?'☐ '+esc(p.label):t==='Long text'?'':t==='File'?'Choose file':t==='Date'?'dd / mm / yyyy':''}</span></label>`;break;}
+  case 'upload':body=`<div class="m-upload">${ic('upload',20)}<div style="margin-top:6px">Drop a file or <b>browse</b></div></div>`;break;
+  case 'calendar':body=`<div class="m-cal">${Array.from({length:14},(_,i)=>`<div>${i+2}${[1,3,8].includes(i)?'<em>JAVA-B1</em>':''}${[2,9].includes(i)?'<em>FSD-B1</em>':''}</div>`).join('')}</div>`;break;
+  case 'tabs':body=`<div class="m-tabs"><span class="on">Tab one</span><span>Tab two</span><span>Tab three</span></div><p class="muted small">Drop sections inside each tab in the full build.</p>`;break;
+ }
+ const warn=!c.roles.includes(role);
+ const strip=warn&&!preview?`<div class="warn-strip">${ic('alert',13)} ${esc(c.portal==='super-admin'?'Admin-only section':'Built for '+portal(c.portal).name)} — ${esc(portal(page.portal).name)} users won't see it.</div>`:'';
+ if(preview&&warn)return '';
+ return `${strip}${title}${body}${c.data&&c.data!=='—'&&!preview&&c.portal!=='basic'?`<div class="small muted" style="margin-top:8px">${ic('users',12)} Shows: ${esc(scopeText(page))}${p.course&&p.course!=='All courses'?' · '+esc(p.course):''}</div>`:''}`;
+}
+
+/* ---------- canvas rendering ---------- */
+function cols(layout){return (LAYOUTS[layout]||[1]).map(n=>n+'fr').join(' ');}
+function renderCanvas(page,preview){
+ const menu=(S.menus[page.portal]||[]);const inMenu=menu.find(m=>m.pageId===page.id||m.children.some(c=>c.pageId===page.id));
+ const menuHtml=menu.map(m=>`<span class="${inMenu&&inMenu.id===m.id?'on':''}">${esc(m.label)}</span>`).join('')+(inMenu?'':`<span class="on">${esc(page.name)}</span>`);
+ const role=portal(page.portal);
+ let h=`<div class="cv-band"><div class="cv-top"><span class="brand" style="font-size:13px">${ic('cap',18)}Learn Being <span class="f">Forward</span></span><span class="row" style="gap:8px"><span class="role-pill">${esc(role.name)}</span><span class="avatar" style="width:24px;height:24px;font-size:9px;background:var(--gold);color:var(--navy)">AJ</span></span></div>
+  <div class="cv-menu">${menuHtml}</div>
+  <div class="cv-title"><h2 ${preview?'':'contenteditable="true" data-edit="name" spellcheck="false"'}>${esc(page.name)}</h2><p ${preview?'':'contenteditable="true" data-edit="subtitle" spellcheck="false"'}>${esc(page.subtitle||'Add a subtitle')}</p></div></div><div class="cv-body">`;
+ if(!page.rows.length&&!preview){h+=`<div class="page-empty dz-page" data-dz="row" data-index="0"><div style="font-size:34px;color:var(--gold)">${ic('layers',34)}</div><h3 style="margin-top:8px;color:var(--text)">Drag sections here</h3><p style="margin-top:4px">Pick anything from the left — an existing section, a basic block or a layout.<br>Or click the <b>+</b> next to an item.</p></div>`;}
+ page.rows.forEach((r,ri)=>{
+  if(!preview)h+=`<div class="dz row-dz" data-dz="row" data-index="${ri}"></div>`;
+  h+=`<div class="cv-row ${UI.sel&&UI.sel.row===r.id&&!UI.sel.block?'sel':''}" data-row="${r.id}">`;
+  if(!preview)h+=`<div class="row-tools"><button data-act="row-sel" data-row="${r.id}" title="Row settings">${ic('rows',13)} Row</button><button data-act="row-up" data-row="${r.id}" aria-label="Move row up">${ic('up',13)}</button><button data-act="row-down" data-row="${r.id}" aria-label="Move row down">${ic('down',13)}</button><button data-act="row-dup" data-row="${r.id}" aria-label="Duplicate row">${ic('copy',13)}</button><button data-act="row-del" data-row="${r.id}" aria-label="Delete row">${ic('trash',13)}</button></div>`;
+  h+=`<div class="cv-cols" style="grid-template-columns:${cols(r.layout)}">`;
+  r.cols.forEach(c=>{
+   h+=`<div class="cv-col" data-col="${c.id}">`;
+   if(!c.blocks.length&&!preview)h+=`<div class="col-empty" data-dz="block" data-row="${r.id}" data-col="${c.id}" data-index="0">${ic('plus',14)}&nbsp;Drop a section here</div>`;
+   c.blocks.forEach((b,bi)=>{
+    if(!preview)h+=`<div class="dz" data-dz="block" data-row="${r.id}" data-col="${c.id}" data-index="${bi}"></div>`;
+    const inner=renderBlock(b,page,preview);if(preview&&!inner)return;
+    const warn=!BY_ID[b.type].roles.includes(roleOf(page.portal));
+    h+=preview?`<div class="blk" style="cursor:default;margin-bottom:14px">${inner}</div>`:`<div class="blk ${UI.sel&&UI.sel.block===b.id?'sel':''} ${warn?'warn':''}" data-block="${b.id}" draggable="true" tabindex="0" aria-label="${esc(BY_ID[b.type].name)}"><span class="blk-tag">${esc(BY_ID[b.type].name)}</span><div class="blk-tools"><button class="grip" title="Drag to move" aria-label="Drag to move">${ic('grip',13)}</button><button data-act="blk-up" data-block="${b.id}" aria-label="Move up">${ic('up',13)}</button><button data-act="blk-down" data-block="${b.id}" aria-label="Move down">${ic('down',13)}</button><button data-act="blk-dup" data-block="${b.id}" aria-label="Duplicate">${ic('copy',13)}</button><button data-act="blk-del" data-block="${b.id}" aria-label="Delete">${ic('trash',13)}</button></div>${inner}</div>`;
+    if(!preview&&bi===c.blocks.length-1)h+=`<div class="dz" data-dz="block" data-row="${r.id}" data-col="${c.id}" data-index="${bi+1}"></div>`;
+   });
+   h+=`</div>`;});
+  h+=`</div></div>`;});
+ if(page.rows.length&&!preview)h+=`<div class="dz row-dz" data-dz="row" data-index="${page.rows.length}" style="height:40px;border:1.5px dashed var(--border-2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">${ic('plus',13)}&nbsp;Drop here to add a new row at the bottom</div>`;
+ return h+`</div>`;
+}
+
+/* ---------- mutations (with undo) ---------- */
+function snap(){const p=curPage();UI.undo.push(JSON.stringify({rows:p.rows,name:p.name,subtitle:p.subtitle}));if(UI.undo.length>60)UI.undo.shift();UI.redo=[];}
+function touch(msg){const p=curPage();p.updated=now();if(p.status==='Published')p.status='Unpublished changes';save();UI.savedAt=now();if(msg)toast(msg);}
+function findBlock(id){const p=curPage();for(const r of p.rows)for(const c of r.cols){const i=c.blocks.findIndex(b=>b.id===id);if(i>-1)return {r,c,i,b:c.blocks[i]};}return null;}
+function addBlock(type,target){const p=curPage();const c=BY_ID[type];snap();const b=newBlock(type);
+ if(target&&target.col){const r=p.rows.find(x=>x.id===target.row);const col=r.cols.find(x=>x.id===target.col);col.blocks.splice(target.index,0,b);}
+ else{const idx=target&&target.rowIndex!=null?target.rowIndex:p.rows.length;p.rows.splice(idx,0,{id:uid('r'),layout:'1',cols:[{id:uid('c'),blocks:[b]}]});}
+ UI.sel={block:b.id};touch();
+ if(!c.roles.includes(roleOf(p.portal)))toast(`“${c.name}” isn't available to ${portal(p.portal).name} users — it will stay hidden for them.`,true);else toast(`Added “${c.name}”`);
+ render();}
+function addRow(layout,rowIndex){const p=curPage();snap();const r={id:uid('r'),layout,cols:LAYOUTS[layout].map(()=>({id:uid('c'),blocks:[]}))};p.rows.splice(rowIndex??p.rows.length,0,r);UI.sel={row:r.id};touch(`Added a ${LAYOUT_NAMES[layout].toLowerCase()} row`);render();}
+function moveBlock(id,target){const p=curPage();const f=findBlock(id);if(!f)return;snap();f.c.blocks.splice(f.i,1);
+ if(target.col){const r=p.rows.find(x=>x.id===target.row);const col=r.cols.find(x=>x.id===target.col);let idx=target.index;if(col===f.c&&f.i<idx)idx--;col.blocks.splice(idx,0,f.b);}
+ else p.rows.splice(target.rowIndex,0,{id:uid('r'),layout:'1',cols:[{id:uid('c'),blocks:[f.b]}]});
+ if(f.r.layout==='1'&&f.r.cols.every(c=>!c.blocks.length)){const k=p.rows.indexOf(f.r);if(k>-1)p.rows.splice(k,1);} // drop the now-empty single-column row
+ UI.sel={block:id};touch();render();}
+function setLayout(rowId,layout){const p=curPage();const r=p.rows.find(x=>x.id===rowId);snap();const n=LAYOUTS[layout].length;
+ while(r.cols.length<n)r.cols.push({id:uid('c'),blocks:[]});
+ while(r.cols.length>n){const extra=r.cols.pop();r.cols[r.cols.length-1].blocks.push(...extra.blocks);}
+ r.layout=layout;touch();render();}
+function doUndo(){if(!UI.undo.length)return;const p=curPage();UI.redo.push(JSON.stringify({rows:p.rows,name:p.name,subtitle:p.subtitle}));Object.assign(p,JSON.parse(UI.undo.pop()));save();toast('Undone');render();}
+function doRedo(){if(!UI.redo.length)return;const p=curPage();UI.undo.push(JSON.stringify({rows:p.rows,name:p.name,subtitle:p.subtitle}));Object.assign(p,JSON.parse(UI.redo.pop()));save();toast('Redone');render();}
+function act(a,el){const p=curPage();const id=el.dataset.block,rid=el.dataset.row;
+ if(a==='blk-del'){const f=findBlock(id);snap();f.c.blocks.splice(f.i,1);UI.sel=null;touch('Section removed — press Undo to bring it back');}
+ if(a==='blk-dup'){const f=findBlock(id);snap();const nb=JSON.parse(JSON.stringify(f.b));nb.id=uid('b');f.c.blocks.splice(f.i+1,0,nb);UI.sel={block:nb.id};touch('Duplicated');}
+ if(a==='blk-up'||a==='blk-down'){const f=findBlock(id);const d=a==='blk-up'?-1:1;const j=f.i+d;snap();
+   if(j>=0&&j<f.c.blocks.length){[f.c.blocks[f.i],f.c.blocks[j]]=[f.c.blocks[j],f.c.blocks[f.i]];}
+   else{const ri=p.rows.indexOf(f.r);const nr=ri+d;if(nr>=0&&nr<p.rows.length){f.c.blocks.splice(f.i,1);const tc=p.rows[nr].cols[0];d<0?tc.blocks.push(f.b):tc.blocks.unshift(f.b);}}
+   touch();}
+ if(a==='row-sel'){UI.sel={row:rid};}
+ if(a==='row-up'||a==='row-down'){const i=p.rows.findIndex(r=>r.id===rid);const j=i+(a==='row-up'?-1:1);if(j>=0&&j<p.rows.length){snap();[p.rows[i],p.rows[j]]=[p.rows[j],p.rows[i]];touch();}}
+ if(a==='row-dup'){const i=p.rows.findIndex(r=>r.id===rid);snap();const nr=JSON.parse(JSON.stringify(p.rows[i]));nr.id=uid('r');nr.cols.forEach(c=>{c.id=uid('c');c.blocks.forEach(b=>b.id=uid('b'))});p.rows.splice(i+1,0,nr);touch('Row duplicated');}
+ if(a==='row-del'){const i=p.rows.findIndex(r=>r.id===rid);snap();p.rows.splice(i,1);UI.sel=null;touch('Row removed — press Undo to bring it back');}
+ render();}
+
+/* ---------- library panel ---------- */
+function libItem(c,page){const ok=c.roles.includes(roleOf(page.portal));return `<div class="lib-item ${ok?'':'lock'}" draggable="true" data-add="${c.id}" title="${ok?'Drag onto the page':'Not available for this portal'}"><span class="ic">${ic(c.icon,15)}</span><span class="nm">${esc(c.name)}${c.data&&c.data!=='—'?`<small>${esc(c.data)}</small>`:''}${!ok?`<small style="color:var(--warning-text)">Not for ${esc(portal(page.portal).name)}</small>`:''}</span><button class="add" data-add-click="${c.id}" aria-label="Add ${esc(c.name)}">${ic('plus',13)}</button></div>`;}
+function renderLib(page){
+ const q=UI.libQ.toLowerCase();const match=c=>!q||(c.name+c.page+c.data).toLowerCase().includes(q);
+ let h=`<div class="lib-tabs" role="tablist"><button role="tab" aria-selected="${UI.libTab==='sections'}" data-libtab="sections">Sections</button><button role="tab" aria-selected="${UI.libTab==='basics'}" data-libtab="basics">Basics</button><button role="tab" aria-selected="${UI.libTab==='layouts'}" data-libtab="layouts">Layouts</button><button role="tab" aria-selected="${UI.libTab==='outline'}" data-libtab="outline">Outline</button></div>`;
+ if(UI.libTab!=='layouts'&&UI.libTab!=='outline')h+=`<div class="lib-search"><div style="position:relative">${'<span style="position:absolute;left:10px;top:11px;color:var(--muted)">'+ic('search',14)+'</span>'}<input class="input" id="libq" placeholder="Search sections…" value="${esc(UI.libQ)}" style="padding-left:32px" aria-label="Search sections"></div></div>`;
+ if(UI.libTab==='sections'){
+  const order=[roleOf(page.portal),...['student','college','trainer','super-admin','public'].filter(x=>x!==roleOf(page.portal))];
+  order.forEach(pid=>{const items=CAT.filter(c=>c.portal===pid&&match(c));if(!items.length)return;const pages=[...new Set(items.map(i=>i.page))];
+   const open=UI.openGroups[pid]||q||pid===roleOf(page.portal);
+   h+=`<details class="lib-group" ${open?'open':''} data-group="${pid}"><summary><span class="icon-box ${pid===roleOf(page.portal)?'navy':''}" style="width:28px;height:28px">${ic(portal(pid).icon,14)}</span>${esc(portal(pid).name)} pages<span class="pill" style="margin-left:6px">${items.length}</span><span class="chev">${ic('chevR',14)}</span></summary><div class="lib-page">${pages.map(pg=>`<div class="pg">${esc(pg)}</div>${items.filter(i=>i.page===pg).map(i=>libItem(i,page)).join('')}`).join('')}</div></details>`;});
+ }
+ if(UI.libTab==='basics'){h+=`<div class="lib-page"><div class="pg">Content &amp; data blocks</div>${BASICS.filter(match).map(c=>libItem(c,page)).join('')}<div class="pg">Form fields <span style="text-transform:none;letter-spacing:0;font-weight:400">— drop inside a column</span></div>${FIELDS.filter(match).map(c=>libItem(c,page)).join('')}</div>`;}
+ if(UI.libTab==='layouts'){h+=`<p class="small muted" style="padding:12px 12px 0">Drag a layout onto the page to add an empty row, then drop sections into its columns.</p><div class="layouts">${Object.keys(LAYOUTS).map(k=>`<div class="layout-tile" draggable="true" data-layout="${k}"><div class="lt" style="grid-template-columns:${cols(k)}">${LAYOUTS[k].map(()=>'<span></span>').join('')}</div>${LAYOUT_NAMES[k]}<button class="add" style="display:none"></button></div>`).join('')}</div><div style="padding:0 12px 12px"><button class="btn btn-sm" style="width:100%" data-addrow="2">${ic('plus',13)} Add two-column row</button></div>`;}
+ if(UI.libTab==='outline'){h+=`<div style="padding:10px">${page.rows.length?page.rows.map((r,i)=>`<div class="outline-item ${UI.sel&&UI.sel.row===r.id&&!UI.sel.block?'on':''}" data-pick-row="${r.id}">${ic('rows',13)}<b>Row ${i+1}</b><span class="muted small">· ${LAYOUT_NAMES[r.layout]}</span></div>${r.cols.map((c,ci)=>c.blocks.map(b=>`<div class="outline-item ${UI.sel&&UI.sel.block===b.id?'on':''}" data-pick-block="${b.id}" style="padding-left:28px">${ic(BY_ID[b.type].icon,13)}${esc(b.props.title||BY_ID[b.type].name)}${r.cols.length>1?`<span class="muted small">· col ${ci+1}</span>`:''}</div>`).join('')).join('')}`).join(''):'<p class="muted small">Nothing on the page yet.</p>'}</div>`;}
+ return h;}
+
+/* ---------- properties panel ---------- */
+function F(label,ctrl,hint){return `<label class="field">${label}${ctrl}${hint?`<span class="hint">${hint}</span>`:''}</label>`;}
+function selOpts(key,opts,val){return `<select class="select" data-prop="${key}">${opts.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select>`;}
+function renderProps(page){
+ if(UI.sel&&UI.sel.block){const f=findBlock(UI.sel.block);if(!f){UI.sel=null;return renderProps(page);}const b=f.b,c=BY_ID[b.type],p=b.props;const role=roleOf(page.portal);const ok=c.roles.includes(role);
+  let h=`<div class="props-head"><div class="label">Selected section</div><div class="row" style="margin-top:6px;flex-wrap:nowrap"><span class="icon-box navy">${ic(c.icon,16)}</span><div style="min-width:0"><div class="strong">${esc(c.name)}</div><div class="small muted">${c.portal==='basic'||c.portal==='field'?'Basic block':'From '+esc(portal(c.portal).name)+' › '+esc(c.page)}</div></div></div></div>`;
+  if(!ok)h+=`<div class="props-sec"><div class="alert warning">${ic('alert',16)}<span><b>Not available for ${esc(portal(page.portal).name)} users.</b> ${c.portal==='super-admin'?'It performs admin-only actions.':'It needs data this portal can\'t access.'} It stays on the canvas but is hidden when published.</span></div></div>`;
+  h+=`<div class="props-sec"><span class="label">Content</span>`;
+  if(c.kind!=='heading'&&c.kind!=='divider'&&c.kind!=='field')h+=F('Section title',`<input class="input" data-prop="title" value="${esc(p.title)}">`)+`<label class="toggle">Show title<input type="checkbox" data-prop="showTitle" ${p.showTitle?'checked':''}></label>`;
+  if(c.kind==='heading')h+=F('Text',`<input class="input" data-prop="text" value="${esc(p.text)}">`)+F('Size',selOpts('size',['Small','Medium','Large'],p.size||'Medium'))+F('Align',selOpts('align',['Left','Center','Right'],p.align||'Left'));
+  if(c.kind==='text')h+=F('Text',`<textarea class="textarea" rows="4" data-prop="text">${esc(p.text)}</textarea>`);
+  if(c.kind==='button')h+=F('Label',`<input class="input" data-prop="label" value="${esc(p.label)}">`)+F('Style',selOpts('style',['Primary','Gold','Outline'],p.style))+F('Opens',selOpts('link',['— choose a page —',...S.pages.map(x=>x.name),'External link…'],p.link));
+  if(c.kind==='alert')h+=F('Message',`<textarea class="textarea" rows="3" data-prop="text">${esc(p.text)}</textarea>`)+F('Colour',selOpts('tone',['gold','info','success','warning','danger'],p.tone));
+  if(c.kind==='image')h+=F('Image',`<span class="btn btn-sm">${ic('upload',13)} Upload image</span>`)+F('Alt text (for screen readers)',`<input class="input" data-prop="alt" value="${esc(p.alt||'')}">`);
+  if(c.kind==='table')h+=`<label class="toggle">Search box<input type="checkbox" data-prop="search" ${p.search?'checked':''}></label><label class="toggle">Export to CSV<input type="checkbox" data-prop="export" ${p.export?'checked':''}></label>`+F('Rows per page',selOpts('perPage',['10','25','50'],p.perPage||'10'));
+  if(c.kind==='form'&&b.type==='b-form')h+=F('Button label',`<input class="input" data-prop="submit" value="${esc(p.submit)}">`)+F('Save answers to',`<input class="input" data-prop="saveTo" value="${esc(p.saveTo)}">`,'Creates a new data set the first time the page is published.');
+  if(c.kind==='field')h+=F('Label',`<input class="input" data-prop="label" value="${esc(p.label)}">`)+F('Field type',selOpts('ftype',['Text','Number','Dropdown','Date','File','Checkbox','Long text','Email','Phone'],p.ftype))+(p.ftype==='Dropdown'?F('Options',`<input class="input" data-prop="options" value="${esc(p.options)}">`,'Comma separated'):'')+`<label class="toggle">Required<input type="checkbox" data-prop="required" ${p.required?'checked':''}></label>`;
+  h+=`</div>`;
+  if(['tiles','chart','table','list','cards','form','copied'].includes(c.kind))h+=itemsEditor(b);
+  if(c.data&&c.data!=='—'&&c.portal!=='basic'&&c.portal!=='field')h+=`<div class="props-sec"><span class="label">Data (automatic)</span><div class="box" style="padding:12px;background:var(--info-soft);border:0"><div class="small" style="color:var(--info-text)"><b>Reads:</b> ${esc(c.data)}<br><b>Shows:</b> ${esc(scopeText(page))}</div></div>${F('Filter by course',selOpts('course',COURSES,p.course))}<p class="small muted">The same section shows different data on each portal — you never type data in.</p></div>`;
+  h+=`<div class="props-sec"><span class="label">Visibility</span><label class="toggle">View only (no editing or approving)<input type="checkbox" data-prop="readOnly" ${p.readOnly?'checked':''}></label><label class="toggle">Hide on phones<input type="checkbox" data-prop="hideMobile" ${p.hideMobile?'checked':''}></label><label class="toggle">Only show after certificate eligible<input type="checkbox" data-prop="gated" ${p.gated?'checked':''}></label></div>`;
+  h+=`<div class="props-sec"><div class="row"><button class="btn btn-sm" data-act="blk-dup" data-block="${b.id}">${ic('copy',13)} Duplicate</button><button class="btn btn-sm btn-danger-o" data-act="blk-del" data-block="${b.id}">${ic('trash',13)} Delete section</button></div></div>`;
+  return h;}
+ if(UI.sel&&UI.sel.row){const r=page.rows.find(x=>x.id===UI.sel.row);if(!r){UI.sel=null;return renderProps(page);}
+  return `<div class="props-head"><div class="label">Selected row</div><div class="strong" style="margin-top:4px">Row ${page.rows.indexOf(r)+1} · ${LAYOUT_NAMES[r.layout]}</div></div><div class="props-sec"><span class="label">Columns</span><div class="grid" style="--min:120px;gap:8px">${Object.keys(LAYOUTS).map(k=>`<button class="layout-tile" data-setlayout="${k}" style="cursor:pointer;${r.layout===k?'border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)':''}"><div class="lt" style="grid-template-columns:${cols(k)}">${LAYOUTS[k].map(()=>'<span></span>').join('')}</div>${LAYOUT_NAMES[k]}</button>`).join('')}</div><p class="small muted">Fewer columns? Sections from removed columns move into the last one — nothing is lost.</p></div><div class="props-sec"><div class="row"><button class="btn btn-sm" data-act="row-dup" data-row="${r.id}">${ic('copy',13)} Duplicate row</button><button class="btn btn-sm btn-danger-o" data-act="row-del" data-row="${r.id}">${ic('trash',13)} Delete row</button></div></div>`;}
+ // page settings
+ const menu=S.menus[page.portal]||[];
+ return `<div class="props-head"><div class="label">Page settings</div><div class="strong" style="margin-top:4px">${esc(page.name)}</div></div>
+ <div class="props-sec">${F('Page name',`<input class="input" data-page="name" value="${esc(page.name)}">`)}${F('Subtitle',`<input class="input" data-page="subtitle" value="${esc(page.subtitle||'')}">`)}${F('Icon',`<select class="select" data-page="icon">${['file','briefcase','target','book','chart','calendar','users','award','message','layers'].map(i=>`<option ${page.icon===i?'selected':''}>${i}</option>`).join('')}</select>`)}</div>
+ <div class="props-sec"><span class="label">Portal &amp; menu</span><div class="box" style="padding:12px;display:flex;gap:10px;align-items:center"><span class="icon-box navy">${ic(portal(page.portal).icon,16)}</span><div><div class="strong">${esc(portal(page.portal).name)}</div><div class="small muted">Shows: ${esc(scopeText(page))}</div></div></div>
+ ${F('Menu position',`<select class="select" data-page="menuPos"><option value="">Hidden (direct link only)</option><option value="top" ${menuPosOf(page)==='top'?'selected':''}>New top-menu item</option>${menu.map(m=>`<option value="${m.id}" ${menuPosOf(page)===m.id?'selected':''}>Inside “${esc(m.label)}”</option>`).join('')}</select>`,'Change the order in the Menus tab.')}</div>
+ <div class="props-sec"><span class="label">Who can open it</span>${S.portals.filter(p=>p.id!=='public').map(p=>`<label class="check"><input type="checkbox" ${p.id===page.portal||p.id==='super-admin'?'checked':''} ${p.id==='super-admin'?'disabled':''}> ${esc(p.name)}${p.id==='super-admin'?' <span class="muted small">(always)</span>':''}</label>`).join('')}</div>
+ <div class="props-sec"><span class="label">Tip</span><div class="shortcuts"><span><span class="kbd">Ctrl Z</span> undo</span><span><span class="kbd">Ctrl Y</span> redo</span><span><span class="kbd">Del</span> remove selected</span><span><span class="kbd">Esc</span> deselect</span></div></div>
+ <div class="props-sec"><button class="btn btn-sm btn-danger-o" data-delpage="${page.id}">${ic('trash',13)} Delete this page…</button></div>`;
+}
+function itemsEditor(b){const it=itemsOf(b),k=BY_ID[b.type].kind;const name={tiles:'Tiles',chart:'Bars',table:'Columns',list:'Rows',cards:'Cards',form:'Fields',copied:'Items'}[k];const one=name.replace(/s$/,'').toLowerCase();
+ return `<div class="props-sec"><span class="label">${name} in this section (${it.length})</span><p class="small muted" style="margin-top:-4px">Remove with ×. Reorder with the arrows, or drag them on the canvas.</p><div style="display:flex;flex-direction:column;gap:6px">${it.map((x,i)=>`<div class="item-row"><span class="muted">${i+1}</span><input class="input" data-item="${i}" data-f="label" value="${esc(x.label)}" aria-label="${one} ${i+1} label">${k==='tiles'||k==='chart'?`<input class="input" style="width:76px" data-item="${i}" data-f="value" value="${esc(x.value||'')}" aria-label="${one} ${i+1} value">`:''}${k==='form'?`<select class="select" style="width:104px" data-item="${i}" data-f="type" aria-label="${one} ${i+1} type">${['Text','Number','Dropdown','Date','File','Checkbox','Long text','Email','Phone'].map(t=>`<option ${t===x.type?'selected':''}>${t}</option>`).join('')}</select>`:''}<button class="btn btn-sm btn-icon" data-itemmove="${i}:-1" aria-label="Move up" ${i?'':'disabled'}>${ic('up',12)}</button><button class="btn btn-sm btn-icon" data-itemmove="${i}:1" aria-label="Move down" ${i<it.length-1?'':'disabled'}>${ic('down',12)}</button><button class="btn btn-sm btn-icon btn-danger-o" data-subdel="${b.id}:${i}" aria-label="Remove ${esc(x.label)}">${ic('x',12)}</button></div>`).join('')}</div>
+ <button class="btn btn-sm" data-itemadd>${ic('plus',12)} Add ${one}</button>${(b.props.removed||[]).length?`<div><div class="label" style="margin-bottom:6px">Removed — click to restore</div><div class="row" style="gap:6px">${b.props.removed.map((x,i)=>`<button class="pill" data-itemrestore="${i}" style="border:0;cursor:pointer">${ic('undo',11)} ${esc(x.label)}</button>`).join('')}</div></div>`:''}</div>`;}
+function subDelete(bid,i){const f=findBlock(bid);if(!f)return;snap();const it=itemsOf(f.b);const [x]=it.splice(i,1);(f.b.props.removed=f.b.props.removed||[]).push(x);UI.sel={block:bid};touch(`Removed “${x.label}” — restore it from the settings panel`);render();}
+function subMove(bid,from,to){const f=findBlock(bid);if(!f)return;const it=itemsOf(f.b);if(to<0||to>=it.length||from===to)return;snap();const [x]=it.splice(from,1);it.splice(to,0,x);UI.sel={block:bid};touch();render();}
+function menuPosOf(page){const menu=S.menus[page.portal]||[];for(const m of menu){if(m.pageId===page.id)return 'top';if(m.children.some(c=>c.pageId===page.id))return m.id;}return '';}
+function setMenuPos(page,pos){const menu=S.menus[page.portal]||(S.menus[page.portal]=[]);
+ for(let i=menu.length-1;i>=0;i--){if(menu[i].pageId===page.id)menu.splice(i,1);else menu[i].children=menu[i].children.filter(c=>c.pageId!==page.id);}
+ if(pos==='top')menu.push({id:uid('m'),label:page.name,icon:page.icon||'file',pageId:page.id,children:[]});
+ else if(pos){const m=menu.find(x=>x.id===pos);m&&m.children.push({id:uid('m'),label:page.name,pageId:page.id});}}
+
+/* ---------- views ---------- */
+function shell(inner){
+ const tabs=[['ai','AI Create','sparkle',null],['pages','Pages','file',S.pages.length],['editor','Canvas editor','layers',null],['accounts','Accounts & portals','users',S.users.length],['menus','Menus','menu',null],['library','Section library','grid',CAT.length+BASICS.length+FIELDS.length],['activity','Activity','history',null]];
+ return `<header class="app-band"><div class="top"><a class="brand" href="#" data-view="pages">${ic('cap',24)}Learn Being <span class="f">Forward</span><span class="sep"></span><span class="sb">Site Builder</span></a>
+ <div class="row" style="gap:10px"><span class="role-pill">Super Admin</span><div class="user-chip"><span class="avatar">LK</span>Lohit Kumar</div></div></div>
+ <nav class="tabsbar" role="tablist" aria-label="Site Builder">${tabs.map(([k,l,i,n])=>`<button role="tab" aria-selected="${UI.view===k||(UI.view==='trim'&&k==='pages')}" data-view="${k}">${ic(i,15)}${l}${n!=null?`<span class="count">${n}</span>`:''}</button>`).join('')}</nav></header>${inner}`;}
+
+function viewPages(){
+ const pub=S.pages.filter(p=>p.status==='Published').length;
+ const sys=[['Home','public'],['Courses','public'],['Student › My Dashboard','student'],['Student › Attendance','student'],['College › Overview','college'],['Trainer › Attendance','trainer'],['Super Admin › Requests','super-admin']];
+ return `<main class="view"><div class="view-head"><div><div class="label">Site Builder</div><h1>Pages you've built</h1><p class="muted" style="margin-top:4px">Create, edit, publish or delete pages for any portal. The public Home page stays locked.</p></div><div class="row"><button class="btn" data-giveaccess>${ic('user',14)} Give someone access</button><button class="btn" data-newportal>${ic('users',14)} New account type</button><button class="btn btn-primary" data-newpage>${ic('plus',14)} New page</button></div></div>
+ <div class="kpis"><div class="kpi"><span class="label">Built pages</span><b>${S.pages.length}</b></div><div class="kpi"><span class="label">Published</span><b>${pub}</b></div><div class="kpi"><span class="label">Drafts / changes</span><b>${S.pages.length-pub}</b></div><div class="kpi"><span class="label">Custom portals</span><b>${S.portals.filter(p=>!p.builtin).length}</b></div></div>
+ <section class="card" style="padding:0;overflow:hidden"><div class="split" style="padding:16px 20px"><h2 style="font-size:17px">Built pages</h2><div class="row"><select class="select" style="width:auto" id="pfilter" aria-label="Filter by portal"><option value="">All portals</option>${S.portals.map(p=>`<option value="${p.id}" ${UI.pfilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div></div>
+ ${S.pages.filter(p=>!UI.pfilter||p.portal===UI.pfilter).length?`<div style="overflow:auto"><table class="t"><thead><tr><th>Page</th><th>Portal</th><th>In menu</th><th>Sections</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody>${S.pages.filter(p=>!UI.pfilter||p.portal===UI.pfilter).map(p=>{const n=p.rows.reduce((a,r)=>a+r.cols.reduce((x,c)=>x+c.blocks.length,0),0);const mp=menuPosOf(p);const mlabel=mp==='top'?'Top menu':mp?'Under “'+((S.menus[p.portal]||[]).find(m=>m.id===mp)||{}).label+'”':'Hidden';
+  return `<tr><td><div class="row" style="flex-wrap:nowrap"><span class="icon-box">${ic(p.icon||'file',16)}</span><div><div class="strong">${esc(p.name)}</div><div class="small muted">${esc(p.subtitle||'')}</div></div></div></td><td><span class="pill ${portal(p.portal).builtin?'':'gold'}">${esc(portal(p.portal).name)}</span></td><td class="small">${esc(mlabel)}</td><td>${n}</td><td><span class="pill ${p.status==='Published'?'success':p.status==='Draft'?'':'warning'}">${esc(p.status)}</span></td><td class="small muted">${esc(p.updated)}</td>
+  <td style="white-space:nowrap;text-align:right"><button class="btn btn-sm btn-primary" data-edit="${p.id}">${ic('edit',13)} Edit</button> <button class="btn btn-sm btn-icon" data-preview="${p.id}" aria-label="Preview ${esc(p.name)}">${ic('eye',14)}</button> <button class="btn btn-sm btn-icon" data-duppage="${p.id}" aria-label="Duplicate ${esc(p.name)}">${ic('copy',14)}</button> <button class="btn btn-sm btn-icon btn-danger-o" data-delpage="${p.id}" aria-label="Delete ${esc(p.name)}">${ic('trash',14)}</button></td></tr>`;}).join('')}</tbody></table></div>`:`<div style="padding:40px;text-align:center" class="muted">No pages for this portal yet. <button class="btn btn-sm btn-primary" data-newpage>${ic('plus',13)} New page</button></div>`}</section>
+ ${copySection()}</main>`;}
+function copySection(){const sp=UI.sysTab||'college';
+ const tree=(parent,dd)=>SYS[sp].filter(p=>p.parent===parent).map(p=>{const kids=sysKids(sp,p.id);return `<div class="sysrow" style="padding-left:${12+dd*24}px">${ic(kids.length?'layers':dd?'chevR':'file',14)}<span class="strong small" style="flex:1">${esc(p.name)}</span>${kids.length?`<span class="pill">opens ${kids.length} inner page${kids.length>1?'s':''}</span>`:''}${sp==='public'&&p.id==='home'?`<span class="pill">${ic('lock',10)} original stays locked</span>`:''}<span class="small muted">${p.els.length} boxes</span><button class="btn btn-sm" data-copypage="${p.id}">${ic('copy',12)} Copy</button></div>${tree(p.id,dd+1)}`;}).join('');
+ return `<section class="card" style="margin-top:18px"><div class="split"><div><h2 style="font-size:17px">Copy an existing page, then remove what you don't need</h2><p class="small muted">Copy one page (its inner pages come with it) or a whole portal. The originals never change.</p></div><div class="row"><button class="btn btn-sm" data-giveaccess>${ic('user',12)} Copy for an employee</button><button class="btn btn-sm btn-primary" data-copyportal="${sp}">${ic('copy',12)} Copy whole ${esc(portal(sp).name)} portal</button></div></div>
+ <div class="tabs-row" role="tablist">${['public','super-admin','college','trainer','student'].map(x=>`<button role="tab" aria-selected="${x===sp}" data-systab="${x}">${ic(portal(x).icon,14)} ${esc(portal(x).name)} <span class="count">${SYS[x].length}</span></button>`).join('')}</div><div>${tree(null,0)}</div></section>
+ ${S.sets.length?`<section class="card" style="margin-top:18px;padding:0;overflow:hidden"><div style="padding:16px 20px"><h2 style="font-size:17px">Copies you're trimming</h2></div><div style="overflow:auto"><table class="t"><thead><tr><th>Copy</th><th>From</th><th>For</th><th>Kept</th><th>Status</th><th></th></tr></thead><tbody>${S.sets.map(st=>{const c=tCount(st);return `<tr><td class="strong">${esc(st.name)}</td><td>${esc(portal(st.source).name)}</td><td>${st.forUser?esc(st.forUser.name):'—'}</td><td class="small">${c.pages} pages · ${c.els} boxes · ${c.items} items</td><td>${st.saved?'<span class="pill success">Saved</span>':'<span class="pill">In progress</span>'}</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-openset="${st.id}">${ic('edit',12)} Continue</button> <button class="btn btn-sm btn-icon btn-danger-o" data-delset="${st.id}" aria-label="Delete copy ${esc(st.name)}">${ic('trash',13)}</button></td></tr>`;}).join('')}</tbody></table></div></section>`:''}`;}
+
+function viewEditor(){
+ const page=curPage();
+ if(!page)return `<main class="view"><div class="card" style="text-align:center;padding:60px"><span class="icon-box navy" style="width:56px;height:56px;margin:0 auto">${ic('layers',26)}</span><h2 style="margin-top:14px">Choose a page to edit</h2><p class="muted" style="margin-top:6px">Open a page from the list, or start a new one.</p><div class="row" style="justify-content:center;margin-top:18px"><button class="btn" data-view="pages">Go to pages</button><button class="btn btn-primary" data-newpage>${ic('plus',14)} New page</button></div></div></main>`;
+ const w=UI.device==='phone'?390:UI.device==='tablet'?780:1080;
+ return `<div class="editor"><div class="edbar"><div class="row" style="gap:12px"><button class="btn btn-sm" data-view="pages">${ic('arrowL',13)} Pages</button><span class="pname">${esc(page.name)}</span><span class="pill ${portal(page.portal).builtin?'':'gold'}">${esc(portal(page.portal).name)}</span><span class="pill ${page.status==='Published'?'success':page.status==='Draft'?'':'warning'}">${esc(page.status)}</span><span class="saved">${ic('check',13)} Saved${UI.savedAt?' · '+esc(UI.savedAt):''}</span></div>
+ <div class="row" style="gap:8px"><button class="btn btn-sm btn-icon" data-undo aria-label="Undo" ${UI.undo.length?'':'disabled'}>${ic('undo',14)}</button><button class="btn btn-sm btn-icon" data-redo aria-label="Redo" ${UI.redo.length?'':'disabled'}>${ic('redo',14)}</button>
+ <div class="seg" role="group" aria-label="Device">${[['desktop','monitor'],['tablet','tablet'],['phone','phone']].map(([d,i])=>`<button aria-pressed="${UI.device===d}" data-device="${d}" aria-label="${d}">${ic(i,14)}</button>`).join('')}</div>
+ <button class="btn btn-sm" data-preview="${page.id}">${ic('eye',13)} Preview</button><button class="btn btn-sm btn-gold" data-publish>${ic('globe',13)} ${page.status==='Published'?'Published':'Publish'}</button></div></div>
+ <aside class="lib" aria-label="Section library">${renderLib(page)}</aside>
+ <section class="stage" id="stage"><div class="frame device-${UI.device}" style="width:${w}px;max-width:100%">${renderCanvas(page)}</div></section>
+ <aside class="props" aria-label="Properties">${renderProps(page)}</aside></div>`;}
+
+function viewAccounts(){
+ const q=(UI.uq||'').toLowerCase();const list=S.users.filter(u=>(!UI.ufilter||u.portal===UI.ufilter)&&(!q||(u.name+u.email).toLowerCase().includes(q)));
+ return `<main class="view"><div class="view-head"><div><div class="label">Site Builder</div><h1>Accounts &amp; portals</h1><p class="muted" style="margin-top:4px">Portals are account types. Each has its own menu and pages. Users log in to one portal.</p></div><div class="row"><button class="btn" data-giveaccess>${ic('copy',14)} Copy a portal for someone</button><button class="btn" data-newportal>${ic('plus',14)} New account type</button><button class="btn btn-primary" data-newuser>${ic('plus',14)} New user</button></div></div>
+ <div class="grid" style="--min:250px">${S.portals.map(p=>{const pages=S.pages.filter(x=>x.portal===p.id).length;const users=S.users.filter(u=>u.portal===p.id).length;return `<div class="card portal-card" style="padding:18px"><div class="split"><span class="icon-box ${p.builtin?'navy':''}">${ic(p.icon,17)}</span>${p.builtin?'<span class="pill">Built-in</span>':`<span class="pill gold">Custom · based on ${esc(portal(p.basedOn).name)}</span>`}</div><div><div style="font-weight:700;font-size:16px">${esc(p.name)}</div><div class="small muted">Sees: ${esc(p.scope)}</div></div><div class="row small"><span><b>${pages}</b> built page${pages===1?'':'s'}</span><span><b>${users}</b> user${users===1?'':'s'}</span></div><div class="row"><button class="btn btn-sm" data-newpage="${p.id}">${ic('plus',12)} Page</button><button class="btn btn-sm" data-menus="${p.id}">${ic('menu',12)} Menu</button>${p.builtin?`<span class="small muted" title="Built-in portals can't be deleted">${ic('lock',12)}</span>`:`<button class="btn btn-sm btn-danger-o" data-delportal="${p.id}">${ic('trash',12)} Delete</button>`}</div></div>`;}).join('')}</div>
+ <section class="card" style="margin-top:18px;padding:0;overflow:hidden"><div class="split" style="padding:16px 20px"><h2 style="font-size:17px">Users</h2><div class="row"><input class="input" id="uq" placeholder="Search name or email" style="width:220px" value="${esc(UI.uq||'')}" aria-label="Search users"><select class="select" id="ufilter" style="width:auto" aria-label="Filter users"><option value="">All portals</option>${S.portals.filter(p=>p.id!=='public').map(p=>`<option value="${p.id}" ${UI.ufilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div></div>
+ <div style="overflow:auto"><table class="t"><thead><tr><th>User</th><th>Portal</th><th>Organisation</th><th>Data</th><th>Status</th><th></th></tr></thead><tbody>${list.map(u=>`<tr><td><div class="row" style="flex-wrap:nowrap"><span class="avatar">${esc(u.name.split(' ').map(w=>w[0]).join('').slice(0,2))}</span><div><div class="strong">${esc(u.name)}</div><div class="small muted">${esc(u.email)}</div></div></div></td><td><span class="pill ${portal(u.portal).builtin?'':'gold'}">${esc(portal(u.portal).name)}</span></td><td class="small">${esc(u.org)}</td><td class="small muted">${u.records} records</td><td><span class="pill ${u.status==='Active'?'success':'warning'}">${esc(u.status)}</span></td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" data-resetpw="${u.id}">${ic('key',12)} Reset password</button> <button class="btn btn-sm" data-toggleuser="${u.id}">${u.status==='Active'?'Disable':'Enable'}</button> <button class="btn btn-sm btn-icon btn-danger-o" data-deluser="${u.id}" aria-label="Delete ${esc(u.name)}">${ic('trash',14)}</button></td></tr>`).join('')||`<tr><td colspan="6" class="muted" style="text-align:center;padding:30px">No users match.</td></tr>`}</tbody></table></div></section></main>`;}
+
+function viewMenus(){
+ const pid=UI.menuPortal||'student';const menu=S.menus[pid]||(S.menus[pid]=[]);const free=S.pages.filter(p=>p.portal===pid&&!menuPosOf(p));
+ return `<main class="view"><div class="view-head"><div><div class="label">Site Builder</div><h1>Menus</h1><p class="muted" style="margin-top:4px">Drag to reorder. Rename by clicking a label. New pages can sit in the top menu or inside a group.</p></div>
+ <select class="select" style="width:auto" id="menuPortal" aria-label="Choose portal">${S.portals.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.name)} menu</option>`).join('')}</select></div>
+ <section class="card" style="background:var(--navy);color:#fff;padding:16px 20px"><div class="label" style="color:var(--gold)">Live preview</div><div class="cv-menu" style="border:0;padding:0">${menu.map((m,i)=>`<span class="${i===0?'on':''}">${esc(m.label)}${m.children.length?' ▾':''}</span>`).join('')||'<span>Empty menu — add pages below</span>'}</div></section>
+ <div class="row" style="align-items:flex-start;margin-top:18px;gap:18px"><section class="card menu-tree" style="flex:999 1 520px">${menu.length?menu.map((m,i)=>`<div class="mi" draggable="true" data-mi="${i}"><span class="muted" style="cursor:grab">${ic('grip',15)}</span><span class="icon-box" style="width:28px;height:28px">${ic(m.icon||'file',14)}</span><input value="${esc(m.label)}" data-rename="${i}" aria-label="Menu label">${m.sys?'<span class="pill">System</span>':'<span class="pill gold">Built page</span>'}<button class="btn btn-sm btn-icon" data-mup="${i}" aria-label="Move up">${ic('up',13)}</button><button class="btn btn-sm btn-icon" data-mdown="${i}" aria-label="Move down">${ic('down',13)}</button>${m.sys?'':`<button class="btn btn-sm btn-icon btn-danger-o" data-mremove="${i}" aria-label="Remove from menu">${ic('x',13)}</button>`}</div>${m.children.map((c,ci)=>`<div class="mi child"><span class="muted">${ic('chevR',13)}</span><input value="${esc(c.label)}" data-rename="${i}.${ci}" aria-label="Sub-menu label"><span class="pill gold">Built page</span><button class="btn btn-sm btn-icon btn-danger-o" data-mremove="${i}.${ci}" aria-label="Remove from menu">${ic('x',13)}</button></div>`).join('')}`).join(''):'<p class="muted">No menu items yet.</p>'}</section>
+ <aside class="card" style="flex:1 1 280px"><div class="label">Pages not in the menu</div>${free.length?free.map(p=>`<div class="box row" style="margin-top:10px;padding:10px;flex-wrap:nowrap"><span class="icon-box">${ic(p.icon||'file',14)}</span><span class="strong small" style="flex:1">${esc(p.name)}</span><select class="select" style="width:auto;height:32px" data-placepage="${p.id}" aria-label="Place ${esc(p.name)}"><option value="">Place…</option><option value="top">Top menu</option>${menu.map(m=>`<option value="${m.id}">In ${esc(m.label)}</option>`).join('')}</select></div>`).join(''):'<p class="small muted" style="margin-top:8px">Every built page for this portal is already in the menu.</p>'}</aside></div></main>`;}
+
+function viewLibrary(){
+ const q=(UI.lq||'').toLowerCase();const all=[...CAT,...BASICS,...FIELDS].filter(c=>!q||(c.name+c.page+c.data).toLowerCase().includes(q));
+ return `<main class="view"><div class="view-head"><div><div class="label">Site Builder</div><h1>Section library</h1><p class="muted" style="margin-top:4px">Every section from your live site, rebuilt as a smart block. Each knows its data and which portals may use it.</p></div><input class="input" id="lq" style="width:260px" placeholder="Search sections" value="${esc(UI.lq||'')}" aria-label="Search library"></div>
+ <section class="card" style="padding:0;overflow:hidden"><div style="overflow:auto"><table class="t"><thead><tr><th>Section</th><th>Comes from</th><th>Reads data</th><th>Available for</th></tr></thead><tbody>${all.map(c=>`<tr><td><div class="row" style="flex-wrap:nowrap"><span class="icon-box">${ic(c.icon,14)}</span><span class="strong">${esc(c.name)}</span></div></td><td class="small">${c.portal==='basic'||c.portal==='field'?'Basic block':esc(portal(c.portal).name)+' › '+esc(c.page)}</td><td class="small muted">${esc(c.data||'Nothing (static)')}</td><td>${c.roles.length===5?'<span class="pill success">All portals</span>':c.roles.map(r=>`<span class="pill" style="margin:2px">${esc(portal(r).name)}</span>`).join('')}</td></tr>`).join('')}</tbody></table></div></section></main>`;}
+
+function viewActivity(){
+ return `<main class="view"><div class="view-head"><div><div class="label">Site Builder</div><h1>Activity &amp; versions</h1><p class="muted" style="margin-top:4px">Every create, publish and delete is logged. Restore a page to any published version.</p></div><button class="btn btn-sm" data-reset>${ic('history',13)} Reset demo data</button></div>
+ <section class="card"><ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px">${S.history.map(h=>`<li class="box row" style="padding:12px;flex-wrap:nowrap"><span class="icon-box">${ic(/Deleted/.test(h.what)?'trash':/Published/.test(h.what)?'globe':/Created/.test(h.what)?'plus':'edit',15)}</span><div style="flex:1"><div class="strong small">${esc(h.what)}</div><div class="small muted">${esc(h.who)} · ${esc(h.t)}</div></div>${h.page&&S.pages.find(p=>p.id===h.page)?`<button class="btn btn-sm" data-edit="${h.page}">Open</button>`:''}</li>`).join('')}</ul></section></main>`;}
+
+function log(what,page){S.history.unshift({t:now(),who:'Lohit Kumar',what,page});save();}
+
+/* ---------- modals: new page / portal / user / deletes ---------- */
+function openNewPage(pre){
+ const portals=S.portals;
+ modal(`<h2>New page</h2><p class="muted small" style="margin-top:4px">Three quick choices, then you're on the canvas.</p>
+ <div style="display:flex;flex-direction:column;gap:16px;margin-top:18px">
+  <label class="field">Page name<input class="input" id="np-name" placeholder="e.g. Internship Tracker"></label>
+  <div class="field">Which portal is it for?<div class="choice">${portals.map(p=>`<label><input type="radio" name="np-portal" value="${p.id}" ${p.id===(pre||'student')?'checked':''}>${ic(p.icon,18)}<b>${esc(p.name)}</b><span class="muted" style="font-size:11px">${esc(p.scope)}</span></label>`).join('')}</div></div>
+  <label class="field">Where in the menu?<select class="select" id="np-menu"></select></label>
+  <div class="field">Start from<div class="choice"><label><input type="radio" name="np-start" value="blank" checked>${ic('file',18)}<b>Blank page</b></label><label><input type="radio" name="np-start" value="dashboard">${ic('grid',18)}<b>Dashboard</b><span class="muted" style="font-size:11px">Tiles, chart, list</span></label><label><input type="radio" name="np-start" value="list">${ic('table',18)}<b>List</b><span class="muted" style="font-size:11px">Search + table</span></label><label><input type="radio" name="np-start" value="form">${ic('form',18)}<b>Form</b><span class="muted" style="font-size:11px">Collect new data</span></label></div></div>
+ </div><div class="foot"><button class="btn" data-close>Cancel</button><button class="btn btn-primary" id="np-go">${ic('layers',14)} Create &amp; open canvas</button></div>`,true);
+ const fill=()=>{const pid=document.querySelector('[name=np-portal]:checked').value;const menu=S.menus[pid]||[];document.getElementById('np-menu').innerHTML=`<option value="top">New top-menu item</option>${menu.map(m=>`<option value="${m.id}">Inside “${esc(m.label)}”</option>`).join('')}<option value="">Hidden (link only)</option>`;};
+ fill();document.querySelectorAll('[name=np-portal]').forEach(r=>r.onchange=fill);
+ document.getElementById('np-go').onclick=()=>{const name=document.getElementById('np-name').value.trim();if(!name){document.getElementById('np-name').classList.add('error');document.getElementById('np-name').focus();toast('Give the page a name',true);return;}
+  const pid=document.querySelector('[name=np-portal]:checked').value,start=document.querySelector('[name=np-start]:checked').value;const role=roleOf(pid);
+  const pick=(st,co,sa)=>role==='student'?st:role==='college'?co:role==='trainer'?'tr-tiles':role==='public'?'pub-stats':sa;
+  const T={blank:[],dashboard:[['1',[pick('stu-welcome','col-tiles','col-tiles')]],['2a',[pick('stu-attchart','col-attchart','col-attchart')],[pick('tr-schedule','col-breakdown','sa-notifs')]]],list:[['1',['b-table']]],form:[['2a',['b-form'],['b-alert']]]};
+  const page={id:uid('p'),name,subtitle:'',portal:pid,icon:'file',status:'Draft',updated:now(),records:0,rows:T[start].map(([lay,...cs])=>({id:uid('r'),layout:lay,cols:cs.map(l=>({id:uid('c'),blocks:l.map(newBlock)}))}))};
+  S.pages.unshift(page);setMenuPos(page,document.getElementById('np-menu').value);log(`Created page “${name}” for ${portal(pid).name}`,page.id);closeModal();openEditor(page.id);toast('Page created — drag sections from the left');};
+}
+function openNewPortal(){
+ modal(`<h2>New account type</h2><p class="muted small" style="margin-top:4px">For example: Placement Officer, Company HR, Parent. It gets its own login, menu and pages.</p>
+ <div style="display:flex;flex-direction:column;gap:16px;margin-top:18px"><label class="field">Name<input class="input" id="pt-name" placeholder="e.g. Company HR"></label>
+ <div class="field">Start from<div class="choice">${['student','college','trainer','super-admin'].map((b,i)=>`<label><input type="radio" name="pt-base" value="${b}" ${i===1?'checked':''}>${ic(portal(b).icon,18)}<b>Like ${esc(portal(b).name)}</b><span class="muted" style="font-size:11px">Copies its menu &amp; data access</span></label>`).join('')}</div></div>
+ <label class="field">What data can they see?<input class="input" id="pt-scope" placeholder="e.g. Students of the colleges assigned to them"><span class="hint">Shown on every section as “Shows: …”.</span></label>
+ <label class="check"><input type="checkbox" id="pt-copy" checked> Copy the starting portal's menu so the account isn't empty</label></div>
+ <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn btn-primary" id="pt-go">${ic('plus',14)} Create account type</button></div>`,true);
+ document.getElementById('pt-go').onclick=()=>{const name=document.getElementById('pt-name').value.trim();if(!name){toast('Give it a name',true);return;}const base=document.querySelector('[name=pt-base]:checked').value;const id=uid('portal-');
+  S.portals.push({id,name,builtin:false,basedOn:base,scope:document.getElementById('pt-scope').value.trim()||portal(base).scope,icon:'target'});
+  S.menus[id]=document.getElementById('pt-copy').checked?JSON.parse(JSON.stringify(S.menus[base]||[])):[];
+  log(`Created portal “${name}” (based on ${portal(base).name})`);closeModal();UI.view='accounts';render();toast(`“${name}” created — now add users and pages`);};
+}
+function openNewUser(){
+ modal(`<h2>New user</h2><div style="display:flex;flex-direction:column;gap:14px;margin-top:16px"><div class="grid" style="--min:200px"><label class="field">Full name<input class="input" id="nu-name"></label><label class="field">Login email<input class="input" id="nu-email" type="email"></label></div>
+ <div class="grid" style="--min:200px"><label class="field">Account type<select class="select" id="nu-portal">${S.portals.filter(p=>p.id!=='public').map(p=>`<option value="${p.id}" ${p.id==='student'?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label class="field">College / organisation<select class="select" id="nu-org"><option>Crestview College of Engineering</option><option>Pinnacle Institute of Technology</option><option>Global Institute of Technology</option><option>Learn Being Forward</option></select></label></div>
+ <label class="field">Password<div class="row" style="flex-wrap:nowrap"><input class="input mono" id="nu-pw" type="password" value="${genPw()}"><button class="btn btn-sm" id="nu-gen" type="button">${ic('key',13)} New</button></div><span class="hint">Shown once after creating. They can change it from Profile.</span></label>
+ <label class="check"><input type="checkbox" checked> Email the login details to them</label></div>
+ <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn btn-primary" id="nu-go">${ic('plus',14)} Create user</button></div>`);
+ document.getElementById('nu-gen').onclick=()=>document.getElementById('nu-pw').value=genPw();
+ document.getElementById('nu-go').onclick=()=>{const name=document.getElementById('nu-name').value.trim(),email=document.getElementById('nu-email').value.trim();if(!name||!/.+@.+\..+/.test(email)){toast('Enter a name and a valid email',true);return;}
+  if(S.users.some(u=>u.email.toLowerCase()===email.toLowerCase())){toast('That email already has an account',true);return;}
+  const u={id:uid('u-'),name,email,portal:document.getElementById('nu-portal').value,org:document.getElementById('nu-org').value,status:'Active',records:0};S.users.unshift(u);log(`Created ${portal(u.portal).name} user ${email}`);
+  modal(`<span class="icon-box" style="background:var(--success-soft);color:var(--success);width:48px;height:48px;border-radius:50%">${ic('check',22)}</span><h2 style="margin-top:12px">${esc(name)} can log in now</h2><p class="muted" style="margin-top:6px">Copy these details — the password won't be shown again.</p><div class="box" style="margin-top:14px"><div class="label">Email</div><div class="mono">${esc(email)}</div><div class="label" style="margin-top:10px">Password</div><input class="input mono" type="password" readonly value="${esc(document.getElementById('nu-pw').value)}" aria-label="Password"><div class="label" style="margin-top:10px">Lands on</div><div>${esc(portal(u.portal).name)} › ${esc(((S.menus[u.portal]||[])[0]||{label:'Home'}).label)}</div></div><div class="foot"><button class="btn btn-primary" data-close>Done</button></div>`);UI.view='accounts';render();};
+}
+function genPw(){const c='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';return Array.from({length:12},()=>c[Math.floor(Math.random()*c.length)]).join('');}
+function dangerModal({title,lead,impacts,confirmText,button,onConfirm}){
+ modal(`<div class="danger-head"><span class="icon-box">${ic('trash',20)}</span><div><h2>${esc(title)}</h2><p class="muted small" style="margin-top:4px">${lead}</p></div></div><ul class="impact">${impacts.map(i=>`<li>${ic('x',15)}<span>${i}</span></li>`).join('')}</ul>
+ <div class="alert warning" style="margin-top:14px">${ic('alert',16)}<span>This is permanent. It is removed from the database, not just hidden — it can't be restored.</span></div>
+ <label class="field" style="margin-top:16px"><span>Type <span class="mono" style="background:var(--surface);padding:1px 6px;border-radius:4px">${esc(confirmText)}</span> to confirm</span><input class="input" id="dz-confirm" autocomplete="off"></label>
+ <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn btn-danger" id="dz-go" disabled>${ic('trash',14)} ${esc(button)}</button></div>`);
+ const inp=document.getElementById('dz-confirm'),go=document.getElementById('dz-go');inp.focus();inp.oninput=()=>go.disabled=inp.value.trim()!==confirmText;go.onclick=()=>{closeModal();onConfirm();};}
+function deletePage(id){const p=S.pages.find(x=>x.id===id);const n=p.rows.reduce((a,r)=>a+r.cols.reduce((x,c)=>x+c.blocks.length,0),0);const forms=p.rows.some(r=>r.cols.some(c=>c.blocks.some(b=>b.type==='b-form')));
+ dangerModal({title:`Delete “${p.name}”?`,lead:`${esc(portal(p.portal).name)} page · ${esc(p.status)}`,impacts:[`The page and its <b>${n} sections</b>`,forms?`All <b>${p.records} records</b> people saved through this page's form`:'No saved form data on this page',`Its menu link — users will no longer see it`,`Its version history`],confirmText:p.name,button:'Delete page',
+  onConfirm:()=>{S.pages=S.pages.filter(x=>x.id!==id);setMenuPosAll(id);log(`Deleted page “${p.name}” and its data`);if(UI.pageId===id){UI.pageId=null;UI.view='pages';}render();toast(`“${p.name}” and its data were permanently deleted`);}});}
+function setMenuPosAll(id){Object.values(S.menus).forEach(menu=>{for(let i=menu.length-1;i>=0;i--){if(menu[i].pageId===id)menu.splice(i,1);else menu[i].children=menu[i].children.filter(c=>c.pageId!==id);}});}
+function deleteUser(id){const u=S.users.find(x=>x.id===id);
+ dangerModal({title:`Delete ${u.name}?`,lead:`${esc(u.email)} · ${esc(portal(u.portal).name)}`,impacts:[`<b>Login stops working immediately</b> — every open session is signed out`,`Their profile, photo and CV`,`All their data: <b>${u.records} records</b> (attendance, submissions, requests)`,`The email becomes free — a new account would start from zero`],confirmText:u.email,button:'Delete user & data',
+  onConfirm:()=>{S.users=S.users.filter(x=>x.id!==id);log(`Deleted user ${u.email} and all their data`);render();toast(`${u.email} deleted — login disabled`);}});}
+function deletePortal(id){const p=portal(id);const pages=S.pages.filter(x=>x.portal===id),users=S.users.filter(u=>u.portal===id);
+ dangerModal({title:`Delete the “${p.name}” account type?`,lead:`Custom portal based on ${esc(portal(p.basedOn).name)}`,impacts:[`<b>${users.length} user${users.length===1?'':'s'}</b> — their logins stop working immediately`,`All data belonging to those users`,`<b>${pages.length} built page${pages.length===1?'':'s'}</b> and anything saved through them`,`The portal's menu and settings`],confirmText:p.name,button:'Delete everything',
+  onConfirm:()=>{S.pages=S.pages.filter(x=>x.portal!==id);S.users=S.users.filter(u=>u.portal!==id);S.portals=S.portals.filter(x=>x.id!==id);delete S.menus[id];log(`Deleted portal “${p.name}”, ${users.length} users and ${pages.length} pages`);if(curPage()==null)UI.pageId=null;render();toast(`“${p.name}” and all its users, pages and data were deleted`);}});}
+
+/* ---------- open editor / preview ---------- */
+function openEditor(id){UI.pageId=id;UI.view='editor';UI.sel=null;UI.undo=[];UI.redo=[];const p=curPage();UI.openGroups={[roleOf(p.portal)]:1};render();}
+function openPreview(id){const p=S.pages.find(x=>x.id===id);const o=document.createElement('div');o.className='overlay';o.innerHTML=`<div class="ov-bar"><div class="row"><b>Preview</b><span class="pill gold">${esc(portal(p.portal).name)}</span><span class="small" style="color:var(--on-navy)">Exactly what users will see — hidden sections removed</span></div><div class="row"><div class="seg dark">${['Desktop','Tablet','Phone'].map((d,i)=>`<button aria-pressed="${i===0}" data-pw="${[1080,780,390][i]}">${d}</button>`).join('')}</div><button class="btn btn-sm btn-gold" id="ov-close">${ic('x',13)} Close</button></div></div><div class="ov-body"><div class="frame" id="ov-frame" style="width:1080px;max-width:100%;margin:0 auto;border-radius:10px;overflow:hidden;background:var(--cream);box-shadow:var(--shadow)">${renderCanvas(p,true)}</div></div>`;
+ document.body.append(o);o.querySelector('#ov-close').onclick=()=>o.remove();o.querySelectorAll('[data-pw]').forEach(b=>b.onclick=()=>{o.querySelectorAll('[data-pw]').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');const f=o.querySelector('#ov-frame');f.style.width=b.dataset.pw+'px';f.className='frame'+(b.dataset.pw==='390'?' device-phone':b.dataset.pw==='780'?' device-tablet':'');});
+ o.tabIndex=-1;o.focus();o.addEventListener('keydown',e=>{if(e.key==='Escape')o.remove();});}
+
+/* =====================================================================
+   SYSTEM PAGE MAP — every page of the live site, its sections, the items
+   inside each section, and which items open another page ("A>target").
+   ===================================================================== */
+const SP=(id,name,parent,els)=>({id,name,parent,els});
+const SE=(label,kind,items)=>({label,kind,items:(items||[]).map(x=>{const [l,to]=x.split('>');return {label:l.trim(),to:to?to.trim():null};})});
+const SYS={
+ 'public':[
+  SP('home','Home',null,[SE('Hero banner','hero',['Explore courses>courses','Partner with us>contact']),SE('Stats strip','tiles',['Languages taught · 6+','Frameworks covered · 10+','Colleges trained · 75+','Students placement-ready · 1000s']),SE('What we do','cards',['Programming & Full-Stack','Aptitude & Soft Skills','Placement Support','Corporate Onboarding']),SE('Technologies strip','chips',['C','C++','Java','Python','React','Node.js','Spring Boot','MySQL']),SE('Who we train','list',['School students','Colleges & universities','Corporate freshers']),SE('Call to action','buttons',['Partner with us>contact','Explore courses>courses'])]),
+  SP('courses','Courses',null,[SE('Category tabs','tabs',['All','Technical','Aptitude','Soft skills']),SE('Search box','search'),SE('Technical courses','cards',['Java & DSA>course-detail','Full-Stack Development>course-detail','Frontend Development','Backend Development','Data Science / AI','Robotics','Programming']),SE('Aptitude courses','list',['Quantitative Aptitude','Logical Reasoning','Verbal Reasoning','Non-Verbal Reasoning']),SE('Soft skills','list',['Soft Skills'])]),
+  SP('course-detail','Course detail','courses',[SE('Course header','hero',['Java','Python','MySQL / SQL','Git']),SE('Curriculum modules','list',['Java Fundamentals','Java Intermediate','Java Advanced','DSA Fundamentals','DSA Advanced']),SE('Course at a glance','tiles',['Modules · 5','Duration · [weeks]','Delivery · Campus / online','Outcome · Capstone']),SE('Enroll buttons','buttons',['Enroll your college>contact','Contact us about this course>contact'])]),
+  SP('technologies','Technologies',null,[SE('Technology groups','cards',['Languages','Frontend','Backend','Databases','Tools & DevOps','Data & AI','Aptitude','Soft skills','Robotics'])]),
+  SP('about','About',null,[SE('Intro text','text'),SE('Three pillars','cards',['Courses','Campus partnerships','Placements']),SE('Founder profile','tiles',['Colleges · 75+','Experience · 4+ yrs'])]),
+  SP('team','Team',null,[SE('Filter','tabs',['All','Employees','Freelance']),SE('Trainer profiles','cards',['Lohit Kumar','Ananya Rao','Chidananda K','Sumitra S','Arjun Mehta','Priya Nair','Karthik Iyer'])]),
+  SP('contact','Contact',null,[SE('Message form','form',['Name','Email','I am a','Phone','Message']),SE('Company contact','list',['Phone · +91 99729 34418','Email · support@learnbeingforward.in']),SE('Team contacts','list',['Rahul Sharma · Placements','Divya Menon · Partnerships','Vikram Singh · Campus','Neha Kulkarni · Admissions','Sanjay Gupta · Operations','Meera Pillai · Student success','Harsh P · Invoices'])])],
+ 'student':[
+  SP('dashboard','My Dashboard',null,[SE('Summary tiles','tiles',['Enrolled courses · 2','Overall attendance · 90%','Next class · Mon 9:30','Assessments due · 0']),SE('Course card: Java & DSA','ring',['View details>course-progress','Java Fundamentals','Java Intermediate','DSA Fundamentals']),SE('Course card: Full-Stack','ring',['Frontend Module','Backend Module','Database Module']),SE('Placement support banner','alert',['Update CV>profile'])]),
+  SP('course-progress','Course progress','dashboard',[SE('Progress tiles','tiles',['Total classes · 34','Classes held · 20','Attended · 18','Attendance · 90%']),SE('Certificate','buttons',['Download certificate']),SE('Session-by-session table','table',['Date','Sessions','Module','Status'])]),
+  SP('attendance','Attendance',null,[SE('Attendance across courses','chart',['Java & DSA · 90','Full-Stack · 0']),SE('Java & DSA attendance','tiles',['Held · 20','Attended · 18','Upcoming · 14','Attendance · 90%']),SE('Certificate download','buttons',['Download certificate'])]),
+  SP('courses','Browse Courses',null,[SE('Category tabs','tabs',['Technical','Aptitude','Soft skills']),SE('Course catalogue','cards',['Backend Development','Data Science / AI','Frontend Development','Full-Stack Development','Java & DSA','Robotics']),SE('Request enrollment','buttons',['Request enrollment'])]),
+  SP('content','Content',null,[SE('Course picker','search'),SE('Module materials','list',['Frontend Module · Download','Backend Module · Requested','Database Module · Request access','Deployment Module · Locked'])]),
+  SP('assessments','Assessments',null,[SE('Proctoring rules notice','alert'),SE('Tabs','tabs',['To take','Completed']),SE('Assessment cards','cards',['Sasken Test 1','Sample Test 1','Aptitude Mock 2']),SE('Start assessment','buttons',['Start assessment'])]),
+  SP('profile','Profile',null,[SE('Profile form','form',['Full name','Email','College','Branch','Semester','USN',"Father's name"]),SE('CV upload','upload'),SE('Change password','form',['Current password','New password'])])],
+ 'college':[
+  SP('dashboard','Overview',null,[SE('Summary tiles','tiles',['Students enrolled · 60>all-students','Average attendance · 66%','Courses active · 6>courses','Certificates issued · 12']),SE('Attendance by course','chart',['Java · 61','FSD · 66','Data · 75','Backend · 73','Frontend · 58','Robotics · 61']),SE('Breakdown by course','list',['Java & DSA · 8 students','Full-Stack · 10 students','Data Science · 15 students','Backend · 8 students','Frontend · 12 students','Robotics · 11 students']),SE('Quick actions','buttons',['Add a student>add-student','Enroll in a course>courses','Build a batch>batches','Attendance exception>queries'])]),
+  SP('students','Students',null,[SE('Toolbar','buttons',['View all students>all-students','Add student>add-student']),SE('Search','search'),SE('Students by branch','cards',['Electronics & Comm. · 9>all-students','Information Technology · 8>all-students','Mechanical · 12>all-students','Electrical · 9>all-students','Computer Science · 3>all-students','Unspecified · 23>all-students'])]),
+  SP('all-students','All students','students',[SE('Search & filters','chips',['Search','Branch filter','Semester filter','Course filter','Attendance filter']),SE('Export','buttons',['Export CSV']),SE('Students table','table',['Student','Email','Branch','Semester','Course','Attendance','CV']),SE('Row actions','chips',['View','Edit','Remove from roster'])]),
+  SP('add-student','Add student','students',[SE('How sign-up works','alert'),SE('Single student form','form',['Full name','Email','USN',"Father's name",'Branch','Semester']),SE('Bulk upload (Excel)','upload'),SE('Recently added','table',['Student','Added','Signup status'])]),
+  SP('courses','Courses',null,[SE('Bulk enroll','form',['Course','Branch groups','Students']),SE('Request enrollment','buttons',['Request enrollment']),SE('Course activity','list',['Java & DSA · 61%','Full-Stack · 66%','Data Science · 75%','Backend · 73%','Frontend · 58%','Robotics · 61%'])]),
+  SP('batches','Batches',null,[SE('Build a batch','form',['Course','Semester','Students']),SE('Your batches','cards',['Data Science — Batch 2>batch-detail','Placement Program — Batch 2>batch-detail','Placement Program — Batch 1>batch-detail','Data Science — Batch 1>batch-detail','Full-Stack — Batch 1>batch-detail','Backend — Batch 1>batch-detail','Robotics — Batch 1>batch-detail'])]),
+  SP('batch-detail','Batch detail','batches',[SE('Batch header','tiles',['Students · 4/60','Status · In progress','Trainer · Demo Trainer']),SE('Students in batch','list',['Reyansh Mehta','Riya Pillai','Reyansh Iyer','Aditya Chauhan']),SE('Move student action','chips',['Move to course']),SE('Add students to batch','form',['Unbatched students'])]),
+  SP('queries','Query from Student',null,[SE('Search & filters','chips',['Search','Course filter']),SE('Students below 75%','list',['Aadhya Singh · 43%','Aarav Singh · 73%','Amit Verma · 59%','Arjun Sharma · 0%']),SE('Request actions','chips',['Write reason','Attach proof','Send request'])]),
+  SP('contracts','Contracts',null,[SE('Summary tiles','tiles',['Pending requests · 0','Pending invoices · 0','Active trainings · 4','Paid to date · ₹54,000']),SE('Waiting for you','list',['Robotics training request','Invoice ₹27,000']),SE('Decision actions','chips',['View MOU','Approve','Reject','Accept invoice','Download PDF']),SE('Recent decisions','table',['Item','Type','Decision'])]),
+  SP('assessment-data','Assessment Data',null,[SE('Results summary','tiles',['Attempted · 3','Average · 42%','Highest · 9/12','Cleared · 1']),SE('Results table','table',['Student','Branch','Marks','Percent','Result']),SE('Download','buttons',['Download CSV'])]),
+  SP('profile','Profile',null,[SE('College details form','form',['College name','Contact email','Logo']),SE('Students per branch','list',['Unspecified · 19','Mechanical · 12','Electrical · 9','E&C · 8','IT · 8','CS · 3']),SE('Change password','form',['Current password','New password'])])],
+ 'trainer':[
+  SP('details','Personal Details',null,[SE('Summary tiles','tiles',['Active batches · 1>batches','Upcoming sessions · 2>schedule','Attendance pending · 2>attendance','Ready to invoice · ₹0>invoice']),SE('Personal details form','form',['Name','Email','Phone','Hourly rate','About you','CV']),SE('Bank details form','form',['Account holder','Account number','IFSC','Bank name'])]),
+  SP('batches','My Batches',null,[SE('Tabs','tabs',['Active','Completed']),SE('Batch cards','cards',['Backend Development — Batch 1']),SE('Batch actions','buttons',['Schedule>schedule','Mark attendance>attendance'])]),
+  SP('schedule','Schedule',null,[SE('View switch','tabs',['List','Calendar']),SE('Upcoming sessions','list',['Server Frameworks · Sep 16 09:00','REST API Design · Sep 16 11:15']),SE('Batch timeline','list',['Server Frameworks','REST API Design'])]),
+  SP('attendance','Attendance',null,[SE('Pending notice','alert'),SE('Sessions table','table',['Session','Batch','Module','Status']),SE('Mark buttons','buttons',['Mark attendance>mark-attendance'])]),
+  SP('mark-attendance','Mark attendance','attendance',[SE('Session info','text'),SE('Bulk actions','buttons',['Mark all present','Clear']),SE('Student list','list',['Riya Patel','Riya Agarwal','Rohan Kumar','Aditya Menon','Nikhil Sharma']),SE('Submit','buttons',['Submit attendance'])]),
+  SP('content','Content',null,[SE('Send content to eligible students','form',['Batch','Students','Modules']),SE('Upload new content','form',['Title','Description','Course','Module','File']),SE('Your content','table',['Title','Module','Status'])]),
+  SP('invoice','Invoice',null,[SE('Invoice tiles','tiles',['Sessions ready · 0','Total hours · 0','Rate · ₹1,000/hr','Total · ₹0']),SE('Ready sessions','table',['Date','Batch','Module','Hours','Amount']),SE('Generate invoice','form',['Note']),SE('Past invoices','table',['Invoice','Period','Amount','Status'])])],
+ 'super-admin':[
+  SP('requests','Requests',null,[SE('Summary tiles','tiles',['Pending requests · 0','Colleges represented · 0','Courses requested · 0','Students · 293>all-students','Certificates to issue · 79>attendance']),SE('Pending approval by college','list',['Approve / reject each request']),SE('Recent decisions','list',['Aadhya Joshi · Approved','Varun Kumar · Approved','Myra Singh · Approved']),SE('Quick actions','buttons',['Add an account>add-account','Schedule training>trainers-schedule','Build an assessment>assessments','Upload content>course-content'])]),
+  SP('notifications','Notifications',null,[SE('Tabs','tabs',['All','Students','Colleges','Trainers','Admin']),SE('Notification feed','list',['Enrollment request · Aadhya Joshi','Attendance exception · Crestview'])]),
+  SP('attendance','Attendance',null,[SE('Summary tiles','tiles',['Avg attendance · 68%','Enrollments · 309','Eligible, not issued · 79','Issued · —']),SE('Attendance by course','chart',['Full-Stack · 72','Java · 81','Backend · 64','Robotics · 58']),SE('By college','list',['Crestview · 64','Sunrise · 63','Pinnacle · 56']),SE('Certificate queue','table',['Student','College','Course','Attendance','Status']),SE('Issue certificates','buttons',['Issue selected','Issue'])]),
+  SP('edit-site','Edit Site',null,[SE('Site sections','cards',['Courses>edit-courses','Technologies','Employees>edit-employees','Contacts>edit-employees','Home page','Footer links','Company contact'])]),
+  SP('edit-courses','Courses editor','edit-site',[SE('Add new course','form',['Course name','Category','Short description','Full description','Technologies']),SE('Add module','form',['Course','Track','Level','Module title','Topics']),SE('Existing courses','table',['Course','Category','Modules','Status'])]),
+  SP('edit-employees','Employees & contacts editor','edit-site',[SE('Add profile','form',['Photo','Full name','Role','Experience','Type','Skills']),SE('Company contact','form',['Name','Phone','Email']),SE('Published profiles','table',['Profile','Shown on','Type','Order'])]),
+  SP('trainer-content','Trainer-Submitted Content',null,[SE('Review notice','alert'),SE('Submissions','table',['Content','Trainer','Course · Module','Batch','Status']),SE('Actions','chips',['Preview','Send to attendees'])]),
+  SP('add-account','Add Account',null,[SE('Account type tabs','tabs',['Student','College','Trainer','Second admin','Employee']),SE('Student form','form',['Full name','Email','USN',"Father's name",'Branch','Semester','College']),SE('Bulk upload (Excel)','upload'),SE('College form','form',['College name','Contact email','Admin name','Admin email']),SE('Trainer form','form',['Full name','Login email','Phone','Hourly rate'])]),
+  SP('manage-accounts','Manage Accounts',null,[SE('Reset by email','form',['Account email','New password']),SE('Reset student password','form',['Student','New password']),SE('Reset college password','form',['College','New password']),SE('Reset trainer password','form',['Trainer','New password']),SE('Audit log','table',['When','Account','Role','Reset by'])]),
+  SP('all-students','All Students',null,[SE('Search & filters','chips',['Search','College','Course','Attendance']),SE('Students table','table',['Student','College','Branch','Sem','Course','Attendance','CV']),SE('Export','buttons',['Export CSV'])]),
+  SP('colleges','Colleges',null,[SE('Section cards','cards',['Approvals · 0>colleges-approvals','Sent to college · 4>colleges-sent','MOUs · 4>colleges-mous']),SE('New training request','form',['College','Domains','Courses','Training type','Branch','Semester','Min students','Days','Start date'])]),
+  SP('colleges-approvals','Approvals','colleges',[SE('Pending approvals','list',['Sunrise — Java & DSA']),SE('Set rate & send','form',['Rate type','Rate'])]),
+  SP('colleges-sent','Sent to College','colleges',[SE('Training requests','list',['Crestview — Robotics','Crestview — Java & DSA','Crestview — Data Science','Crestview — Frontend']),SE('Invoice actions','chips',['Generate invoice','Mark as paid'])]),
+  SP('colleges-mous','MOUs','colleges',[SE('Approved trainings','list',['Crestview — Robotics','Crestview — Java & DSA']),SE('MOU editor','form',['Effective date','Special terms'])]),
+  SP('trainers','Trainers',null,[SE('Section cards','cards',['Batches>trainers-batches','Schedule training>trainers-schedule','Invoices>trainers-invoices']),SE('All trainers','table',['Trainer','Batches','Login','Hourly rate']),SE('Trainer actions','chips',['Create login','Save rate'])]),
+  SP('trainers-batches','Batches','trainers',[SE('Auto-batch','buttons',['Auto-batch everyone']),SE('Build a batch manually','form',['College','Course','Semester','Students']),SE('Batches by college','cards',['Crestview · 7','Pinnacle · 6','Horizon · 6','Sunrise · 6','Global · 5'])]),
+  SP('trainers-schedule','Schedule Training','trainers',[SE('New session-day','form',['Batch','Trainer','Date','Session 1','Session 2','Session 3']),SE('Sessions by trainer','list',['Demo Trainer · 10','Anil Deshmukh · 2','Arvind Bhatt · 3']),SE('Calendar','calendar')]),
+  SP('trainers-invoices','Trainer invoices','trainers',[SE('Invoice tiles','tiles',['Pending · 0','Approved this month · ₹9,000','Trainer dues · ₹0']),SE('Pending invoices','list',['Anil Deshmukh · ₹9,000']),SE('Decision actions','chips',['View breakdown','Approve','Reject']),SE('Recent decisions','table',['Trainer','Period','Amount','Decision'])]),
+  SP('account-details','Account Details',null,[SE('Totals','tiles',['Students · 293','Colleges · 7','Trainers · 3','Admins · 3','Trainer dues · ₹0']),SE('Account tabs','tabs',['Students','Colleges','Trainers','Admins']),SE('Directory table','table',['Name','Phone','College','Courses & attendance','Password']),SE('Generate new password','buttons',['Generate new password'])]),
+  SP('employee-access','Employee Access',null,[SE('New employee form','form',['Account type','Full name','Login email','Password','Phone']),SE('Access checkboxes','list',['Overview','Accounts','Registrations','Assessments','Course content']),SE('Existing employees','table',['Employee','Type','Access','Status'])]),
+  SP('registrations','New Registrations',null,[SE('Pending registrations','list',['Ishaan Verma · roster match']),SE('Decision actions','chips',['Approve','Reject','Approve all'])]),
+  SP('attendance-approvals','Approvals from College',null,[SE('Pending exceptions','list',['Aadhya Joshi · 62%']),SE('Decision actions','chips',['Approve','Reject']),SE('Recent decisions','table',['Student','Course','College','Decision'])]),
+  SP('password-resets','Password Reset Requests',null,[SE('Info notice','alert'),SE('Pending requests','list',['Aadhya Joshi']),SE('Recent decisions','table',['Account','Role','Decision','Date'])]),
+  SP('assessments','Assessments',null,[SE('Assessment categories','cards',['Aptitude>assessment-create','Technical aptitude>assessment-create','Coding>assessment-create']),SE('Recent assessments','table',['Assessment','Category','Questions','Window','Sent'])]),
+  SP('assessment-create','New assessment','assessments',[SE('Create assessment form','form',['Title','Description','Duration','Opens','Closes','Proctoring']),SE('In this category','list',['Sample Test 1','Sasken Test 1']),SE('Send to students','buttons',['Send to students'])]),
+  SP('submissions','Submissions',null,[SE('Totals','tiles',['Submissions · 1','Average · 17%','Graded · 1','Flagged · 0']),SE('Submissions table','table',['Student','College','Assessment','Marks','Time','Proctoring','Status'])]),
+  SP('course-content','Course Content',null,[SE('Add content form','form',['Course','Module','Sub-module','Title','PDF','Links']),SE('Browse by course','cards',['Backend','Data Science','Frontend','Full-Stack','Java & DSA','Programming']),SE('Access requests','table',['Student','Module','Batch had class','Requested'])]),
+  SP('profile','Profile',null,[SE('Profile details','form',['Name','Email','Photo']),SE('Bank details','form',['Account holder','Bank','Account number','IFSC','GST']),SE('Change password','form',['Current password','New password'])])]
+};
+const sysPage=(portalId,id)=>(SYS[portalId]||[]).find(p=>p.id===id);
+const sysKids=(portalId,id)=>(SYS[portalId]||[]).filter(p=>p.parent===id);
+function sysDesc(portalId,id){const out=[id];sysKids(portalId,id).forEach(k=>out.push(...sysDesc(portalId,k.id)));return out;}
+
+/* =====================================================================
+   COPY & REMOVE — copy a page (with its inner pages) or a whole portal,
+   then delete what you don't need. Inner pages must be deleted before the
+   box that opens them; deleting an inner page removes every link to it.
+   ===================================================================== */
+if(!S.sets)S.sets=[];
+const curSet=()=>S.sets.find(x=>x.id===UI.setId);
+function makeSet(portalId,rootId,forUser,name){
+ const ids=rootId?sysDesc(portalId,rootId):(SYS[portalId]||[]).map(p=>p.id);
+ const pages=ids.map(id=>{const sp=sysPage(portalId,id);return {id,name:sp.name,parent:rootId===id?null:sp.parent,deleted:false,els:sp.els.map(e=>({id:uid('e'),label:e.label,kind:e.kind,deleted:false,items:e.items.map(i=>({id:uid('i'),label:i.label,to:i.to,deleted:false}))}))};});
+ const set={id:uid('set'),name:name||(rootId?sysPage(portalId,rootId).name+' (copy)':portal(portalId).name+' portal (copy)'),source:portalId,forUser:forUser||null,pages,log:[],saved:false,created:now()};
+ S.sets.unshift(set);save();return set;}
+const tp=(set,id)=>set.pages.find(p=>p.id===id);
+const tLive=(set,id)=>{const p=tp(set,id);return !!p&&!p.deleted;};
+const tKids=(set,id)=>set.pages.filter(p=>p.parent===id&&!p.deleted);
+function tIsInner(set,page,target){let p=tp(set,target);while(p){if(p.parent===page.id)return true;p=tp(set,p.parent);}return false;}
+/* link state of an item: 'inner' (opens a live inner page → Open, no delete), 'gone' (target deleted → hide), 'shortcut' (other live page → deletable + go), null (plain) */
+function tLink(set,page,item){if(!item.to)return null;const t=tp(set,item.to);if(!t)return null;if(t.deleted)return 'gone';return tIsInner(set,page,item.to)?'inner':'shortcut';}
+const tItems=(set,page,el)=>el.items.filter(i=>!i.deleted&&tLink(set,page,i)!=='gone');
+const tEls=(set,page)=>page.els.filter(e=>!e.deleted&&!(e.items.length&&e.items.every(i=>i.deleted||tLink(set,page,i)==='gone')&&e.items.some(i=>tLink(set,page,i)==='gone')));
+const tHasInner=(set,page,el)=>tItems(set,page,el).some(i=>tLink(set,page,i)==='inner');
+function tCount(set){const pages=set.pages.filter(p=>!p.deleted);let els=0,items=0;pages.forEach(p=>tEls(set,p).forEach(e=>{els++;items+=tItems(set,p,e).length;}));return {pages:pages.length,els,items};}
+
+function viewTrim(){
+ const set=curSet();if(!set){UI.view='pages';return viewPages();}
+ let page=tp(set,UI.trimPage);if(!page||page.deleted){page=set.pages.find(p=>!p.deleted&&!p.parent)||set.pages.find(p=>!p.deleted);UI.trimPage=page&&page.id;}
+ const c=tCount(set);const by=portal(set.source);
+ const tree=(parent,depth)=>set.pages.filter(p=>p.parent===parent&&!p.deleted).map(p=>{const kids=tKids(set,p.id);return `<div class="tnode ${p.id===UI.trimPage?'on':''}" style="padding-left:${10+depth*18}px"><button class="tname" data-tpage="${p.id}">${ic(kids.length?'layers':'file',14)}<span>${esc(p.name)}</span></button>${kids.length?`<span class="pill" title="Delete its inner pages first">${kids.length} inner</span>`:`<button class="btn btn-sm btn-icon btn-danger-o" data-tdelpage="${p.id}" aria-label="Delete page ${esc(p.name)}" title="Delete this page">${ic('trash',13)}</button>`}</div>${tree(p.id,depth+1)}`;}).join('');
+ const crumbs=[];let q=page;while(q){crumbs.unshift(q);q=q.parent?tp(set,q.parent):null;}
+ const tops=set.pages.filter(p=>!p.parent&&!p.deleted);
+ let body='';
+ if(!page){body=`<div class="page-empty">Every page was removed. Restore one from the right.</div>`;}
+ else{
+  const els=tEls(set,page);
+  body=els.map((e,ei)=>{const its=tItems(set,page,e);const inner=tHasInner(set,page,e);
+   return `<div class="tel" data-tel="${e.id}"><div class="tel-head"><span class="muted" title="Drag to reorder">${ic('grip',14)}</span><b>${esc(e.label)}</b><span class="pill">${esc(e.kind)}</span><span style="flex:1"></span>
+    <button class="btn btn-sm btn-icon" data-telmove="${e.id}:-1" aria-label="Move up" ${ei?'':'disabled'}>${ic('up',12)}</button><button class="btn btn-sm btn-icon" data-telmove="${e.id}:1" aria-label="Move down" ${ei<els.length-1?'':'disabled'}>${ic('down',12)}</button>
+    ${inner?`<span class="pill info" title="This box opens inner pages. Open and delete them first.">${ic('lock',11)} Opens inner pages</span>`:`<button class="btn btn-sm btn-danger-o" data-teldel="${e.id}">${ic('trash',12)} Delete box</button>`}</div>
+    ${its.length?`<div class="tel-items ${e.kind}">${its.map(i=>{const L=tLink(set,page,i);const [lab,val]=i.label.split(' · ');return `<div class="titem">${val!=null&&(e.kind==='tiles'||e.kind==='chart')?`<span class="label">${esc(lab)}</span><b>${esc(val)}${e.kind==='chart'?'%':''}</b>`:`<span>${esc(i.label)}</span>`}
+      ${L==='inner'?`<button class="btn btn-sm btn-primary" data-tpage="${i.to}">Open ${ic('chevR',12)}</button>`:L==='shortcut'?`<button class="link-go" data-tpage="${i.to}" title="Go to ${esc(tp(set,i.to).name)}">${ic('link',11)}</button><button class="titem-x" data-titemdel="${e.id}:${i.id}" aria-label="Delete ${esc(i.label)}">${ic('x',11)}</button>`:`<button class="titem-x" data-titemdel="${e.id}:${i.id}" aria-label="Delete ${esc(i.label)}">${ic('x',11)}</button>`}</div>`;}).join('')}</div>`:`<p class="small muted">${e.kind==='alert'||e.kind==='text'?'Text block':'Single element'} — delete the box to remove it.</p>`}</div>`;}).join('')||`<div class="page-empty">Everything on this page was removed.${tKids(set,page.id).length?'':' You can delete the page itself from the tree on the left.'}</div>`;
+ }
+ const removed=set.log.slice().reverse();
+ return `<div class="trim"><div class="edbar"><div class="row"><button class="btn btn-sm" data-view="pages">${ic('arrowL',13)} Pages</button><b>${esc(set.name)}</b><span class="pill">Copied from ${esc(by.name)}</span>${set.forUser?`<span class="pill gold">${ic('user',11)} ${esc(set.forUser.name)}</span>`:''}${set.saved?'<span class="pill success">Saved</span>':'<span class="pill">Not saved</span>'}</div>
+  <div class="row"><span class="small muted"><b style="color:var(--text)">${c.pages}</b> page${c.pages===1?'':'s'} · <b style="color:var(--text)">${c.els}</b> boxes · <b style="color:var(--text)">${c.items}</b> items kept</span><button class="btn btn-sm btn-primary" data-tsave>${ic('check',13)} ${set.forUser?'Save & give access':'Save as pages'}</button></div></div>
+  <aside class="lib" aria-label="Page tree"><div style="padding:14px 12px;border-bottom:1px solid var(--border)"><div class="label">Pages in this copy</div><p class="small muted" style="margin-top:4px">${ic('trash',11)} deletes a page. Pages with inner pages can only be deleted once those are gone.</p></div><div class="ttree">${tree(null,0)||'<p class="muted small" style="padding:12px">No pages left.</p>'}</div></aside>
+  <section class="stage"><div class="frame" style="width:1000px;max-width:100%"><div class="cv-band"><div class="cv-top"><span class="brand" style="font-size:13px">${ic('cap',18)}Learn Being <span class="f">Forward</span></span><span class="role-pill">${esc(set.forUser?set.forUser.name:by.name)}</span></div><div class="cv-menu">${tops.map(t=>`<span class="${crumbs[0]&&crumbs[0].id===t.id?'on':''}" data-tpage="${t.id}" style="cursor:pointer">${esc(t.name)}</span>`).join('')}</div>
+   <div class="cv-title"><div class="small" style="color:var(--on-navy)">${crumbs.map((x,i)=>i<crumbs.length-1?`<button class="link-crumb" data-tpage="${x.id}">${esc(x.name)}</button> › `:'').join('')}</div><h2>${esc(page?page.name:'')}</h2><p>Remove anything this ${set.forUser?'employee':'page'} doesn't need — it's blocked for them in the system too.</p></div></div><div class="cv-body" style="display:flex;flex-direction:column;gap:12px">${body}</div></div></section>
+  <aside class="props"><div class="props-head"><div class="label">${set.forUser?'Access for '+esc(set.forUser.name):'This copy'}</div><div class="small muted" style="margin-top:4px">${set.forUser?esc(set.forUser.email):'Not assigned to anyone yet'}</div></div>
+   <div class="props-sec"><span class="label">They can open</span>${set.pages.filter(p=>!p.deleted).map(p=>`<div class="small row" style="gap:6px">${ic('check',12)}${esc(p.name)}</div>`).join('')||'<span class="small muted">Nothing</span>'}</div>
+   <div class="props-sec"><span class="label">Removed (${removed.length}) — blocked for them</span>${removed.length?removed.map((r,i)=>`<div class="item-row" style="justify-content:space-between"><span class="small" style="width:auto;text-align:left">${ic(r.type==='page'?'file':r.type==='box'?'grid':'x',12)} ${esc(r.label)}</span><button class="btn btn-sm" data-trestore="${set.log.length-1-i}">${ic('undo',12)} Restore</button></div>`).join(''):'<span class="small muted">Nothing removed yet. Use the × and Delete buttons on the page.</span>'}
+   <div class="alert info small">${ic('shield',14)}<span>Removed items aren't just hidden: the matching actions and data are blocked for this account on the server.</span></div></div></aside></div>`;
+}
+function tLog(set,entry){set.log.push(entry);set.saved=false;save();}
+function tAct(d){const set=curSet();
+ if(d.tpage){UI.trimPage=d.tpage;render();return true;}
+ if(d.tdelpage){const p=tp(set,d.tdelpage);if(tKids(set,p.id).length){toast('Delete its inner pages first',true);return true;}
+  const links=set.pages.filter(x=>!x.deleted).reduce((a,x)=>a+x.els.reduce((b,e)=>b+e.items.filter(i=>!i.deleted&&i.to===p.id).length,0),0);
+  p.deleted=true;tLog(set,{type:'page',page:p.id,label:p.name});if(UI.trimPage===p.id)UI.trimPage=p.parent;render();toast(`Deleted “${p.name}”${links?` — ${links} link${links>1?'s':''} to it removed too`:''}`);return true;}
+ if(d.teldel){const pg=tp(set,UI.trimPage);const e=pg.els.find(x=>x.id===d.teldel);e.deleted=true;tLog(set,{type:'box',page:pg.id,el:e.id,label:pg.name+' › '+e.label});render();toast(`Deleted “${e.label}”`);return true;}
+ if(d.titemdel){const pg=tp(set,UI.trimPage);const [eid,iid]=d.titemdel.split(':');const e=pg.els.find(x=>x.id===eid);const it=e.items.find(x=>x.id===iid);it.deleted=true;tLog(set,{type:'item',page:pg.id,el:eid,item:iid,label:e.label+' › '+it.label});render();toast(`Removed “${it.label}”`);return true;}
+ if(d.telmove){const pg=tp(set,UI.trimPage);const [eid,dd]=d.telmove.split(':');const vis=tEls(set,pg);const i=vis.findIndex(x=>x.id===eid),j=i+(+dd);if(j<0||j>=vis.length)return true;const a=pg.els.indexOf(vis[i]),b=pg.els.indexOf(vis[j]);[pg.els[a],pg.els[b]]=[pg.els[b],pg.els[a]];set.saved=false;save();render();return true;}
+ if(d.trestore){const r=set.log.splice(+d.trestore,1)[0];const pg=tp(set,r.page);if(r.type==='page')pg.deleted=false;if(r.type==='box')pg.els.find(x=>x.id===r.el).deleted=false;if(r.type==='item')pg.els.find(x=>x.id===r.el).items.find(x=>x.id===r.item).deleted=false;set.saved=false;save();render();toast(`Restored “${r.label}”`);return true;}
+ if(d.tsave!==undefined){tSave(set);return true;}
+ return false;}
+/* turn a trimmed copy into real, editable pages (and an account if it's for an employee) */
+function tSave(set){
+ let pid=set.portalId;
+ if(!pid){pid=uid('portal-');set.portalId=pid;S.portals.push({id:pid,name:set.forUser?set.forUser.role||(set.forUser.name+' access'):set.name.replace(' (copy)',''),builtin:false,basedOn:roleOf(set.source)||'super-admin',scope:set.forUser?'Only what was kept in “'+set.name+'”':portal(set.source).scope,icon:'target'});S.menus[pid]=[];}
+ S.pages=S.pages.filter(p=>p.fromSet!==set.id);S.menus[pid]=[];
+ set.pages.filter(p=>!p.deleted).forEach(p=>{const rows=tEls(set,p).map(e=>{const b=newBlock('x-copied');b.props.title=e.label;b.props.kindOrig=e.kind;b.props.items=tItems(set,p,e).map(i=>{const [l,v]=i.label.split(' · ');return {id:uid('i'),label:l,value:v||'',type:'Text'};});return {id:uid('r'),layout:'1',cols:[{id:uid('c'),blocks:[b]}]};});
+  const page={id:uid('p'),name:p.name,subtitle:'',portal:pid,icon:p.parent?'file':'layers',status:'Draft',updated:now(),records:0,rows,fromSet:set.id};S.pages.push(page);
+  if(!p.parent)S.menus[pid].push({id:uid('m'),label:p.name,icon:'file',pageId:page.id,children:[]});});
+ S.pages.filter(x=>x.fromSet===set.id).forEach(pg=>{const sp=set.pages.find(q=>q.name===pg.name&&!q.deleted);if(sp&&sp.parent){const parentPg=set.pages.find(q=>q.id===sp.parent);const m=S.menus[pid].find(mm=>mm.label===parentPg.name);m&&m.children.push({id:uid('m'),label:pg.name,pageId:pg.id});}});
+ if(set.forUser&&!S.users.some(u=>u.email===set.forUser.email))S.users.unshift({id:uid('u-'),name:set.forUser.name,email:set.forUser.email,portal:pid,org:set.forUser.org||'Learn Being Forward',status:'Active',records:0});
+ set.saved=true;log(`Saved “${set.name}”${set.forUser?' and gave access to '+set.forUser.email:''}`);save();render();
+ toast(set.forUser?`${set.forUser.name} can now log in and sees only what you kept`:'Saved as editable pages — find them in Pages');}
+
+function openCopy(portalId,pageId){
+ const sp=pageId?sysPage(portalId,pageId):null;const ids=pageId?sysDesc(portalId,pageId):(SYS[portalId]||[]).map(p=>p.id);
+ if(pageId&&ids.length===1){const set=makeSet(portalId,pageId);UI.setId=set.id;UI.trimPage=pageId;UI.view='trim';render();toast('Single page copied — delete what you don\'t need');return;}
+ const inner=ids.slice(1).map(id=>sysPage(portalId,id).name);
+ modal(`<h2>Copy ${pageId?'“'+esc(sp.name)+'”':'the whole '+esc(portal(portalId).name)+' portal'}</h2><p class="muted small" style="margin-top:6px">${pageId?`This page opens <b>${inner.length}</b> more page${inner.length>1?'s':''}. They're copied together so the links keep working:`:`All <b>${ids.length}</b> pages are copied:`}</p>
+ <div class="box" style="margin-top:12px;max-height:240px;overflow:auto">${ids.map(id=>{const x=sysPage(portalId,id);return `<div class="small row" style="gap:6px;padding:3px 0 3px ${x.parent&&x.id!==pageId?18:0}px">${ic(x.parent&&x.id!==pageId?'chevR':'file',12)}${esc(x.name)}</div>`}).join('')}</div>
+ <div class="alert gold" style="margin-top:12px">${ic('trash',15)}<span>Next, delete what you don't need. Boxes that open an inner page show <b>Open ›</b> — delete the inner page and its link disappears automatically.</span></div>
+ <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn btn-primary" id="cp-go">${ic('copy',14)} Copy ${ids.length} pages</button></div>`);
+ document.getElementById('cp-go').onclick=()=>{closeModal();const set=makeSet(portalId,pageId);UI.setId=set.id;UI.trimPage=pageId||set.pages[0].id;UI.view='trim';render();};}
+
+function openGiveAccess(){
+ const emps=S.users;
+ modal(`<h2>Give someone access by copying a portal</h2><p class="muted small" style="margin-top:4px">We copy every page of the portal you pick. Then you delete what they shouldn't see or do.</p>
+ <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px"><div class="field">Copy which portal?<div class="choice">${['super-admin','college','trainer','student'].map((p,i)=>`<label><input type="radio" name="ga-src" value="${p}" ${i===1?'checked':''}>${ic(portal(p).icon,18)}<b>${esc(portal(p).name)}</b><span class="muted" style="font-size:11px">${SYS[p].length} pages</span></label>`).join('')}</div></div>
+ <div class="field">For<div class="seg"><button type="button" aria-pressed="true" data-ga="new">New employee</button><button type="button" aria-pressed="false" data-ga="old">Existing user</button></div></div>
+ <div id="ga-new" class="grid" style="--min:200px"><label class="field">Full name<input class="input" id="ga-name"></label><label class="field">Login email<input class="input" id="ga-email" type="email"></label><label class="field">Phone<input class="input" id="ga-phone" type="tel"></label><label class="field">Password<input class="input" id="ga-pw" type="password" value="${genPw()}"></label><label class="field">Job title<input class="input" id="ga-role" placeholder="e.g. Placement Coordinator"></label></div>
+ <div id="ga-old" class="hidden"><label class="field">User<select class="select" id="ga-user">${emps.map(u=>`<option value="${u.id}">${esc(u.name)} · ${esc(u.email)}</option>`).join('')}</select></label></div></div>
+ <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn btn-primary" id="ga-go">${ic('copy',14)} Copy &amp; start removing</button></div>`,true);
+ enhancePw(document.getElementById('modal-root'));let mode='new';
+ document.querySelectorAll('[data-ga]').forEach(b=>b.onclick=()=>{mode=b.dataset.ga;document.querySelectorAll('[data-ga]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.getElementById('ga-new').classList.toggle('hidden',mode!=='new');document.getElementById('ga-old').classList.toggle('hidden',mode!=='old');});
+ document.getElementById('ga-go').onclick=()=>{const src=document.querySelector('[name=ga-src]:checked').value;let who;
+  if(mode==='new'){const n=document.getElementById('ga-name').value.trim(),e=document.getElementById('ga-email').value.trim();if(!n||!/.+@.+\..+/.test(e)){toast('Enter a name and a valid email',true);return;}if(S.users.some(u=>u.email.toLowerCase()===e.toLowerCase())){toast('That email already has an account — choose “Existing user”',true);return;}who={name:n,email:e,phone:document.getElementById('ga-phone').value,role:document.getElementById('ga-role').value.trim()};}
+  else{const u=S.users.find(x=>x.id===document.getElementById('ga-user').value);who={name:u.name,email:u.email,existing:true};}
+  closeModal();const set=makeSet(src,null,who,`${portal(src).name} access for ${who.name}`);UI.setId=set.id;UI.trimPage=set.pages[0].id;UI.view='trim';render();toast(`Copied ${set.pages.length} pages — now delete what ${who.name} shouldn't have`);};}
+
+/* =====================================================================
+   AI CREATE — a local, rule-based assistant (no cloud AI, no subscription).
+   It reads the description, matches keywords to capabilities, and builds
+   the account, menu and pages from the existing smart sections.
+   ===================================================================== */
+const CAPS=[
+ {id:'reports',name:'Dashboard & reports',page:'Dashboard',icon:'chart',rows:[['1',['col-tiles']],['2a',['col-attchart'],['col-breakdown']]],kw:['report','dashboard','overview','summary','analytics','numbers','kpi']},
+ {id:'students',name:'See students',page:'Students',icon:'users',rows:[['1',['col-students']]],kw:['student','roster','candidate','learner']},
+ {id:'attendance',name:'Attendance & certificates',page:'Attendance',icon:'check',rows:[['1',['col-attchart']],['1',['sa-certq']]],kw:['attendance','present','absent','certificate']},
+ {id:'mark',name:'Mark attendance',page:'Mark attendance',icon:'check',rows:[['1',['tr-mark']]],kw:['mark attendance','take attendance','record attendance']},
+ {id:'enroll',name:'Approve enrollments',page:'Enrollment requests',icon:'list',rows:[['2a',['sa-requests'],['sa-notifs']]],kw:['enroll','registration','approve student','admission']},
+ {id:'assess',name:'Build & send assessments',page:'Assessments',icon:'code',rows:[['1',['sa-assess']]],kw:['create test','build test','create assessment','build assessment','send assessment','make test','make assessment','conduct exam','set exam','quiz','mcq','question paper','coding question']},
+ {id:'results',name:'Assessment results',page:'Results',icon:'chart',rows:[['1',['sa-subs']]],kw:['result','score','marks','submission','performance','how students did']},
+ {id:'batches',name:'Batches',page:'Batches',icon:'layers',rows:[['1',['col-batches']]],kw:['batch','group of students']},
+ {id:'schedule',name:'Schedule & calendar',page:'Schedule',icon:'calendar',rows:[['1',['sa-calendar']],['1',['tr-schedule']]],kw:['schedule','calendar','session','timetable','class timing']},
+ {id:'content',name:'Course content',page:'Course content',icon:'book',rows:[['2a',['tr-upload'],['stu-materials']]],kw:['content','material','notes','pdf','upload','study material']},
+ {id:'invoices',name:'Invoices & payments',page:'Invoices',icon:'money',rows:[['1',['sa-invoice']]],kw:['invoice','payment','bill','finance','money','accounts payable']},
+ {id:'contracts',name:'College contracts & MOUs',page:'Contracts',icon:'file',rows:[['1',['col-contracts']],['1',['sa-training']]],kw:['contract','mou','training request','partnership','college deal']},
+ {id:'placement',name:'Placements',page:'Placements',icon:'briefcase',rows:[['1',['stu-placement']],['1',['col-students']]],kw:['placement','job','company','hiring','interview','recruit','offer']},
+ {id:'notifs',name:'Notifications',page:'Notifications',icon:'bell',rows:[['1',['sa-notifs']]],kw:['notification','alert','update','message']},
+ {id:'accounts',name:'Reset passwords',page:'Accounts',icon:'key',rows:[['1',['sa-reset']]],kw:['password','reset','login problem','account']},
+];
+function aiDefault(){return {step:1,name:'',email:'',phone:'',pw:genPw(),role:'',base:'super-admin',org:'Learn Being Forward',text:'',caps:{},access:{},scope:'All colleges',outline:null,result:null,why:{}};}
+function aiParse(text){const t=' '+text.toLowerCase()+' ';const caps={},why={};CAPS.forEach(c=>{const hit=c.kw.find(k=>t.includes(k));if(hit){caps[c.id]=true;why[c.id]=hit;}});
+ const viewOnly=/(view only|read only|only view|only see|cannot edit|can't edit|no edit|just see|only check)/.test(t);
+ let scope=null;const m=t.match(/(crestview|pinnacle|global|sunrise|horizon)/g);if(m)scope='Only '+[...new Set(m)].map(x=>x[0].toUpperCase()+x.slice(1)).join(', ');
+ return {caps,why,viewOnly,scope};}
+function aiOutline(A){const pages=[{key:'home',name:'Home',icon:'home',sections:[{id:'h1',label:'Welcome heading',type:'b-heading'},{id:'h2',label:'Summary tiles',type:'b-tiles'},{id:'h3',label:'Notifications',type:'sa-notifs'}]}];
+ CAPS.filter(c=>A.caps[c.id]).forEach(c=>pages.push({key:c.id,name:c.page,icon:c.icon,access:A.access[c.id]||'edit',sections:c.rows.flatMap(([lay,...cols])=>cols.flat()).map((t,i)=>({id:c.id+i,label:BY_ID[t].name,type:t}))}));
+ pages.push({key:'profile',name:'Profile',icon:'user',sections:[{id:'p1',label:'Profile form',type:'b-form'},{id:'p2',label:'Change password',type:'b-form'}]});
+ return pages;}
+function viewAI(){const A=UI.ai||(UI.ai=aiDefault());const st=A.step;
+ const steps=['Who is it for','What they need','Access','Outline','Done'];
+ const head=`<div class="ai-steps">${steps.map((s,i)=>`<div class="ai-step ${i+1===st?'on':i+1<st?'done':''}"><span>${i+1<st?ic('check',13):i+1}</span>${s}</div>`).join('')}</div>`;
+ let body='';
+ if(st===1)body=`<h2>Who is this account for?</h2><p class="muted" style="margin-top:4px">These details create their login.</p><div class="grid" style="--min:240px;margin-top:18px">
+  <label class="field">Full name *<input class="input" data-ai="name" value="${esc(A.name)}" placeholder="e.g. Rahul Sharma"></label><label class="field">Login email *<input class="input" type="email" data-ai="email" value="${esc(A.email)}" placeholder="name@learnbeingforward.in"></label>
+  <label class="field">Phone<input class="input" type="tel" data-ai="phone" value="${esc(A.phone)}" placeholder="+91"></label><label class="field">Password *<span class="row" style="flex-wrap:nowrap;gap:6px"><input class="input mono" type="password" data-ai="pw" value="${esc(A.pw)}"><button class="btn btn-sm" type="button" data-aigenpw>${ic('key',12)} New</button></span><span class="hint">Shown to you once after creating. They can change it later.</span></label>
+  <label class="field">Job title<input class="input" data-ai="role" value="${esc(A.role)}" placeholder="e.g. Placement Coordinator"></label><label class="field">Works for<select class="select" data-ai="org">${['Learn Being Forward','Crestview College of Engineering','Pinnacle Institute of Technology','Global Institute of Technology'].map(o=>`<option ${o===A.org?'selected':''}>${o}</option>`).join('')}</select></label></div>
+  <div class="field" style="margin-top:16px">What kind of account?<div class="choice">${[['super-admin','Company employee','Works inside Learn Being Forward'],['college','College staff','Sees one college\'s data'],['trainer','Trainer','Runs batches and classes'],['student','Student-type','Sees only their own data']].map(([v,l,s])=>`<label><input type="radio" name="ai-base" value="${v}" ${A.base===v?'checked':''}>${ic(portal(v).icon,18)}<b>${l}</b><span class="muted" style="font-size:11px">${s}</span></label>`).join('')}</div></div>`;
+ if(st===2){body=`<h2>What should ${esc(A.name.split(' ')[0]||'they')} be able to do?</h2><p class="muted" style="margin-top:4px">Describe it in plain words. The assistant picks the matching parts of the site — you can change anything.</p>
+  <textarea class="textarea" rows="4" data-ai="text" style="margin-top:14px" placeholder="e.g. Rahul handles placements for Crestview and Pinnacle. He should see students and their attendance, check assessment results, and see notifications. View only — he shouldn't edit anything.">${esc(A.text)}</textarea>
+  <div class="row" style="margin-top:10px"><button class="btn btn-gold" data-aisuggest>${ic('sparkle',14)} Suggest from my description</button><span class="small muted">Runs inside the page — no paid AI service.</span></div>
+  ${Object.keys(A.why).length?`<div class="alert info" style="margin-top:12px">${ic('sparkle',15)}<span>Understood: ${Object.keys(A.why).map(k=>`<b>${esc(CAPS.find(c=>c.id===k).name)}</b> <span class="small">(“${esc(A.why[k])}”)</span>`).join(', ')}${A.viewOnlyHit?'. Detected <b>view only</b>':''}${A.scopeHit?'. Scope: <b>'+esc(A.scope)+'</b>':''}.</span></div>`:''}
+  <div class="label" style="margin:18px 0 8px">Parts of the site (click to add or remove)</div><div class="cap-grid">${CAPS.map(c=>`<button class="cap ${A.caps[c.id]?'on':''}" data-aicap="${c.id}" aria-pressed="${!!A.caps[c.id]}">${ic(c.icon,16)}<span>${esc(c.name)}</span>${A.caps[c.id]?ic('check',14):ic('plus',14)}</button>`).join('')}</div>`;}
+ if(st===3){const sel=CAPS.filter(c=>A.caps[c.id]);body=`<h2>How much access?</h2><p class="muted" style="margin-top:4px">For each part: can they change things, or only look?</p>
+  <div class="t-wrap" style="margin-top:14px"><table class="t"><thead><tr><th>Part</th><th>View only</th><th>Can edit &amp; approve</th></tr></thead><tbody>${sel.map(c=>`<tr><td><div class="row" style="flex-wrap:nowrap">${ic(c.icon,15)}<b>${esc(c.name)}</b></div></td>${['view','edit'].map(a=>`<td><label class="check"><input type="radio" name="acc-${c.id}" data-aiacc="${c.id}" value="${a}" ${(A.access[c.id]||'edit')===a?'checked':''}> ${a==='view'?'Only look':'Change'}</label></td>`).join('')}</tr>`).join('')||'<tr><td colspan="3" class="muted">Nothing selected — go back a step.</td></tr>'}</tbody></table></div>
+  <label class="field" style="margin-top:16px;max-width:420px">Which data can they see?<select class="select" data-ai="scope">${['All colleges','Only Crestview','Only Pinnacle','Only Crestview, Pinnacle','Only their own college','Only their own batches'].concat(A.scope&&!['All colleges','Only Crestview','Only Pinnacle','Only Crestview, Pinnacle','Only their own college','Only their own batches'].includes(A.scope)?[A.scope]:[]).map(o=>`<option ${o===A.scope?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;}
+ if(st===4){const O=A.outline||(A.outline=aiOutline(A));body=`<h2>Here's the outline</h2><p class="muted" style="margin-top:4px">${esc(A.name)} · ${esc(A.role||portal(A.base).name)} · sees: ${esc(A.scope)}. Remove anything with ×, then build.</p>
+  <div class="cv-band" style="border-radius:12px;margin-top:14px;padding:12px 18px"><div class="label" style="color:var(--gold)">Their menu</div><div class="cv-menu" style="border:0;padding:0">${O.map((p,i)=>`<span class="${i===0?'on':''}">${esc(p.name)}</span>`).join('')}</div></div>
+  <div class="grid" style="--min:260px;margin-top:14px">${O.map((p,pi)=>`<div class="box"><div class="split"><div class="row">${ic(p.icon,16)}<b>${esc(p.name)}</b>${p.access?`<span class="pill ${p.access==='view'?'':'success'}">${p.access==='view'?'View only':'Can edit'}</span>`:''}</div>${p.key==='home'||p.key==='profile'?'':`<button class="btn btn-sm btn-icon btn-danger-o" data-aidelpage="${pi}" aria-label="Remove page ${esc(p.name)}">${ic('trash',12)}</button>`}</div>
+   <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">${p.sections.map((s,si)=>`<div class="m-li" style="padding:6px 8px">${ic(BY_ID[s.type].icon,13)}<span class="grow">${esc(s.label)}</span><button class="titem-x" style="position:static;transform:none;flex:none" data-aidelsec="${pi}:${si}" aria-label="Remove ${esc(s.label)}">${ic('x',11)}</button></div>`).join('')||'<span class="small muted">Empty page</span>'}</div></div>`).join('')}</div>`;}
+ if(st===5){const R=A.result;body=`<div style="text-align:center;padding:10px 0"><span class="icon-box" style="width:56px;height:56px;border-radius:50%;background:var(--success-soft);color:var(--success);margin:0 auto">${ic('check',26)}</span><h2 style="margin-top:12px">${esc(R.name)}'s account and ${R.pages.length} pages are ready</h2><p class="muted" style="margin-top:6px">Everything is a draft. Open any page to delete boxes or items, then publish.</p></div>
+  <div class="box" style="max-width:520px;margin:16px auto"><div class="label">Login details — shown once</div><div class="mono" style="margin-top:6px">${esc(R.email)}</div><div class="row" style="flex-wrap:nowrap;margin-top:6px"><input class="input mono" type="password" value="${esc(R.pw)}" readonly aria-label="Password"></div></div>
+  <div class="grid" style="--min:220px;margin-top:10px">${R.pages.map(id=>{const p=S.pages.find(x=>x.id===id);return p?`<div class="box row" style="flex-wrap:nowrap"><span class="icon-box">${ic(p.icon,15)}</span><b style="flex:1">${esc(p.name)}</b><button class="btn btn-sm btn-primary" data-edit="${p.id}">${ic('edit',12)} Edit</button></div>`:''}).join('')}</div>`;}
+ const nav=st<5?`<div class="split" style="margin-top:24px">${st>1?`<button class="btn" data-aistep="${st-1}">${ic('arrowL',13)} Back</button>`:'<span></span>'}<button class="btn btn-primary" data-ainext>${st===4?ic('sparkle',14)+' Build account &amp; pages':'Next '+ic('chevR',14)}</button></div>`:`<div class="row" style="justify-content:center;margin-top:20px"><button class="btn" data-ainew>${ic('plus',13)} Create another</button><button class="btn btn-gold" data-aipublish>${ic('globe',13)} Publish all &amp; activate login</button></div>`;
+ return `<main class="view"><div class="view-head"><div><div class="label">Site Builder</div><h1>${ic('sparkle',22)} AI Create</h1><p class="muted" style="margin-top:4px">Answer a few questions. The assistant builds the account, its menu and its pages from your existing sections.</p></div></div>${head}<section class="card" style="margin-top:16px">${body}${nav}</section></main>`;}
+function aiAct(d,t){const A=UI.ai;
+ if(d.aigenpw!==undefined){A.pw=genPw();render();return true;}
+ if(d.aisuggest!==undefined){const r=aiParse(A.text||'');if(!Object.keys(r.caps).length){toast('No matching parts found — pick them below',true);}Object.assign(A.caps,r.caps);A.why=r.why;if(r.viewOnly){A.viewOnlyHit=1;CAPS.forEach(c=>A.access[c.id]='view');}if(r.scope){A.scope=r.scope;A.scopeHit=1;}A.outline=null;render();if(Object.keys(r.caps).length)toast(`Picked ${Object.keys(r.caps).length} parts from your description`);return true;}
+ if(d.aicap){A.caps[d.aicap]=!A.caps[d.aicap];A.outline=null;render();return true;}
+ if(d.aistep){A.step=+d.aistep;render();return true;}
+ if(d.ainext!==undefined){
+  if(A.step===1){const b=document.querySelector('[name=ai-base]:checked');A.base=b?b.value:A.base;if(!A.name.trim()||!/.+@.+\..+/.test(A.email)){toast('Enter a name and a valid email',true);return true;}if(S.users.some(u=>u.email.toLowerCase()===A.email.toLowerCase())){toast('That email already has an account',true);return true;}if(A.pw.length<8){toast('Password needs at least 8 characters',true);return true;}}
+  if(A.step===2&&!Object.values(A.caps).some(Boolean)){toast('Pick at least one part, or describe what they need',true);return true;}
+  if(A.step===4){aiBuild();return true;}
+  A.step++;render();return true;}
+ if(d.aidelpage){A.outline.splice(+d.aidelpage,1);render();return true;}
+ if(d.aidelsec){const [pi,si]=d.aidelsec.split(':').map(Number);A.outline[pi].sections.splice(si,1);render();return true;}
+ if(d.ainew!==undefined){UI.ai=aiDefault();render();return true;}
+ if(d.aipublish!==undefined){const R=A.result;R.pages.forEach(id=>{const p=S.pages.find(x=>x.id===id);if(p)p.status='Published';});const u=S.users.find(x=>x.email===R.email);if(u)u.status='Active';log(`Published ${R.pages.length} pages for ${R.email}`);save();render();toast(`${R.name} can log in now`);return true;}
+ return false;}
+function aiBuild(){const A=UI.ai;const O=A.outline;const pid=uid('portal-');
+ S.portals.push({id:pid,name:A.role||(A.name+' (custom)'),builtin:false,basedOn:A.base,scope:A.scope,icon:'target'});S.menus[pid]=[];const ids=[];
+ O.forEach(p=>{const rows=[];
+  p.sections.forEach(s=>{const b=newBlock(s.type);if(s.label==='Welcome heading'){b.props.text='Welcome, '+A.name.split(' ')[0];}
+   if(p.key==='home'&&s.type==='b-tiles'){b.props.title='Your areas';b.props.items=O.filter(x=>x.key!=='home'&&x.key!=='profile').map(x=>({id:uid('i'),label:x.name,value:x.access==='view'?'View':'Edit'}));}
+   if(p.key==='profile'){b.props.title=s.label;b.props.items=(s.label==='Change password'?['Current password','New password']:['Name','Email','Phone']).map(l=>({id:uid('i'),label:l,value:'',type:'Text'}));b.props.submit=s.label==='Change password'?'Change password':'Save';}
+   if(p.access==='view')b.props.readOnly=true;rows.push({id:uid('r'),layout:'1',cols:[{id:uid('c'),blocks:[b]}]});});
+  const page={id:uid('p'),name:p.name,subtitle:p.access==='view'?'View only':'',portal:pid,icon:p.icon,status:'Draft',updated:now(),records:0,rows};S.pages.push(page);ids.push(page.id);S.menus[pid].push({id:uid('m'),label:p.name,icon:p.icon,pageId:page.id,children:[]});});
+ S.users.unshift({id:uid('u-'),name:A.name,email:A.email,portal:pid,org:A.org,status:'Not active yet',records:0,phone:A.phone});
+ A.result={name:A.name,email:A.email,pw:A.pw,pages:ids};A.step=5;log(`AI Create built “${A.role||A.name}” with ${ids.length} pages for ${A.email}`);save();render();toast(`Built ${ids.length} pages — open any to delete boxes, then publish`);}
+
+/* password show / hide on every password field */
+function enhancePw(root){(root||document).querySelectorAll('input[type=password]:not([data-pw-done])').forEach(inp=>{inp.dataset.pwDone='1';const w=document.createElement('span');w.className='pw-wrap';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+ const b=document.createElement('button');b.type='button';b.className='pw-eye';b.setAttribute('aria-label','Show password');b.setAttribute('aria-pressed','false');b.innerHTML=ic('eye',16);
+ b.onclick=()=>{const show=inp.type==='password';inp.type=show?'text':'password';b.setAttribute('aria-pressed',String(show));b.setAttribute('aria-label',show?'Hide password':'Show password');b.innerHTML=show?EYE_OFF:ic('eye',16);};w.appendChild(b);});}
+const EYE_OFF='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7c2 0 3.8.7 5.3 1.7M22 12s-4 7-10 7c-2 0-3.8-.7-5.3-1.7"/><path d="M3 3l18 18"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+
+/* ---------- render + events ---------- */
+function render(){
+ const v={ai:viewAI,trim:viewTrim,pages:viewPages,editor:viewEditor,accounts:viewAccounts,menus:viewMenus,library:viewLibrary,activity:viewActivity}[UI.view]();
+ const st=document.getElementById('stage');const sx=st?st.scrollTop:0;const lib=document.querySelector('.lib');const lx=lib?lib.scrollTop:0;
+ document.getElementById('app').innerHTML=shell(v);
+ const st2=document.getElementById('stage');if(st2)st2.scrollTop=sx;const lib2=document.querySelector('.lib');if(lib2)lib2.scrollTop=lx;
+ bindDnD();
+ enhancePw(document.getElementById('app'));
+}
+document.addEventListener('click',e=>{
+ const t=e.target.closest('[data-view],[data-newpage],[data-newportal],[data-newuser],[data-edit],[data-preview],[data-duppage],[data-delpage],[data-copysys],[data-act],[data-libtab],[data-add-click],[data-addrow],[data-device],[data-undo],[data-redo],[data-publish],[data-setlayout],[data-pick-row],[data-pick-block],[data-deluser],[data-delportal],[data-subdel],[data-tpage],[data-tdelpage],[data-teldel],[data-titemdel],[data-telmove],[data-trestore],[data-tsave],[data-aigenpw],[data-aisuggest],[data-aicap],[data-aistep],[data-ainext],[data-aidelpage],[data-aidelsec],[data-ainew],[data-aipublish],[data-copyportal],[data-copypage],[data-systab],[data-giveaccess],[data-openset],[data-delset],[data-itemmove],[data-itemadd],[data-itemrestore],[data-resetpw],[data-toggleuser],[data-menus],[data-mup],[data-mdown],[data-mremove],[data-close],[data-reset],.blk,.cv-row,.stage');
+ if(!t)return;const d=t.dataset;
+ if(d.close!==undefined){closeModal();return;}
+ if(UI.view==='trim'&&tAct(d))return;
+ if(UI.view==='ai'&&aiAct(d,t))return;
+ if(d.systab){UI.sysTab=d.systab;render();return;}
+ if(d.copyportal){openCopy(d.copyportal,null);return;}
+ if(d.copypage){openCopy(UI.sysTab||'college',d.copypage);return;}
+ if(d.giveaccess!==undefined){openGiveAccess();return;}
+ if(d.openset){UI.setId=d.openset;UI.trimPage=null;UI.view='trim';render();return;}
+ if(d.delset){const st=S.sets.find(x=>x.id===d.delset);dangerModal({title:`Delete the copy “${st.name}”?`,lead:'Working copy',impacts:['The working copy and its list of removed items',st.saved?'Pages already saved from it stay — delete them from the Pages list if needed':'Nothing was saved from it yet'],confirmText:st.name,button:'Delete copy',onConfirm:()=>{S.sets=S.sets.filter(x=>x.id!==st.id);log(`Deleted copy “${st.name}”`);render();toast('Copy deleted');}});return;}
+ if(d.view){e.preventDefault();UI.view=d.view;render();return;}
+ if(d.newpage!==undefined){openNewPage(d.newpage||null);return;}
+ if(d.newportal!==undefined){openNewPortal();return;}
+ if(d.newuser!==undefined){openNewUser();return;}
+ if(d.edit&&!t.hasAttribute('contenteditable')){openEditor(d.edit);return;}
+ if(d.preview){openPreview(d.preview);return;}
+ if(d.duppage){const p=S.pages.find(x=>x.id===d.duppage);const c=JSON.parse(JSON.stringify(p));c.id=uid('p');c.name=p.name+' (copy)';c.status='Draft';c.updated=now();c.records=0;S.pages.unshift(c);log(`Duplicated “${p.name}”`,c.id);render();toast('Copy created as a draft');return;}
+ if(d.delpage){deletePage(d.delpage);return;}
+ if(d.copysys){const role=d.portal;const map={student:[['1',['stu-welcome']],['1',['stu-course']],['1',['stu-placement']]],college:[['1',['col-tiles']],['2a',['col-attchart'],['col-breakdown']]],trainer:[['1',['tr-mark']]],'super-admin':[['2a',['sa-requests'],['sa-notifs']]],public:[['1',['pub-hero']],['1',['pub-stats']],['1',['pub-pillars']]]};
+  const page={id:uid('p'),name:d.copysys.split('›').pop().trim()+' (copy)',subtitle:'',portal:role,icon:'file',status:'Draft',updated:now(),records:0,rows:(map[role]||[]).map(([lay,...cs])=>({id:uid('r'),layout:lay,cols:cs.map(l=>({id:uid('c'),blocks:l.map(newBlock)}))}))};
+  S.pages.unshift(page);log(`Copied system page “${d.copysys}”`,page.id);openEditor(page.id);toast('Copied — edit it freely, the original stays untouched');return;}
+ if(d.subdel){e.stopPropagation();const [bid,i]=d.subdel.split(':');subDelete(bid,+i);return;}
+ if(d.itemmove){const [i,dd]=d.itemmove.split(':').map(Number);subMove(UI.sel.block,i,i+dd);return;}
+ if(d.itemadd!==undefined){const f=findBlock(UI.sel.block);snap();const k=BY_ID[f.b.type].kind;itemsOf(f.b).push({id:uid('i'),label:k==='form'?'New field':k==='table'?'New column':'New item',value:'0',type:'Text'});touch('Added');render();return;}
+ if(d.itemrestore){const f=findBlock(UI.sel.block);snap();const [x]=f.b.props.removed.splice(+d.itemrestore,1);itemsOf(f.b).push(x);touch(`Restored “${x.label}”`);render();return;}
+ if(d.act){e.stopPropagation();act(d.act,t);return;}
+ if(d.libtab){UI.libTab=d.libtab;render();return;}
+ if(d.addClick){e.stopPropagation();const s=UI.sel;let target=null;if(s&&s.block){const f=findBlock(s.block);target={row:f.r.id,col:f.c.id,index:f.i+1};}else if(s&&s.row){const r=curPage().rows.find(x=>x.id===s.row);const c=r.cols.find(x=>!x.blocks.length)||r.cols[r.cols.length-1];target={row:r.id,col:c.id,index:c.blocks.length};}addBlock(d.addClick,target);return;}
+ if(d.addrow){addRow(d.addrow);return;}
+ if(d.device){UI.device=d.device;render();return;}
+ if(d.undo!==undefined){doUndo();return;}if(d.redo!==undefined){doRedo();return;}
+ if(d.publish!==undefined){const p=curPage();const hidden=p.rows.reduce((a,r)=>a+r.cols.reduce((x,c)=>x+c.blocks.filter(b=>!BY_ID[b.type].roles.includes(roleOf(p.portal))).length,0),0);p.status='Published';p.updated=now();log(`Published “${p.name}”`,p.id);render();toast(hidden?`Published — ${hidden} admin-only section(s) stay hidden for users`:'Published — users can see it now');return;}
+ if(d.setlayout){setLayout(UI.sel.row,d.setlayout);return;}
+ if(d.pickRow){UI.sel={row:d.pickRow};render();return;}
+ if(d.pickBlock){UI.sel={block:d.pickBlock};render();document.querySelector(`[data-block="${d.pickBlock}"]`)?.scrollIntoView({block:'center',behavior:'smooth'});return;}
+ if(d.deluser){deleteUser(d.deluser);return;}if(d.delportal){deletePortal(d.delportal);return;}
+ if(d.resetpw){const u=S.users.find(x=>x.id===d.resetpw);const pw=genPw();modal(`<h2>New password for ${esc(u.name)}</h2><p class="muted small" style="margin-top:4px">Their old password stops working now.</p><input class="input mono" type="password" readonly value="${pw}" style="margin-top:14px" aria-label="New password"><div class="foot"><button class="btn btn-primary" data-close>Done</button></div>`);log(`Reset password for ${u.email}`);return;}
+ if(d.toggleuser){const u=S.users.find(x=>x.id===d.toggleuser);u.status=u.status==='Active'?'Disabled':'Active';log(`${u.status==='Active'?'Enabled':'Disabled'} ${u.email}`);render();toast(u.status==='Active'?'Login enabled':'Login disabled — data kept');return;}
+ if(d.menus){UI.menuPortal=d.menus;UI.view='menus';render();return;}
+ if(d.mup||d.mdown){const m=S.menus[UI.menuPortal||'student'];const i=+(d.mup||d.mdown),j=i+(d.mup?-1:1);if(j>=0&&j<m.length){[m[i],m[j]]=[m[j],m[i]];save();render();}return;}
+ if(d.mremove){const m=S.menus[UI.menuPortal||'student'];const [i,ci]=d.mremove.split('.').map(Number);if(ci>=0)m[i].children.splice(ci,1);else m.splice(i,1);save();render();toast('Removed from menu — the page still exists');return;}
+ if(d.reset!==undefined){if(confirmReset()){S=seed();save();UI.view='pages';render();toast('Demo data reset');}return;}
+ if(t.classList.contains('blk')){UI.sel={block:t.dataset.block};render();return;}
+ if(t.classList.contains('cv-row')){UI.sel={row:t.dataset.row};render();return;}
+ if(t.classList.contains('stage')&&!e.target.closest('[contenteditable]')){if(UI.sel){UI.sel=null;render();}return;}
+});
+function confirmReset(){return true;}
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.dataset.prop){const f=findBlock(UI.sel.block);if(!f)return;if(!UI._typing){snap();UI._typing=1;setTimeout(()=>UI._typing=0,800);}f.b.props[t.dataset.prop]=t.type==='checkbox'?t.checked:t.value;touch();
+  const el=document.querySelector(`[data-block="${f.b.id}"]`);if(el){const tools=el.querySelector('.blk-tools').outerHTML,tag=el.querySelector('.blk-tag').outerHTML;el.innerHTML=tag+tools+renderBlock(f.b,curPage());}
+  if(t.tagName==='SELECT'||t.type==='checkbox')render();return;}
+ if(t.dataset.ai){UI.ai[t.dataset.ai]=t.value;if(t.dataset.ai==='text'){UI.ai.why={};}return;}
+ if(t.dataset.item){const f=findBlock(UI.sel.block);if(!f)return;if(!UI._typing){snap();UI._typing=1;setTimeout(()=>UI._typing=0,800);}itemsOf(f.b)[+t.dataset.item][t.dataset.f]=t.value;touch();if(t.tagName==='SELECT'){render();return;}
+  const el=document.querySelector(`[data-block="${f.b.id}"]`);if(el){const tools=el.querySelector('.blk-tools').outerHTML,tag=el.querySelector('.blk-tag').outerHTML;el.innerHTML=tag+tools+renderBlock(f.b,curPage());bindSubs(el);}return;}
+ if(t.dataset.page){const p=curPage();if(t.dataset.page==='menuPos'){setMenuPos(p,t.value);touch('Menu updated');render();return;}p[t.dataset.page]=t.value;touch();if(t.tagName==='SELECT')render();else{const h=document.querySelector(`.cv-title [data-edit="${t.dataset.page}"]`);h&&(h.textContent=t.value);document.querySelector('.pname').textContent=p.name;}return;}
+ if(t.id==='libq'){UI.libQ=t.value;const pos=t.selectionStart;render();const n=document.getElementById('libq');n.focus();n.setSelectionRange(pos,pos);return;}
+ if(t.id==='uq'){UI.uq=t.value;const pos=t.selectionStart;render();const n=document.getElementById('uq');n.focus();n.setSelectionRange(pos,pos);return;}
+ if(t.id==='lq'){UI.lq=t.value;const pos=t.selectionStart;render();const n=document.getElementById('lq');n.focus();n.setSelectionRange(pos,pos);return;}
+ if(t.dataset.rename){const m=S.menus[UI.menuPortal||'student'];const [i,ci]=t.dataset.rename.split('.').map(Number);(ci>=0?m[i].children[ci]:m[i]).label=t.value;save();return;}
+});
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.dataset.aiacc){UI.ai.access[t.dataset.aiacc]=t.value;UI.ai.outline=null;}
+ if(t.name==='ai-base'){UI.ai.base=t.value;}
+ if(t.id==='pfilter'){UI.pfilter=t.value;render();}if(t.id==='ufilter'){UI.ufilter=t.value;render();}if(t.id==='menuPortal'){UI.menuPortal=t.value;render();}
+ if(t.dataset.placepage){const p=S.pages.find(x=>x.id===t.dataset.placepage);setMenuPos(p,t.value);save();render();toast('Added to menu');}
+ if(t.dataset.rename)render();
+});
+document.addEventListener('toggle',e=>{const g=e.target.closest&&e.target.closest('.lib-group');if(g)UI.openGroups[g.dataset.group]=g.open?1:0;},true);
+document.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.edit&&t.hasAttribute('contenteditable')){const p=curPage();const v=t.textContent.trim();if(v&&v!==p[t.dataset.edit]){snap();p[t.dataset.edit]=v;touch('Saved');render();}}});
+document.addEventListener('keydown',e=>{
+ if(e.target.closest('[contenteditable]')&&e.key==='Enter'){e.preventDefault();e.target.blur();return;}
+ if(document.getElementById('modal-root').innerHTML&&e.key==='Escape'){closeModal();return;}
+ if(UI.view!=='editor'||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.target.isContentEditable)return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?doRedo():doUndo();}
+ else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();doRedo();}
+ else if((e.key==='Delete'||e.key==='Backspace')&&UI.sel){e.preventDefault();if(UI.sel.block)act('blk-del',{dataset:{block:UI.sel.block}});else if(UI.sel.row)act('row-del',{dataset:{row:UI.sel.row}});}
+ else if(e.key==='Escape'&&UI.sel){UI.sel=null;render();}
+ else if(e.key==='Enter'&&e.target.classList.contains('blk')){UI.sel={block:e.target.dataset.block};render();}
+});
+
+/* ---------- drag & drop ---------- */
+let DRAG=null;
+function bindSubs(root){root.querySelectorAll('.sub[draggable]').forEach(el=>{
+  el.addEventListener('dragstart',e=>{e.stopPropagation();DRAG={sub:el.dataset.subb,from:+el.dataset.subi};e.dataTransfer.setData('text/plain','sub');e.dataTransfer.effectAllowed='move';});
+  el.addEventListener('dragover',e=>{if(DRAG&&DRAG.sub===el.dataset.subb){e.preventDefault();e.stopPropagation();el.classList.add('subover');}});
+  el.addEventListener('dragleave',()=>el.classList.remove('subover'));
+  el.addEventListener('drop',e=>{if(!DRAG||DRAG.sub!==el.dataset.subb)return;e.preventDefault();e.stopPropagation();el.classList.remove('subover');const D=DRAG;DRAG=null;subMove(D.sub,D.from,+el.dataset.subi);});});}
+function bindDnD(){
+ document.querySelectorAll('[data-add]').forEach(el=>el.addEventListener('dragstart',e=>{DRAG={add:el.dataset.add};e.dataTransfer.setData('text/plain',el.dataset.add);e.dataTransfer.effectAllowed='copy';document.body.classList.add('dragging');}));
+ document.querySelectorAll('[data-layout]').forEach(el=>el.addEventListener('dragstart',e=>{DRAG={layout:el.dataset.layout};e.dataTransfer.setData('text/plain',el.dataset.layout);document.body.classList.add('dragging');}));
+ document.querySelectorAll('.blk[data-block]').forEach(el=>el.addEventListener('dragstart',e=>{DRAG={move:el.dataset.block};e.dataTransfer.setData('text/plain',el.dataset.block);e.dataTransfer.effectAllowed='move';setTimeout(()=>el.classList.add('dragging'),0);document.body.classList.add('dragging');}));
+ document.querySelectorAll('[data-dz]').forEach(z=>{
+  z.addEventListener('dragover',e=>{if(!DRAG)return;if(DRAG.layout&&z.dataset.dz!=='row')return;e.preventDefault();z.classList.add('over');});
+  z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');const D=DRAG;DRAG=null;document.body.classList.remove('dragging');if(!D)return;
+   const tgt=z.dataset.dz==='row'?{rowIndex:+z.dataset.index}:{row:z.dataset.row,col:z.dataset.col,index:+z.dataset.index};
+   if(D.layout){addRow(D.layout,tgt.rowIndex);return;}
+   if(D.add){addBlock(D.add,tgt);return;}
+   if(D.move){moveBlock(D.move,tgt);}});});
+ bindSubs(document);
+ // auto-scroll the canvas while dragging near its top/bottom edge
+ const st=document.getElementById('stage');if(st)st.addEventListener('dragover',e=>{if(!DRAG)return;const r=st.getBoundingClientRect();if(e.clientY>r.bottom-70)st.scrollTop+=22;else if(e.clientY<r.top+70)st.scrollTop-=22;});
+ // menu reorder
+ document.querySelectorAll('.mi[data-mi]').forEach(el=>{el.addEventListener('dragstart',e=>{DRAG={menu:+el.dataset.mi};e.dataTransfer.setData('text/plain','m');});
+  el.addEventListener('dragover',e=>{if(DRAG&&DRAG.menu!=null){e.preventDefault();el.classList.add('dragover');}});el.addEventListener('dragleave',()=>el.classList.remove('dragover'));
+  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('dragover');if(!DRAG||DRAG.menu==null)return;const m=S.menus[UI.menuPortal||'student'];const from=DRAG.menu,to=+el.dataset.mi;DRAG=null;const [x]=m.splice(from,1);m.splice(to,0,x);save();render();toast('Menu order saved');});});
+}
+document.addEventListener('dragend',()=>{DRAG=null;document.body.classList.remove('dragging');document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging'));document.querySelectorAll('.over').forEach(x=>x.classList.remove('over'));});
+
+render();
+</script>
+</body>
+</html>

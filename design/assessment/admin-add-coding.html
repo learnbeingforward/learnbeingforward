@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New coding question | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css"><link rel="stylesheet" href="../assets/exam.css"></head>
+<body data-layout="exam" style="background:#F4F1E8">
+<header class="ex-band" style="position:relative"><div class="container ex-top"><div class="l"><a class="ex-back" href="admin-create-assessment.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back to assessment</a></div><div class="ctr"><b>New coding question</b><small>Aptitude Skills II › Section 3 · Coding</small></div><div class="r"><button class="btn btn-ghost-light" type="button">Preview as student</button><button class="btn " type="button">Save draft</button></div></div></header>
+<main class="container ex-main"><section class="ex-card"><div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:28px" class="cq-form">
+<nav class="cq-steps" aria-label="Sections"><div class="ex-label">Fill in this order</div><a class="" href="#"><i>✓</i>Basics</a><a class="" href="#"><i>✓</i>Problem statement</a><a class="" href="#"><i>✓</i>Input &amp; output format</a><a class="" href="#"><i>✓</i>Constraints</a><a class="" href="#"><i>✓</i>Sample &amp; explanation</a><a class="" href="#"><i>✓</i>Test cases</a><a class="" href="#"><i>✓</i>Boilerplate (4 languages)</a><a class="" href="#"><i>✓</i>Reference solution</a><a class="on" href="#"><i>9</i>Validate &amp; run rules</a></nav>
+<div><div class="sb"><i>1</i><h3>Basics</h3></div><div class="grid" style="--min:150px"><label class="field" style=grid-column:span 2><span>Question title</span><input class="input" value="First Occurrence in a Sorted Array"></label><label class="field"><span>Difficulty</span><select class="select"><option>Easy–Medium</option></select></label><label class="field"><span>Topic</span><input class="input" value="Binary Search"></label><label class="field"><span>Time limit (sec)</span><input class="input" value="1"></label><label class="field"><span>Memory (MB)</span><input class="input" value="256"></label><label class="field"><span>Marks</span><input class="input" value="20"></label></div>
+<div class="sb"><i>2</i><h3>Problem statement</h3></div><div class="rte"><div class="tb"><b>B</b><i>I</i><span>&lt;/&gt;</span><span>Σ</span></div><div class="tx">You are given an array of N integers sorted in non-decreasing order, which may contain duplicates. You are also given Q queries. Each query is a target value X.<br><br>For every query, find the index (0-based) of the first occurrence of X in the array. If X is not present, print −1. Your solution must run in O(log N) per query.</div></div>
+<div class="sb"><i>3</i><h3>Input &amp; output format</h3></div><div class="grid" style="--min:240px"><label class="field"><span>Input format</span><textarea class="textarea" rows="4">Line 1: integer N
+Line 2: N space-separated integers (sorted, non-decreasing)
+Line 3: integer Q
+Line 4: Q space-separated integers (the targets)</textarea></label><label class="field"><span>Output format</span><textarea class="textarea" rows="4">Print Q lines. Line i holds the answer for the i-th query.</textarea></label></div>
+<div class="sb"><i>4</i><h3>Constraints</h3></div><textarea class="textarea mono" rows="3">1 ≤ N ≤ 10^5
+1 ≤ Q ≤ 10^5
+-10^9 ≤ arr[i], X ≤ 10^9</textarea>
+<div class="sb"><i>5</i><h3>Sample input, output &amp; explanation</h3></div><div class="grid" style="--min:180px"><label class="field"><span>Sample input</span><textarea class="textarea mono" rows="4">7
+1 2 2 2 3 5 8
+4
+2 5 4 8</textarea></label><label class="field"><span>Sample output</span><textarea class="textarea mono" rows="4">1
+5
+-1
+6</textarea></label><label class="field"><span>Explanation</span><textarea class="textarea" rows="4">2 first appears at index 1.
+5 is at index 5.
+4 is not in the array, so −1.
+8 is at index 6.</textarea></label></div><label class="check small" style="margin-top:8px"><input type="checkbox" checked> Also add this sample as visible Test 1</label>
+<div class="split" style="flex-wrap:wrap;gap:10px"><div class="sb"><i>6</i><h3>Test cases <span class="small muted" style="font-weight:500">· 2 visible · 6 hidden</span></h3></div><div style="display:flex;gap:8px"><button class="btn btn-sm" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>Bulk upload (.zip)</button><button class="btn btn-primary btn-sm" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add test case</button></div></div>
+<div class="alert info" style="margin-bottom:10px"><span><b>Visible</b> = runs on Run code and is shown to the student. &nbsp; <b>Hidden</b> = runs only on Submit; input never shown.</span></div><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Type</th><th>Label</th><th>Input</th><th>Expected output</th><th>Weight</th></tr></thead><tbody><tr><td>1</td><td><span class="pill info" style="">Visible</span></td><td>Sample</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">7
+1 2 2 2 3 5 8
+4
+2 5 4 8</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">1
+5
+-1
+6</div></td><td>10%</td></tr><tr><td>2</td><td><span class="pill info" style="">Visible</span></td><td>Single element</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">1
+10
+2
+10 5</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">0
+-1</div></td><td>10%</td></tr><tr><td>3</td><td><span class="pill " style="background:var(--navy);color:#fff">Hidden</span></td><td>All same</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">5
+7 7 7 7 7
+3
+7 6 8</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">0
+-1
+-1</div></td><td>10%</td></tr><tr><td>4</td><td><span class="pill " style="background:var(--navy);color:#fff">Hidden</span></td><td>Out of range</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">6
+3 6 9 12 15 18
+4
+1 20 3 18</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">-1
+-1
+0
+5</div></td><td>10%</td></tr><tr><td>5</td><td><span class="pill " style="background:var(--navy);color:#fff">Hidden</span></td><td>Negatives</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">8
+-10 -5 -5 0 0 0 4 9
+5
+-5 0 -10 9 1</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">1
+3
+0
+7
+-1</div></td><td>10%</td></tr><tr><td>6</td><td><span class="pill " style="background:var(--navy);color:#fff">Hidden</span></td><td>Duplicates at end</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">6
+1 2 3 4 4 4
+2
+4 3</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">3
+2</div></td><td>10%</td></tr><tr><td>7</td><td><span class="pill " style="background:var(--navy);color:#fff">Hidden</span></td><td>Extreme values</td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">5
+-1000000000 -1 0 999999999 1000000000
+3
+1000000000 -1000000000 5</div></td><td><div class="iobox" style="padding:6px 8px;font-size:12px;white-space:pre-wrap">4
+0
+-1</div></td><td>15%</td></tr><tr><td>8</td><td><span class="pill " style="background:var(--navy);color:#fff">Hidden</span></td><td>Performance (N = Q = 100000)</td><td><span class="chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> input8.txt</span></td><td><span class="chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> output8.txt</span></td><td>25%</td></tr></tbody></table></div><p class="small muted" style="margin-top:6px">Large tests: upload input and output as .txt files. Weights must add up to 100%.</p>
+<div class="sb"><i>7</i><h3>Boilerplate code</h3></div><p class="small muted" style="margin:-4px 0 10px">Students see this in the editor. Mark the function body as editable; the input/output code stays locked.</p><div class="cq-tabs" style="border:1px solid var(--border);border-bottom:0;border-radius:10px 10px 0 0;justify-content:space-between"><div style="display:flex;gap:4px"><span class="on">✓ Python 3</span><span>✓ Java</span><span>✓ C</span><span>✓ C++</span></div><span>+ Language</span></div>
+<div class="code-ed"><div class="lock"><span class="k">import</span> sys</div><div class=""> </div><div class="edit"><span class="k">def</span> <span class="f">first_occurrence</span>(arr, n, target):</div><div class="edit">    <span class="c"># Write your code here</span></div><div class="edit">    <span class="c"># Return the 0-based index of the first occurrence of target, or -1</span></div><div class="edit">    <span class="k">pass</span></div><div class=""> </div><div class="lock"><span class="k">def</span> <span class="f">main</span>():</div><div class="lock">    data = sys.stdin.buffer.read().split()</div><div class="lock">    idx = <span class="n">0</span></div><div class="lock">    n = int(data[idx]); idx += <span class="n">1</span></div><div class="lock">    arr = [int(data[idx + i]) <span class="k">for</span> i <span class="k">in</span> range(n)]; idx += n</div><div class="lock">    q = int(data[idx]); idx += <span class="n">1</span></div><div class="lock">    out = []</div><div class="lock">    <span class="k">for</span> _ <span class="k">in</span> range(q):</div><div class="lock">        target = int(data[idx]); idx += <span class="n">1</span></div><div class="lock">        out.append(str(first_occurrence(arr, n, target)))</div><div class="lock">    sys.stdout.write(<span class="s">"\n"</span>.join(out) + <span class="s">"\n"</span>)</div><div class=""> </div><div class="lock"><span class="k">if</span> __name__ == <span class="s">"__main__"</span>:</div><div class="lock">    main()</div></div><div class="legend2"><span><i style="display:inline-block;width:12px;height:12px;background:rgba(201,151,60,.35);border-left:3px solid var(--gold);vertical-align:-1px"></i> Editable by student (lines 3–6) &nbsp; <i style="display:inline-block;width:12px;height:12px;background:#E6E2D8;vertical-align:-1px"></i> Locked</span><button class="btn btn-sm" type="button">Mark selected lines as editable</button></div>
+<div class="sb"><i>8</i><h3>Reference solution <span class="pill danger" style="margin-left:8px">Never shown to students</span></h3></div><p class="small muted" style="margin:-4px 0 10px">Used to check every expected output is correct before you publish.</p><div class="code-ed" style="border-radius:10px"><div><span class="k">def</span> <span class="f">first_occurrence</span>(arr, n, target):</div><div>    lo, hi, ans = <span class="n">0</span>, n - <span class="n">1</span>, -<span class="n">1</span></div><div>    <span class="k">while</span> lo &lt;= hi:</div><div>        mid = lo + (hi - lo) // <span class="n">2</span></div><div>        <span class="k">if</span> arr[mid] == target:</div><div>            ans = mid</div><div>            hi = mid - <span class="n">1</span>      <span class="c"># keep searching left</span></div><div>        <span class="k">elif</span> arr[mid] &lt; target:</div><div>            lo = mid + <span class="n">1</span></div><div>        <span class="k">else</span>:</div><div>            hi = mid - <span class="n">1</span></div><div>    <span class="k">return</span> ans</div></div>
+<label class="field" style="margin-top:12px"><span>Why these test cases (admin note)</span><textarea class="textarea" rows="2">Test 3 fails any-match answers. Test 7 catches (lo + hi) / 2 overflow. Test 8 times out linear search.</textarea></label>
+<div class="sb"><i>9</i><h3>Validate &amp; run rules</h3></div><div class="ab-cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="box"><div class="split" style="margin-bottom:12px"><b>Validation results</b><button class="btn btn-sm" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Re-validate</button></div>
+<div class="valid"><span>Reference solution passes all tests</span><b>8 / 8 ✓</b></div><div class="valid"><span>Boilerplate compiles: Python · Java · C · C++</span><b>4 / 4 ✓</b></div><div class="valid"><span>Empty boilerplate fails tests (no free marks)</span><b>0 / 8 ✓</b></div><div class="valid"><span>Slowest test (Test 8) within time limit</span><b>0.31 s / 1 s ✓</b></div></div>
+<div class="stack" style="gap:12px"><div class="box small"><b>RUN CODE</b> runs visible tests only (Tests 1–2). Shows input, expected output, student output and any compile or runtime error. Not scored.</div><div class="box small"><b>SUBMIT CODE</b> runs all 8 tests. For hidden tests the student sees only the verdict (Passed, Wrong answer, Time limit exceeded, Runtime error), never the input.</div>
+<label class="field"><span>Scoring</span><select class="select"><option>Partial marks by test weight</option></select></label><label class="field"><span>Submissions allowed</span><select class="select"><option>Unlimited (last submission counts)</option></select></label></div></div></div></div></section><div class="ex-foot"><button class="btn " type="button">Cancel</button><div style="display:flex;gap:10px"><a class="btn " href="coding.html">Try it as student</a><button class="btn btn-primary" type="button">Save question</button></div></div><p class="ex-powered">Powered by Learn Being Forward</p></main>
+<script src="../assets/layout.js"></script>
+</body></html>

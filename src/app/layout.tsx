@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import "./globals.css";
-import "./lbf-design.css";
-
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
+import "./styles/lbf/styles.css";
+import { IconSprite } from "@/components/lbf/IconSprite";
 
 const SITE_URL = "https://learnbeingforward.in";
 const SITE_DESCRIPTION =
@@ -36,8 +30,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+    <html lang="en" className="h-full antialiased">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <IconSprite />
+        {children}
+      </body>
     </html>
   );
 }

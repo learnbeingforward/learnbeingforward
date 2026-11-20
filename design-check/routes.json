@@ -1,0 +1,589 @@
+[
+ {
+  "design": "assessment/admin-add-aptitude.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/admin-add-coding.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/admin-add-technical.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/admin-create-assessment.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/coding.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/index.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/instructions.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/run-submit-states.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/submitted.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "assessment/system-check.html",
+  "route": "(assessment",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "auth/forgot-password.html",
+  "route": "/forgot-password",
+  "role": null
+ },
+ {
+  "design": "auth/login.html",
+  "route": "/login",
+  "role": null
+ },
+ {
+  "design": "auth/reset-password.html",
+  "route": "/reset-password",
+  "role": null
+ },
+ {
+  "design": "auth/signup.html",
+  "route": "/signup",
+  "role": null
+ },
+ {
+  "design": "college/add-student.html",
+  "route": "/lms/college/add-student",
+  "role": "college"
+ },
+ {
+  "design": "college/all-students.html",
+  "route": "/lms/college/all-students",
+  "role": "college"
+ },
+ {
+  "design": "college/assessment-data.html",
+  "route": "/lms/college/assessment-data",
+  "role": "college"
+ },
+ {
+  "design": "college/batch-detail.html",
+  "route": "/lms/college/batch-detail",
+  "role": "college"
+ },
+ {
+  "design": "college/batches.html",
+  "route": "/lms/college/batches",
+  "role": "college"
+ },
+ {
+  "design": "college/content-requests.html",
+  "route": "/lms/college/content-requests",
+  "role": "college"
+ },
+ {
+  "design": "college/contract-detail.html",
+  "route": "/lms/college/contracts?contractId=\u2026",
+  "role": "college",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "college/contracts.html",
+  "route": "/lms/college/contracts",
+  "role": "college"
+ },
+ {
+  "design": "college/courses.html",
+  "route": "/lms/college/courses",
+  "role": "college"
+ },
+ {
+  "design": "college/dashboard.html",
+  "route": "/lms/college",
+  "role": "college"
+ },
+ {
+  "design": "college/enrollment-detail.html",
+  "route": "/lms/college/students?studentId=\u2026&enrollmentId=\u2026",
+  "role": "college",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "college/invoice-detail.html",
+  "route": "/lms/college/contracts?invoiceId=\u2026",
+  "role": "college",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "college/profile.html",
+  "route": "/lms/college/profile",
+  "role": "college"
+ },
+ {
+  "design": "college/queries.html",
+  "route": "/lms/college/queries",
+  "role": "college"
+ },
+ {
+  "design": "college/student-detail.html",
+  "route": "/lms/college/students?studentId=\u2026",
+  "role": "college",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "college/students.html",
+  "route": "/lms/college/students",
+  "role": "college"
+ },
+ {
+  "design": "docs/view.html",
+  "route": "/documents/[type]/[id]",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "public/about.html",
+  "route": "/about",
+  "role": null
+ },
+ {
+  "design": "public/buy-checkout.html",
+  "route": "/buy/[course]/checkout",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "public/buy-detail.html",
+  "route": "/buy/[course]",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "public/buy-module.html",
+  "route": "/buy/[course]/[book]",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "public/buy.html",
+  "route": "/buy",
+  "role": null
+ },
+ {
+  "design": "public/coding-patterns-level.html",
+  "route": "/coding-patterns/level-[NN]",
+  "role": null,
+  "designQuery": "?l=01",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "public/coding-patterns.html",
+  "route": "/coding-patterns",
+  "role": null
+ },
+ {
+  "design": "public/contact.html",
+  "route": "/contact",
+  "role": null
+ },
+ {
+  "design": "public/course-detail.html",
+  "route": "/courses/[id]",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "public/courses.html",
+  "route": "/courses",
+  "role": null
+ },
+ {
+  "design": "public/home.html",
+  "route": "/",
+  "role": null
+ },
+ {
+  "design": "public/team.html",
+  "route": "/team",
+  "role": null
+ },
+ {
+  "design": "public/technologies.html",
+  "route": "/technologies",
+  "role": null
+ },
+ {
+  "design": "public/verify.html",
+  "route": "/verify/[certificateId]",
+  "role": null,
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "student/assessments.html",
+  "route": "/lms/student/assessments",
+  "role": "student"
+ },
+ {
+  "design": "student/attendance.html",
+  "route": "/lms/student/attendance",
+  "role": "student"
+ },
+ {
+  "design": "student/certificate.html",
+  "route": "/lms/student/certificate/[id]",
+  "role": "student",
+  "designQuery": "?c=java",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "student/content-view.html",
+  "route": "/lms/student/content/view?contentId=\u2026",
+  "role": "student",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "student/content.html",
+  "route": "/lms/student/content",
+  "role": "student"
+ },
+ {
+  "design": "student/course-progress.html",
+  "route": "/lms/student/course-progress",
+  "role": "student"
+ },
+ {
+  "design": "student/courses.html",
+  "route": "/lms/student/courses",
+  "role": "student"
+ },
+ {
+  "design": "student/dashboard.html",
+  "route": "/lms/student",
+  "role": "student"
+ },
+ {
+  "design": "student/profile.html",
+  "route": "/lms/student/profile",
+  "role": "student"
+ },
+ {
+  "design": "super-admin/account-details.html",
+  "route": "/lms/company/account-details",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/add-account.html",
+  "route": "/lms/company/add-account",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/assessment-builder.html",
+  "route": "/lms/company/assessments?assessmentId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/assessment-create.html",
+  "route": "/lms/company/assessment-create",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/assessment-submissions.html",
+  "route": "/lms/company/assessment-submissions",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/assessments.html",
+  "route": "/lms/company/assessments",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/attendance-approvals.html",
+  "route": "/lms/company/attendance-approvals",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/attendance-batch.html",
+  "route": "/lms/company/attendance?collegeId=\u2026&batchId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/attendance-college.html",
+  "route": "/lms/company/attendance?collegeId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/attendance.html",
+  "route": "/lms/company/attendance",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/batch-admin.html",
+  "route": "/lms/company/trainers/batches?collegeId=\u2026&batchId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/buyers.html",
+  "route": "/lms/company/buyers",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/certificate-editor.html",
+  "route": "/lms/company/certificate-editor",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/certificates.html",
+  "route": "/lms/company/attendance/certificates",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/college-contract.html",
+  "route": "/lms/company/colleges?contractId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/college-invoice.html",
+  "route": "/lms/company/colleges?invoiceId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/colleges-approvals.html",
+  "route": "/lms/company/colleges-approvals",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/colleges-mous.html",
+  "route": "/lms/company/colleges-mous",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/colleges-sent.html",
+  "route": "/lms/company/colleges-sent",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/colleges.html",
+  "route": "/lms/company/colleges",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/course-content.html",
+  "route": "/lms/company/course-content",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/dashboard.html",
+  "route": "/lms/company",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/edit-site-buy.html",
+  "route": "/lms/company/edit-site/buy",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/edit-site-courses.html",
+  "route": "/lms/company/edit-site/courses",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/edit-site-employees.html",
+  "route": "/lms/company/edit-site/employees",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/edit-site.html",
+  "route": "/lms/company/edit-site",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/employee-access.html",
+  "route": "/lms/company/employee-access",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/enrollment-detail.html",
+  "route": "/lms/company/students?studentId=\u2026&enrollmentId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/manage-accounts.html",
+  "route": "/lms/company/manage-accounts",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/mou-editor.html",
+  "route": "/lms/company/mou-editor",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/notifications.html",
+  "route": "/lms/company/notifications",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/password-resets.html",
+  "route": "/lms/company/password-resets",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/profile.html",
+  "route": "/lms/company/profile",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/registrations.html",
+  "route": "/lms/company/registrations",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/site-builder.html",
+  "route": "/lms/company/site-builder",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/student-detail.html",
+  "route": "/lms/company/students?studentId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/students.html",
+  "route": "/lms/company/students",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainer-content.html",
+  "route": "/lms/company/trainer-content",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainer-invoice.html",
+  "route": "/lms/company/trainers/invoices?invoiceId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/trainer-sessions.html",
+  "route": "/lms/company/trainers/schedule?trainerId=\u2026",
+  "role": "super-admin",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "super-admin/trainers-batches-calendar.html",
+  "route": "/lms/company/trainers/batches/calendar",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainers-batches-requests.html",
+  "route": "/lms/company/trainers/batches/requests",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainers-batches.html",
+  "route": "/lms/company/trainers/batches",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainers-invoices.html",
+  "route": "/lms/company/trainers/invoices",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainers-schedule.html",
+  "route": "/lms/company/trainers/schedule",
+  "role": "super-admin"
+ },
+ {
+  "design": "super-admin/trainers.html",
+  "route": "/lms/company/trainers",
+  "role": "super-admin"
+ },
+ {
+  "design": "trainer/attendance.html",
+  "route": "/lms/trainer/attendance",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/batch-detail.html",
+  "route": "/lms/trainer/batches?batchId=\u2026",
+  "role": "trainer",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "trainer/batches.html",
+  "route": "/lms/trainer/batches",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/content.html",
+  "route": "/lms/trainer/content",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/dashboard.html",
+  "route": "/lms/trainer",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/details.html",
+  "route": "/lms/trainer/details",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/invoice.html",
+  "route": "/lms/trainer/invoice",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/mark-attendance.html",
+  "route": "/lms/trainer/attendance?sessionId=\u2026",
+  "role": "trainer",
+  "todo": "Fill a real URL (ids / query) then delete this key"
+ },
+ {
+  "design": "trainer/mou.html",
+  "route": "/lms/trainer/mou",
+  "role": "trainer"
+ },
+ {
+  "design": "trainer/schedule.html",
+  "route": "/lms/trainer/schedule",
+  "role": "trainer"
+ }
+]

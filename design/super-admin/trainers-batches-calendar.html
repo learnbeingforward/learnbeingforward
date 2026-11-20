@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Batch Calendar | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="app" data-role="super-admin" data-active="trainers-batches-calendar">
+<header class="app-band"><div class="container">
+<div id="topbar"></div>
+<div class="page-head"><div><div class="crumb">Accounts › Trainers › Batches › Calendar</div><h1>Batch calendar</h1><p>When each batch starts. Pick a day to see its batches and schedule sessions.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-ghost-light" href="trainers-batches.html" ><svg width="16" height="16" aria-hidden="true"><use href="#i-arrowL"/></svg>Back to Batches</a><a class="btn btn-ghost-light" href="trainers-batches-requests.html" ><svg width="16" height="16" aria-hidden="true"><use href="#i-clipboard"/></svg>Batch requests</a></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<div class="row"><section class="card grow"><div id="cal"></div></section><div class="stack side" style="gap:20px"><section class="card "><div id="cald"></div></section><section class="card "><div class="split" style="margin-bottom:18px"><div><h2 class="h2">All start dates</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><ul class="list small"><li><button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;font:inherit" data-jump="2026-11-24"><span class="grow"><b>24/11/2026</b></span><span class="pill gold">1 batch</span></button></li><li><button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;font:inherit" data-jump="2026-11-17"><span class="grow"><b>17/11/2026</b></span><span class="pill gold">1 batch</span></button></li><li><button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;font:inherit" data-jump="2026-11-03"><span class="grow"><b>03/11/2026</b></span><span class="pill gold">1 batch</span></button></li><li><button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;font:inherit" data-jump="2026-09-17"><span class="grow"><b>17/09/2026</b></span><span class="pill gold">6 batches</span></button></li></ul></section></div></div><script>
+(function(){const EV={"2026-11-17": [["CCE \u00b7 JAVA-SEM7-B1", "Java & DSA", "Demo Trainer", "gold"]], "2026-11-24": [["Sunrise \u00b7 BE-SEM5-B2", "Backend Development", "Anil Deshmukh", "info"]], "2026-11-03": [["PIT \u00b7 FSD-SEM5-B1", "Full-Stack Development", "Lakshmi Menon", "success"]], "2026-09-17": [["CCE \u00b7 JAVA-SEM5-B1", "Java & DSA", "Demo Trainer", "gold"], ["CCE \u00b7 BE-SEM5-B1", "Backend Development", "Demo Trainer", "gold"], ["CCE \u00b7 FE-SEM3-B1", "Frontend Development", "Demo Trainer", "gold"], ["CCE \u00b7 DS-SEM7-B1", "Data Science / AI", "Demo Trainer", "gold"], ["CCE \u00b7 ROB-SEM5-B1", "Robotics", "Demo Trainer", "gold"], ["CCE \u00b7 FSD-SEM7-B1", "Full-Stack Development", "Demo Trainer", "gold"]]}; let y=2026,m=10,sel='2026-11-17';
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const I=(n,z=16)=>`<svg width="${z}" height="${z}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const key=(Y,M,D)=>`${Y}-${String(M+1).padStart(2,'0')}-${String(D).padStart(2,'0')}`;
+function draw(){const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(); let cells='';
+ for(let i=0;i<first;i++)cells+='<div class="bc-day off"></div>';
+ for(let d=1;d<=days;d++){const k=key(y,m,d), ev=EV[k]||[]; cells+=`<button type="button" class="bc-day ${k===sel?'sel':''} ${ev.length?'has':''}" data-day="${k}"><span class="n">${d}</span>${ev.slice(0,2).map(e=>`<span class="bc-ev ${e[3]}">${e[0]}</span>`).join('')}${ev.length>2?`<span class="small muted">+${ev.length-2} more</span>`:''}</button>`;}
+ const list=EV[sel]||[];
+ document.getElementById('cal').innerHTML=`<div class="split" style="margin-bottom:14px"><button class="btn btn-sm" type="button" data-mv="-1">${I('arrowL')}Previous</button><h2 class="h2">${MON[m]} ${y}</h2><button class="btn btn-sm" type="button" data-mv="1">Next${I('arrowR')}</button></div>
+<div class="bc-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="bc-h">${d}</div>`).join('')}${cells}</div>`;
+ document.getElementById('cald').innerHTML=`<div class="label">Batches starting</div><h3 class="h3" style="margin:4px 0 14px">${new Date(sel+'T00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</h3>`+(list.length?'<ul class="list">'+list.map(e=>`<li class="list-row"><span class="icon-box gold">${I('layers')}</span><div class="grow"><div class="strong">${e[0]}</div><div class="small muted">${e[1]} · ${e[2]}</div></div><a class="btn btn-sm" href="trainers-schedule.html">Schedule</a></li>`).join('')+'</ul>':'<p class="muted">No batch starts on this day.</p>');}
+document.addEventListener('click',e=>{const d=e.target.closest('[data-day]'),mv=e.target.closest('[data-mv]'),j=e.target.closest('[data-jump]'); if(d){sel=d.dataset.day;draw();} if(mv){m+=+mv.dataset.mv;if(m<0){m=11;y--;}if(m>11){m=0;y++;}draw();} if(j){[y,m]=j.dataset.jump.split('-').map(Number);m--;sel=j.dataset.jump;draw();}});
+draw();})();
+</script>
+</div></main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/layout.js"></script>
+
+</body>
+</html>

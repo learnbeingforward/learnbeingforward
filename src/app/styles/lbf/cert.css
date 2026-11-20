@@ -1,0 +1,35 @@
+/* copied verbatim from design/assets/cert.css — do not edit; change design first */
+/* Certificate (A4 landscape) — used by the batch certificate editor, the student download and verification */
+.ct{position:relative;width:297mm;height:210mm;background:#fff;overflow:hidden;box-sizing:border-box;font-family:"Eczar",Georgia,serif;color:#2B2F38;box-shadow:0 14px 40px rgba(28,43,74,.18)}
+.ct-bg{position:absolute;inset:0;width:100%;height:100%}
+.ct::before{content:"";position:absolute;inset:5mm;border:1.6px solid #9AA1AE;pointer-events:none;z-index:2}
+.ct-c{position:absolute;width:5mm;height:5mm;border:1.4px solid #9AA1AE;background:#fff;z-index:3}
+.ct-c.tl{top:3mm;left:3mm}.ct-c.tr{top:3mm;right:3mm}.ct-c.bl{bottom:3mm;left:3mm}.ct-c.br{bottom:3mm;right:3mm}
+.ct-main{position:absolute;left:22mm;top:16mm;width:165mm;bottom:20mm;z-index:1;display:flex;flex-direction:column}
+.ct-college{font-family:Poppins,sans-serif;font-weight:700;color:#1C2B4A;font-size:30px;line-height:1.2;letter-spacing:.01em;height:44mm;margin:6mm 0 8mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;align-self:stretch}
+.ct-college.two{font-size:25px}
+.ct-college span{display:block}
+.ct-college span:first-child::after{content:"";display:block}
+.ct-college::after{content:"";display:block;width:28mm;height:3px;background:#C9973C;margin:4mm auto 0;border-radius:2px}
+.ct-date{font-size:12px;letter-spacing:.12em;color:#5D6472}
+.ct-name{font-size:34px;letter-spacing:.06em;color:#1F2633;margin:7mm 0 3mm;font-weight:400}
+.ct-small{font-size:12.5px;color:#4A505C;line-height:1.5}
+.ct-course{font-size:21px;letter-spacing:.04em;color:#1F2633;margin:6mm 0 4mm}
+.ct-sign{margin-top:auto;width:85mm}
+.ct-pad{height:18mm;border-bottom:1px dotted #5D6472;display:flex;align-items:flex-end;padding-bottom:1mm}
+.ct-pad img{max-height:17mm;max-width:100%}
+.ct-typed{font-family:"Dancing Script",cursive;font-size:30px;color:#111}
+.ct-who{font-size:11px;color:#4A505C;margin-top:2mm;line-height:1.45}
+.ct-ribbon{position:absolute;top:0;right:24mm;width:72mm;height:162mm;z-index:1;background:linear-gradient(180deg,#E3E8F1,#D5DCE8);clip-path:polygon(0 0,100% 0,100% 88%,50% 100%,0 88%);display:flex;flex-direction:column;align-items:center;padding-top:22mm;box-shadow:inset 0 0 0 1px #C8D0DE}
+.ct-head{font-family:Poppins,sans-serif;font-weight:600;font-size:17px;letter-spacing:.22em;text-transform:uppercase;color:#1C2B4A;text-align:center;line-height:1.6}
+.ct-seal{width:52mm;height:52mm;margin-top:24mm;filter:drop-shadow(0 2px 4px rgba(28,43,74,.15))}
+.ct-verify{position:absolute;right:16mm;bottom:12mm;width:92mm;text-align:right;z-index:1;font-family:Poppins,sans-serif;font-size:10.5px;color:#4A505C;line-height:1.5}
+.ct-verify a{color:#1C2B4A;font-weight:600}
+.ct-verify p{margin:1mm 0 2mm}
+.ct-vbtn{display:inline-block;background:#1C2B4A;color:#fff!important;padding:1.6mm 4mm;border-radius:999px;text-decoration:none;font-size:10px;letter-spacing:.06em}
+/* scaled previews */
+.ct-scale{transform-origin:top left}
+@media print{@page{size:A4 landscape;margin:0}.ct{box-shadow:none}.ct-vbtn{display:none}}
+.ct-wm{position:absolute;left:22mm;top:50%;transform:translateY(-46%) rotate(-12deg);z-index:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;opacity:.06;color:#1C2B4A;font-family:Poppins,sans-serif}
+.ct-wm span{font-size:190px;font-weight:800;letter-spacing:.04em;line-height:1}
+.ct-wm small{font-size:22px;font-weight:700;letter-spacing:.5em;margin-top:-6px}

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Certificate | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Eczar:wght@400;500&family=Dancing+Script:wght@600&display=swap"><link rel="stylesheet" href="../assets/cert.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<style>body{background:#E9E4D8;margin:0}.cbar{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 20px;flex-wrap:wrap}.cbar .small{color:#D9DEE8}
+.cwrap{padding:24px 14px 60px;max-width:1160px;margin:0 auto}@media print{.cbar{display:none}.cwrap{padding:0}.ct-fit{height:auto!important}.ct{transform:none!important}}</style></head>
+<body><div class="cbar"><div><b id="ct-t">Certificate</b><div class="small">Print → Save as PDF to download. Share the verification link with employers.</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-sm" href="dashboard.html">Back</a><a class="btn btn-sm" id="vlink" href="#">Open verification page</a><button class="btn btn-gold btn-sm" type="button" onclick="window.print()">Print / Save as PDF</button></div></div>
+<div class="cwrap"><div class="ct-fit" id="out"></div></div>
+<script src="../assets/cert.js"></script>
+<script>(function(){const k=new URLSearchParams(location.search).get('c')||'fsd';const id=k==='java'?'LBF-C-2026-00417':'LBF-C-2026-00593';const s=LBFCert.ISSUED[id];
+const t=Object.assign(LBFCert.get(s.batch),{course:s.course});document.getElementById('out').innerHTML=LBFCert.render(t,{name:s.name,id,date:s.date,course:s.course});LBFCert.fit(document.getElementById('out'));
+document.getElementById('vlink').href='../public/verify.html?id='+id;document.getElementById('ct-t').textContent=s.course+' certificate';})();</script>
+</body></html>

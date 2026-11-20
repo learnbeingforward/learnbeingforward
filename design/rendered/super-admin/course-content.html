@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en"><head>
+<!-- RENDERED SNAPSHOT: this is the final DOM after assets/*.js ran (desktop 1440px). Copy this markup 1:1 into JSX. Scripts removed. -->
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Course Studio | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="app" data-role="super-admin" data-active="course-content"><!-- ICON SPRITE — see assets/layout.js (render once in root layout) -->
+<header class="app-band"><div class="container">
+<div class="app-top"><button class="m-burger" type="button" aria-label="Open menu" aria-expanded="false" data-mopen=""><svg width="22" height="22" aria-hidden="true"><use href="#i-menu"></use></svg></button><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="role-pill">Super Admin</span>
+          <button class="icon-btn-light" type="button" aria-label="Notifications"><svg width="18" height="18" aria-hidden="true"><use href="#i-bell"></use></svg><span class="badge"></span></button>
+          <div class="user-chip"><span class="avatar">LK</span><span class="who">Lohit Kumar<small>Company admin</small></span></div>
+          <a class="icon-btn-light" href="../auth/login.html" aria-label="Log out"><svg width="18" height="18" aria-hidden="true"><use href="#i-logout"></use></svg></a>
+        </div></div>
+      <nav class="app-nav" aria-label="Super Admin menu"><a href="dashboard.html" class=""><svg width="16" height="16" aria-hidden="true"><use href="#i-home"></use></svg>Overview</a><a href="add-account.html" class=""><svg width="16" height="16" aria-hidden="true"><use href="#i-users"></use></svg>Accounts</a><a href="registrations.html" class=""><svg width="16" height="16" aria-hidden="true"><use href="#i-clipboard"></use></svg>Registrations &amp; Approvals</a><a href="assessments.html" class=""><svg width="16" height="16" aria-hidden="true"><use href="#i-code"></use></svg>Assessments</a><a href="course-content.html" class="active"><svg width="16" height="16" aria-hidden="true"><use href="#i-book"></use></svg>Course Content</a><a href="site-builder.html" class=""><svg width="16" height="16" aria-hidden="true"><use href="#i-layers"></use></svg>Site Builder</a><a href="profile.html" class=""><svg width="16" height="16" aria-hidden="true"><use href="#i-user"></use></svg>Profile</a></nav>
+<div class="page-head"><div><div class="crumb">Course Content</div><h1>Course Studio</h1><p>Create courses, modules, sub-modules and topics, attach PDFs, and choose when each batch gets them.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-ghost-light" href="attendance-approvals.html"><svg width="16" height="16" aria-hidden="true"><use href="#i-clipboard"></use></svg>Access requests</a><a class="btn btn-ghost-light" href="trainer-content.html"><svg width="16" height="16" aria-hidden="true"><use href="#i-upload"></use></svg>Trainer-submitted</a></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<div id="studio"><div class="st-wrap">
+<aside class="card st-courses" aria-label="Courses">
+<div class="split" style="margin-bottom:12px"><h2 class="h3">Courses <span class="muted" style="font-weight:500">(13)</span></h2><button class="btn btn-gold btn-sm" type="button" data-act="new-course"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg>New</button></div>
+<label class="input-group" style="margin-bottom:10px"><svg width="16" height="16" aria-hidden="true"><use href="#i-search"></use></svg><input class="input" placeholder="Search courses" data-q="" value="" aria-label="Search courses"></label>
+<ul class="st-clist"><li><button type="button" class="" data-course="c-backend-development"><span class="dot live"></span><span class="grow"><b>Backend Development</b><small>4 modules · 12 items</small></span></button></li><li><button type="button" class="" data-course="c-coding-patterns"><span class="dot live"></span><span class="grow"><b>Coding Patterns</b><small>14 modules · 42 items · on Buy</small></span></button></li><li><button type="button" class="" data-course="c-data-science-ai-fundamentals"><span class="dot live"></span><span class="grow"><b>Data Science / AI Fundamentals</b><small>3 modules · 9 items</small></span></button></li><li><button type="button" class="" data-course="c-frontend-development"><span class="dot live"></span><span class="grow"><b>Frontend Development</b><small>3 modules · 9 items · on Buy</small></span></button></li><li><button type="button" class="" data-course="c-full-stack-development"><span class="dot live"></span><span class="grow"><b>Full-Stack Development</b><small>3 modules · 9 items</small></span></button></li><li><button type="button" class="on" data-course="c-java-and-dsa"><span class="dot live"></span><span class="grow"><b>Java &amp; DSA</b><small>5 modules · 34 items</small></span></button></li><li><button type="button" class="" data-course="c-logical-reasoning"><span class="dot live"></span><span class="grow"><b>Logical Reasoning</b><small>3 modules · 9 items</small></span></button></li><li><button type="button" class="" data-course="c-non-verbal-reasoning"><span class="dot live"></span><span class="grow"><b>Non-Verbal Reasoning</b><small>3 modules · 9 items</small></span></button></li><li><button type="button" class="" data-course="c-programming"><span class="dot live"></span><span class="grow"><b>Programming</b><small>4 modules · 12 items · on Buy</small></span></button></li><li><button type="button" class="" data-course="c-quantitative-aptitude"><span class="dot live"></span><span class="grow"><b>Quantitative Aptitude</b><small>3 modules · 9 items</small></span></button></li><li><button type="button" class="" data-course="c-robotics"><span class="dot live"></span><span class="grow"><b>Robotics</b><small>2 modules · 6 items · on Buy</small></span></button></li><li><button type="button" class="" data-course="c-soft-skills"><span class="dot live"></span><span class="grow"><b>Soft Skills</b><small>3 modules · 9 items</small></span></button></li><li><button type="button" class="" data-course="c-verbal-reasoning"><span class="dot live"></span><span class="grow"><b>Verbal Reasoning</b><small>3 modules · 9 items</small></span></button></li></ul>
+</aside>
+<section class="st-main">
+<div class="card st-head"><div class="split" style="flex-wrap:wrap;gap:12px"><div><div class="label">Technical · Live</div><h2 class="h2" style="margin-top:4px">Java &amp; DSA</h2>
+<div class="st-badges"><span class="pill success"><svg width="12" height="12" aria-hidden="true"><use href="#i-globe"></use></svg> On website</span><span class="pill">26 PDFs</span></div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" type="button" data-act="outline"><svg width="16" height="16" aria-hidden="true"><use href="#i-wand"></use></svg>Build from outline</button><button class="btn btn-sm" type="button" data-act="bulk"><svg width="16" height="16" aria-hidden="true"><use href="#i-upload"></use></svg>Bulk upload PDFs</button><a class="btn btn-sm" href="../student/content.html"><svg width="16" height="16" aria-hidden="true"><use href="#i-eye"></use></svg>Student view</a></div></div>
+<div class="tabs" role="tablist" style="margin-top:16px"><button class="tab active" role="tab" aria-selected="true" type="button" data-view="structure">Structure</button><button class="tab " role="tab" aria-selected="false" type="button" data-view="release">Share with batches</button><button class="tab " role="tab" aria-selected="false" type="button" data-view="settings">Course settings</button></div></div>
+<div class="st-body"><div class="card"><div class="split" style="margin-bottom:12px"><div><h3 class="h3">Structure</h3><p class="small muted">Course → Module → Sub-module → Topic, as deep as you need. Drag to reorder, click a name to rename.</p></div>
+<div style="display:flex;gap:6px"><button class="btn btn-sm" type="button" data-act="expand">Expand all</button><button class="btn btn-sm" type="button" data-act="collapse">Collapse all</button></div></div>
+<ul class="st-tree"><li class="st-node" style="--d:0" draggable="true" data-node="n2wfn">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfn" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l0">Module</span>
+<input class="st-title" value="Java Fundamentals" data-title="n2wfn" aria-label="Module name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wfn" hidden=""></label>
+
+<span class="st-chip gold" title="Java Fundamentals — Complete Course Notes.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-book"></use></svg>Book</span>
+<span class="small muted">5</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfn" title="Add sub-module inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfn" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfn" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfi">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfi" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Syntax &amp; data types" data-title="n2wfi" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-fundamentals-syntax-and-data-types.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+<span class="st-chip"><svg width="12" height="12" aria-hidden="true"><use href="#i-link"></use></svg>2</span>
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfi" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfi" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfi" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfj">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfj" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Control flow" data-title="n2wfj" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-fundamentals-control-flow.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+<span class="st-chip"><svg width="12" height="12" aria-hidden="true"><use href="#i-link"></use></svg>1</span>
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfj" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfj" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfj" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfk">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfk" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Arrays &amp; strings" data-title="n2wfk" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-fundamentals-arrays-and-strings.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+<span class="st-chip"><svg width="12" height="12" aria-hidden="true"><use href="#i-link"></use></svg>2</span>
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfk" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfk" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfk" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfl">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfl" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="OOP basics" data-title="n2wfl" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-fundamentals-oop-basics.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+<span class="st-chip"><svg width="12" height="12" aria-hidden="true"><use href="#i-link"></use></svg>1</span>
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfl" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfl" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfl" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfm">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfm" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Exception handling" data-title="n2wfm" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-fundamentals-exception-handling.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+<span class="st-chip"><svg width="12" height="12" aria-hidden="true"><use href="#i-link"></use></svg>1</span>
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfm" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfm" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfm" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:0" draggable="true" data-node="n2wft">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wft" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l0">Module</span>
+<input class="st-title" value="Java Intermediate" data-title="n2wft" aria-label="Module name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wft" hidden=""></label>
+
+
+<span class="small muted">5</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wft" title="Add sub-module inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wft" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wft" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfo">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfo" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Collections framework" data-title="n2wfo" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-intermediate-collections-framework.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfo" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfo" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfo" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfp">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfp" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Generics" data-title="n2wfp" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-intermediate-generics.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfp" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfp" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfp" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfq">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfq" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="File I/O" data-title="n2wfq" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-intermediate-file-i-o.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfq" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfq" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfq" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfr">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfr" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Streams &amp; lambdas" data-title="n2wfr" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-intermediate-streams-and-lambdas.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfr" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfr" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfr" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfs">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfs" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Multithreading basics" data-title="n2wfs" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-intermediate-multithreading-basics.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfs" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfs" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfs" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:0" draggable="true" data-node="n2wfy">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfy" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l0">Module</span>
+<input class="st-title" value="Java Advanced" data-title="n2wfy" aria-label="Module name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wfy" hidden=""></label>
+
+
+<span class="small muted">4</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfy" title="Add sub-module inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfy" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfy" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfu">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfu" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="JVM internals" data-title="n2wfu" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-advanced-jvm-internals.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfu" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfu" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfu" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfv">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfv" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Concurrency utilities" data-title="n2wfv" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-advanced-concurrency-utilities.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfv" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfv" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfv" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfw">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfw" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Design patterns" data-title="n2wfw" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-advanced-design-patterns.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfw" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfw" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfw" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfx">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfx" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="JDBC" data-title="n2wfx" aria-label="Sub-module name">
+<span class="st-chip ok" title="java-advanced-jdbc.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfx" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfx" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfx" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:0" draggable="true" data-node="n2wg4">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg4" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l0">Module</span>
+<input class="st-title" value="DSA Fundamentals" data-title="n2wg4" aria-label="Module name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wg4" hidden=""></label>
+
+
+<span class="small muted">5</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg4" title="Add sub-module inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg4" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg4" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wfz">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wfz" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Complexity analysis" data-title="n2wfz" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-fundamentals-complexity-analysis.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wfz" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wfz" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wfz" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wg0">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg0" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Arrays &amp; two pointers" data-title="n2wg0" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-fundamentals-arrays-and-two-pointers.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg0" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg0" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg0" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wg1">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg1" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Linked lists" data-title="n2wg1" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-fundamentals-linked-lists.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg1" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg1" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg1" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wg2">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg2" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Stacks &amp; queues" data-title="n2wg2" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-fundamentals-stacks-and-queues.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg2" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg2" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg2" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wg3">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg3" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Recursion" data-title="n2wg3" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-fundamentals-recursion.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg3" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg3" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg3" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:0" draggable="true" data-node="n2wgf">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wgf" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l0">Module</span>
+<input class="st-title" value="DSA Advanced" data-title="n2wgf" aria-label="Module name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wgf" hidden=""></label>
+
+
+<span class="small muted">5</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wgf" title="Add sub-module inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wgf" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wgf" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wg5">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg5" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Trees &amp; BST" data-title="n2wg5" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-advanced-trees-and-bst.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg5" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg5" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg5" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wgb">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wgb" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Graphs" data-title="n2wgb" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-advanced-graphs.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+<span class="small muted">3</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wgb" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wgb" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wgb" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:2" draggable="true" data-node="n2wg6">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg6" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l2">Topic</span>
+<input class="st-title" value="BFS" data-title="n2wg6" aria-label="Topic name">
+<span class="st-chip ok" title="graphs-bfs.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg6" title="Add sub-topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg6" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg6" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:2" draggable="true" data-node="n2wg7">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg7" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l2">Topic</span>
+<input class="st-title" value="DFS" data-title="n2wg7" aria-label="Topic name">
+<span class="st-chip ok" title="graphs-dfs.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg7" title="Add sub-topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg7" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg7" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:2" draggable="true" data-node="n2wga">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wga" aria-label="Collapse"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l2">Topic</span>
+<input class="st-title" value="Shortest paths" data-title="n2wga" aria-label="Topic name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wga" hidden=""></label>
+
+
+<span class="small muted">2</span>
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wga" title="Add sub-topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wga" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wga" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:3" draggable="true" data-node="n2wg8">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg8" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l3">Sub-topic</span>
+<input class="st-title" value="Dijkstra" data-title="n2wg8" aria-label="Sub-topic name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wg8" hidden=""></label>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg8" title="Add item inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg8" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg8" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:3" draggable="true" data-node="n2wg9">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wg9" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l3">Sub-topic</span>
+<input class="st-title" value="Bellman-Ford" data-title="n2wg9" aria-label="Sub-topic name">
+<label class="st-chip add"><svg width="12" height="12" aria-hidden="true"><use href="#i-upload"></use></svg>PDF<input type="file" accept="application/pdf" data-pdf="n2wg9" hidden=""></label>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wg9" title="Add item inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wg9" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wg9" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wgc">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wgc" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Dynamic programming" data-title="n2wgc" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-advanced-dynamic-programming.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wgc" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wgc" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wgc" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wgd">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wgd" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Greedy" data-title="n2wgd" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-advanced-greedy.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wgd" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wgd" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wgd" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li><li class="st-node" style="--d:1" draggable="true" data-node="n2wge">
+<span class="st-grip" title="Drag to reorder"><svg width="16" height="16" aria-hidden="true"><use href="#i-grip"></use></svg></span>
+<button class="st-tog" type="button" data-tog="n2wge" aria-label="Collapse" style="visibility:hidden"><svg width="14" height="14" aria-hidden="true"><use href="#i-chevD"></use></svg></button>
+<span class="st-lvl l1">Sub-module</span>
+<input class="st-title" value="Tries &amp; segment trees" data-title="n2wge" aria-label="Sub-module name">
+<span class="st-chip ok" title="dsa-advanced-tries-and-segment-trees.pdf"><svg width="12" height="12" aria-hidden="true"><use href="#i-file"></use></svg>PDF</span>
+
+
+
+<span class="st-acts"><button class="btn-icon" type="button" data-add="n2wge" title="Add topic inside"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="btn-icon" type="button" data-pick="n2wge" title="Details"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></button><button class="btn-icon danger" type="button" data-del="n2wge" title="Delete"><svg width="16" height="16" aria-hidden="true"><use href="#i-trash"></use></svg></button></span></li></ul>
+<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-primary" type="button" data-act="add-module"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"></use></svg>Add module</button><button class="btn" type="button" data-act="outline"><svg width="16" height="16" aria-hidden="true"><use href="#i-wand"></use></svg>Paste a syllabus outline</button></div></div>
+<aside class="card st-detail"><div class="empty" style="border:0"><span class="icon-box gold" style="margin:0 auto 10px"><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"></use></svg></span><div class="h3" style="color:var(--text)">Select an item</div><p class="small muted" style="margin-top:6px">Press <svg width="12" height="12" aria-hidden="true"><use href="#i-edit"></use></svg> on any row to attach its PDF, learn-more links and the module’s course book.</p></div></aside></div>
+</section></div></div>
+</div></main>
+
+<p class="app-footer">Powered by Learn Being Forward</p><nav class="m-tabs" aria-label="Super Admin quick menu"><a href="dashboard.html" class=""><svg width="20" height="20" aria-hidden="true"><use href="#i-home"></use></svg><span>Overview</span></a><a href="add-account.html" class=""><svg width="20" height="20" aria-hidden="true"><use href="#i-users"></use></svg><span>Accounts</span></a><a href="registrations.html" class=""><svg width="20" height="20" aria-hidden="true"><use href="#i-clipboard"></use></svg><span>Approvals</span></a><a href="course-content.html" class="active"><svg width="20" height="20" aria-hidden="true"><use href="#i-book"></use></svg><span>Course Content</span></a><button type="button" class="" data-mopen=""><svg width="20" height="20" aria-hidden="true"><use href="#i-grid"></use></svg><span>More</span></button></nav>
+      <div class="m-scrim" data-mclose="" hidden=""></div><aside class="m-drawer" aria-label="Super Admin menu" hidden="">
+      <div class="m-dhead"><div class="user-chip"><span class="avatar">LK</span><span class="who">Lohit Kumar<small>Company admin</small></span></div><button class="m-x" type="button" aria-label="Close menu" data-mclose=""><svg width="20" height="20" aria-hidden="true"><use href="#i-x"></use></svg></button></div>
+      <span class="role-pill" style="align-self:flex-start;margin:0 0 6px">Super Admin</span>
+      <nav class="m-groups"><details><summary class=""><svg width="18" height="18" aria-hidden="true"><use href="#i-home"></use></svg><span>Overview</span><svg width="16" height="16" aria-hidden="true"><use href="#i-chevD"></use></svg></summary><div><a href="dashboard.html" class="">Requests</a><a href="notifications.html" class="">Notifications</a><a href="attendance.html" class="">Attendance</a><a href="edit-site.html" class="">Edit Site</a><a href="trainer-content.html" class="">Trainer-Submitted Content</a></div></details><details><summary class=""><svg width="18" height="18" aria-hidden="true"><use href="#i-users"></use></svg><span>Accounts</span><svg width="16" height="16" aria-hidden="true"><use href="#i-chevD"></use></svg></summary><div><a href="add-account.html" class="">Add Account</a><a href="manage-accounts.html" class="">Manage Accounts</a><a href="students.html" class="">All Students</a><a href="buyers.html" class="">Buyers</a><a href="colleges.html" class="">Colleges</a><a href="trainers.html" class="">Trainers</a><a href="account-details.html" class="">Account Details</a><a href="employee-access.html" class="">Employee Access</a></div></details><details><summary class=""><svg width="18" height="18" aria-hidden="true"><use href="#i-clipboard"></use></svg><span>Registrations &amp; Approvals</span><svg width="16" height="16" aria-hidden="true"><use href="#i-chevD"></use></svg></summary><div><a href="registrations.html" class="">New Registrations</a><a href="attendance-approvals.html" class="">Approvals from College</a><a href="password-resets.html" class="">Password Reset Requests</a></div></details><details><summary class=""><svg width="18" height="18" aria-hidden="true"><use href="#i-code"></use></svg><span>Assessments</span><svg width="16" height="16" aria-hidden="true"><use href="#i-chevD"></use></svg></summary><div><a href="assessments.html" class="">Build &amp; Send</a><a href="assessment-submissions.html" class="">Submissions</a></div></details><details open=""><summary class="active"><svg width="18" height="18" aria-hidden="true"><use href="#i-book"></use></svg><span>Course Content</span></summary></details><details><summary class=""><svg width="18" height="18" aria-hidden="true"><use href="#i-layers"></use></svg><span>Site Builder</span></summary></details><details><summary class=""><svg width="18" height="18" aria-hidden="true"><use href="#i-user"></use></svg><span>Profile</span></summary></details></nav>
+      <div class="m-dfoot"><a class="btn" href="../auth/login.html"><svg width="18" height="18" aria-hidden="true"><use href="#i-logout"></use></svg>Log out</a></div></aside>
+
+
+
+</body></html>

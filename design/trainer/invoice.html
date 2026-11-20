@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="app" data-role="trainer" data-active="invoice">
+<header class="app-band"><div class="container">
+<div id="topbar"></div>
+<div class="page-head"><div><div class="crumb">Invoice</div><h1>Invoice</h1><p>Your training payments.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<section class="card"><div class="grid" style="--min:180px"><div class="tile gold"><div class="label">Sessions ready</div><div class="value">0</div></div><div class="tile "><div class="label">Total hours</div><div class="value">0</div></div><div class="tile "><div class="label">Rate</div><div class="value">₹1,000/hr</div></div><div class="tile success"><div class="label">Total</div><div class="value">₹0</div></div></div></section><div class="row"><section class="card grow"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Ready to invoice (0 sessions)</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="empty"><span class="icon-box gold" style="margin:0 auto 10px;width:48px;height:48px;border-radius:50%"><svg width="22" height="22" aria-hidden="true"><use href="#i-clock"/></svg></span><div class="h3" style="color:var(--text)">No completed sessions are ready to invoice yet.</div><p class="small muted" style="margin-top:6px">This fills up as you mark attendance for your classes.</p></div><div class="label" style="margin:18px 0 10px">How a ready session looks</div><div class="table-wrap"><table class="table" style="min-width:560px"><thead><tr><th>Date</th><th>Batch</th><th>Module</th><th>Hours</th><th>Amount</th></tr></thead><tbody><tr><td>Sep 16</td><td>Sunrise — Backend — B1</td><td>Server Frameworks</td><td>2</td><td>₹2,000</td></tr></tbody></table></div></section><section class="card side"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Generate invoice</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="stack" style="gap:14px"><div class="list-row"><span class="grow">Total hours</span><strong>0</strong></div><div class="list-row"><span class="grow">Rate</span><strong>₹1,000/hr</strong></div><div class="list-row" style="background:var(--gold-soft)"><span class="grow strong">Total</span><strong style="font-size:20px">₹0</strong></div><label class="field"><span>Note</span><textarea class="textarea" rows="3"></textarea></label><button class="btn btn-primary" type="button" disabled>Generate invoice</button><span class="hint">Needs at least 1 completed session and your bank details.</span></div></section></div><section class="card "><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Payments received</h2><p class="subtitle">A payment advice with the TDS breakup is shared here each time you are paid.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div data-w="trainer-advices"></div></section><section class="card "><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Past invoices</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>Invoice</th><th>Period</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td>INV-0001</td><td>Oct 2026</td><td>₹9,000</td><td><span class="pill success">Approved</span></td></tr></tbody></table></div></section>
+</div></main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/layout.js"></script>
+<script src="../assets/docs.js"></script><script src="../assets/flows.js"></script>
+</body>
+</html>

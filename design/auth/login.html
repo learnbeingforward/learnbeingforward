@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="public">
+
+<header class="band" style="padding-bottom:180px">
+  <div class="container"><div id="topbar"></div></div>
+  <div class="container band-hero" style="margin-top:36px">
+    <div class="eyebrow">Welcome back</div>
+    <h1 style="font-size:34px">Log in to your <em>portal</em></h1>
+    <p>One login for Super Admin, College, Trainer and Student accounts — you'll land on your own dashboard.</p>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card lift" style="max-width:480px;margin-left:auto;margin-right:auto;margin-top:-140px">
+    <div class="segmented" role="tablist" style="display:flex;margin-bottom:24px">
+      <button role="tab" aria-pressed="true" style="flex:1">Login</button>
+      <a role="tab" href="signup.html" style="flex:1;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border-strong);text-decoration:none;font-weight:500;color:#3B4252;font-size:13px">Sign Up</a>
+    </div>
+    <form class="stack" style="gap:16px">
+      <label class="field"><span>Email <span class="req" aria-hidden="true">*</span></span>
+        <span class="input-group"><svg width="16" height="16"><use href="#i-mail"/></svg><input class="input" type="email" autocomplete="email" placeholder="you@college.edu" required></span></label>
+      <label class="field"><span class="split">Password <span class="req" aria-hidden="true">*</span><a href="forgot-password.html" class="small" style="margin-left:auto">Forgot password?</a></span>
+        <span class="input-group"><svg width="16" height="16"><use href="#i-lock"/></svg><input class="input" type="password" autocomplete="current-password" required></span></label>
+      <label class="check"><input type="checkbox"> Keep me signed in on this device</label>
+      <button class="btn btn-primary" type="submit" style="width:100%">Log in</button>
+    </form>
+
+    <div class="alert danger" role="alert" style="margin-top:18px"><svg width="18" height="18" style="flex:none"><use href="#i-x"/></svg><span><strong>Example error state:</strong> Incorrect email or password. 2 attempts left before the account is locked for 15 minutes.</span></div>
+
+    <hr class="divider">
+    <p class="small muted" style="text-align:center">Colleges and companies get accounts from Learn Being Forward. Students can sign up only after their college adds them.</p>
+  </section>
+</main>
+
+<script src="../assets/layout.js"></script>
+</body>
+</html>

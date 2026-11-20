@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head>
+<!-- RENDERED SNAPSHOT: this is the final DOM after assets/*.js ran (desktop 1440px). Copy this markup 1:1 into JSX. Scripts removed. -->
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Level 01 · Programming Basics | Coding Patterns</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="public" data-active="courses"><!-- ICON SPRITE — see assets/layout.js (render once in root layout) -->
+<header class="band">
+  <div class="container"><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a><nav class="nav" aria-label="Main"><a href="../public/home.html" class="">Home</a><a href="../public/courses.html" class="active">Courses</a><a href="../public/technologies.html" class="">Technologies</a><a href="../public/about.html" class="">About</a><a href="../public/team.html" class="">Team</a><a href="../public/contact.html" class="">Contact</a><a href="../public/buy.html" class="">Buy</a></nav><div class="nav-actions"><a class="btn btn-ghost-light btn-sm" href="../auth/login.html">Login</a><a class="btn btn-gold btn-sm" href="../auth/signup.html">Sign Up</a></div><button class="m-burger" type="button" aria-label="Open menu" aria-expanded="false" data-mopen=""><svg width="22" height="22" aria-hidden="true"><use href="#i-menu"></use></svg></button></div>
+  <div class="container band-hero">
+    <div class="eyebrow"><a href="coding-patterns.html" style="color:inherit">Coding Patterns</a> › Visualiser</div>
+    <h1>Pattern visualiser</h1>
+    <p>Pick a pattern, then play it or step through one line at a time.</p>
+  </div>
+</header>
+<main class="container">
+  <div class="lift" id="cp-level"><div class="cp-app">
+<header class="cp-top"><a class="cp-back" href="coding-patterns.html"><svg width="16" height="16" aria-hidden="true"><use href="#i-arrowL"></use></svg>All levels</a><div class="cp-title"><span>Level 01</span><b>Programming Basics</b></div>
+<div style="display:flex;gap:6px"><a class="btn btn-sm" href="?l=2">Level 02<svg width="14" height="14" aria-hidden="true"><use href="#i-arrowR"></use></svg></a><button class="btn btn-sm" type="button" data-fs=""><svg width="14" height="14" aria-hidden="true"><use href="#i-grid"></use></svg>Full screen</button></div></header>
+<div class="cp-body"><aside class="cp-side" aria-label="Patterns"><div class="label" style="color:#9AA6BF;margin-bottom:8px">Patterns (10)</div><button type="button" class="on" data-pat="Linear Search">Linear Search<small>free</small></button><button type="button" class="" data-pat="Min / Max Tracking">Min / Max Tracking<small>🔒</small></button><button type="button" class="" data-pat="Accumulator">Accumulator<small>🔒</small></button><button type="button" class="" data-pat="Counter">Counter<small>🔒</small></button><button type="button" class="" data-pat="Swap">Swap<small>🔒</small></button><button type="button" class="" data-pat="Digit Extraction">Digit Extraction<small>🔒</small></button><button type="button" class="" data-pat="Flag / Sentinel">Flag / Sentinel<small>🔒</small></button><button type="button" class="" data-pat="Early Exit / Guard Clause">Early Exit / Guard Clause<small>🔒</small></button><button type="button" class="" data-pat="Nested Loops">Nested Loops<small>🔒</small></button><button type="button" class="" data-pat="Parity / Toggle">Parity / Toggle<small>🔒</small></button></aside>
+<main class="cp-stage"><div class="cp-h"><h1>Linear Search</h1><span class="pill gold">Step 1 of 7</span></div>
+
+<div class="cp-arr"><div class="cp-cell "><b>7</b><small>0</small></div><div class="cp-cell "><b>3</b><small>1</small></div><div class="cp-cell "><b>9</b><small>2</small></div><div class="cp-cell "><b>4</b><small>3</small></div><div class="cp-cell "><b>12</b><small>4</small></div><div class="cp-cell "><b>6</b><small>5</small></div><div class="cp-cell "><b>1</b><small>6</small></div><div class="cp-cell "><b>8</b><small>7</small></div></div>
+<p class="cp-say" aria-live="polite">Look for 12, starting at index 0.</p>
+<div class="cp-vars"><span><small>target</small><b>12</b></span></div>
+<div class="cp-ctl"><button class="btn btn-sm" type="button" data-c="reset"><svg width="14" height="14" aria-hidden="true"><use href="#i-refresh"></use></svg>Reset</button><button class="btn btn-sm" type="button" data-c="prev" disabled=""><svg width="14" height="14" aria-hidden="true"><use href="#i-arrowL"></use></svg>Back</button><button class="btn btn-gold" type="button" data-c="play"><svg width="14" height="14" aria-hidden="true"><use href="#i-play"></use></svg>Play</button><button class="btn btn-sm" type="button" data-c="next">Step<svg width="14" height="14" aria-hidden="true"><use href="#i-arrowR"></use></svg></button>
+<label class="small" style="display:flex;gap:6px;align-items:center;color:#D9DEE8">Speed<input type="range" min="300" max="1500" step="100" value="900" data-speed="" aria-label="Speed"></label></div></main>
+<aside class="cp-code" aria-label="Code"><div class="label" style="color:#9AA6BF;margin-bottom:8px">Java</div><pre><span class="on"><i>1</i>int find(int[] a, int target) {</span><span class=""><i>2</i>  for (int i = 0; i &lt; a.length; i++) {</span><span class=""><i>3</i>    if (a[i] == target)</span><span class=""><i>4</i>      return i;   // found</span><span class=""><i>5</i>  }</span><span class=""><i>6</i>  return -1;     // not found</span><span class=""><i>7</i>}</span></pre></aside></div></div></div>
+</main>
+<div class="m-scrim" data-mclose="" hidden=""></div><aside class="m-drawer" aria-label="Menu" hidden="">
+      <div class="m-dhead"><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a><button class="m-x" type="button" aria-label="Close menu" data-mclose=""><svg width="20" height="20" aria-hidden="true"><use href="#i-x"></use></svg></button></div>
+      <nav class="m-links"><a href="../public/home.html" class="">Home<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/courses.html" class="active">Courses<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/technologies.html" class="">Technologies<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/about.html" class="">About<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/team.html" class="">Team<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/contact.html" class="">Contact<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/buy.html" class="">Buy<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/coding-patterns.html">Coding Patterns<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a></nav>
+      <div class="m-dfoot"><a class="btn btn-gold" href="../auth/signup.html">Sign Up</a><a class="btn" href="../auth/login.html">Login</a><p class="small muted" style="margin-top:8px">+91 99729 34418 · support@learnbeingforward.in</p></div></aside>
+      <footer class="site-footer"><div class="container">
+        <div class="cols">
+          <div><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a><p style="margin-top:12px;max-width:280px">Placement-focused technical training for schools, colleges and corporate freshers.</p></div>
+          <div><h4>Explore</h4><ul><li><a href="../public/courses.html">Courses</a></li><li><a href="../public/technologies.html">Technologies</a></li><li><a href="../public/team.html">Trainers</a></li><li><a href="../public/coding-patterns.html">Coding Patterns</a></li><li><a href="../public/buy.html">Buy books</a></li></ul></div>
+          <div><h4>Company</h4><ul><li><a href="../public/about.html">About</a></li><li><a href="../public/contact.html">Partner with us</a></li><li><a href="../auth/login.html">Login</a></li></ul></div>
+          <div><h4>Contact</h4><ul><li><a href="tel:+919972934418">+91 99729 34418</a></li><li><a href="mailto:support@learnbeingforward.in">support@learnbeingforward.in</a></li></ul></div>
+        </div>
+        <div class="bottom"><span>© 2026 Learn Being Forward</span><span>Privacy · Terms</span></div>
+      </div></footer>
+
+
+
+</body></html>

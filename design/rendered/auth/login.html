@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head>
+<!-- RENDERED SNAPSHOT: this is the final DOM after assets/*.js ran (desktop 1440px). Copy this markup 1:1 into JSX. Scripts removed. -->
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="public"><!-- ICON SPRITE — see assets/layout.js (render once in root layout) -->
+
+<header class="band" style="padding-bottom:180px">
+  <div class="container"><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a><nav class="nav" aria-label="Main"><a href="../public/home.html" class="">Home</a><a href="../public/courses.html" class="">Courses</a><a href="../public/technologies.html" class="">Technologies</a><a href="../public/about.html" class="">About</a><a href="../public/team.html" class="">Team</a><a href="../public/contact.html" class="">Contact</a><a href="../public/buy.html" class="">Buy</a></nav><div class="nav-actions"><a class="btn btn-ghost-light btn-sm" href="../auth/login.html">Login</a><a class="btn btn-gold btn-sm" href="../auth/signup.html">Sign Up</a></div><button class="m-burger" type="button" aria-label="Open menu" aria-expanded="false" data-mopen=""><svg width="22" height="22" aria-hidden="true"><use href="#i-menu"></use></svg></button></div>
+  <div class="container band-hero" style="margin-top:36px">
+    <div class="eyebrow">Welcome back</div>
+    <h1 style="font-size:34px">Log in to your <em>portal</em></h1>
+    <p>One login for Super Admin, College, Trainer and Student accounts — you'll land on your own dashboard.</p>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card lift" style="max-width:480px;margin-left:auto;margin-right:auto;margin-top:-140px">
+    <div class="segmented" role="tablist" style="display:flex;margin-bottom:24px">
+      <button role="tab" aria-pressed="true" style="flex:1">Login</button>
+      <a role="tab" href="signup.html" style="flex:1;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border-strong);text-decoration:none;font-weight:500;color:#3B4252;font-size:13px">Sign Up</a>
+    </div>
+    <form class="stack" style="gap:16px">
+      <label class="field"><span>Email <span class="req" aria-hidden="true">*</span></span>
+        <span class="input-group"><svg width="16" height="16"><use href="#i-mail"></use></svg><input class="input" type="email" autocomplete="email" placeholder="you@college.edu" required=""></span></label>
+      <label class="field"><span class="split">Password <span class="req" aria-hidden="true">*</span><a href="forgot-password.html" class="small" style="margin-left:auto">Forgot password?</a></span>
+        <span class="input-group"><svg width="16" height="16"><use href="#i-lock"></use></svg><span class="pw-wrap"><input class="input" type="password" autocomplete="current-password" required="" data-pw="1"><button type="button" class="pw-eye" aria-label="Show password" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></span></span></label>
+      <label class="check"><input type="checkbox"> Keep me signed in on this device</label>
+      <button class="btn btn-primary" type="submit" style="width:100%">Log in</button>
+    </form>
+
+    <div class="alert danger" role="alert" style="margin-top:18px"><svg width="18" height="18" style="flex:none"><use href="#i-x"></use></svg><span><strong>Example error state:</strong> Incorrect email or password. 2 attempts left before the account is locked for 15 minutes.</span></div>
+
+    <hr class="divider">
+    <p class="small muted" style="text-align:center">Colleges and companies get accounts from Learn Being Forward. Students can sign up only after their college adds them.</p>
+  </section>
+</main>
+
+<div class="m-scrim" data-mclose="" hidden=""></div><aside class="m-drawer" aria-label="Menu" hidden="">
+      <div class="m-dhead"><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a><button class="m-x" type="button" aria-label="Close menu" data-mclose=""><svg width="20" height="20" aria-hidden="true"><use href="#i-x"></use></svg></button></div>
+      <nav class="m-links"><a href="../public/home.html" class="">Home<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/courses.html" class="">Courses<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/technologies.html" class="">Technologies<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/about.html" class="">About<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/team.html" class="">Team<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/contact.html" class="">Contact<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/buy.html" class="">Buy<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a><a href="../public/coding-patterns.html">Coding Patterns<svg width="16" height="16" aria-hidden="true"><use href="#i-chevR"></use></svg></a></nav>
+      <div class="m-dfoot"><a class="btn btn-gold" href="../auth/signup.html">Sign Up</a><a class="btn" href="../auth/login.html">Login</a><p class="small muted" style="margin-top:8px">+91 99729 34418 · support@learnbeingforward.in</p></div></aside>
+      <footer class="site-footer"><div class="container">
+        <div class="cols">
+          <div><a class="brand" href="../public/home.html"><svg width="26" height="26" aria-hidden="true"><use href="#i-cap"></use></svg><span class="wm">Learn Being <span>Forward</span></span></a><p style="margin-top:12px;max-width:280px">Placement-focused technical training for schools, colleges and corporate freshers.</p></div>
+          <div><h4>Explore</h4><ul><li><a href="../public/courses.html">Courses</a></li><li><a href="../public/technologies.html">Technologies</a></li><li><a href="../public/team.html">Trainers</a></li><li><a href="../public/coding-patterns.html">Coding Patterns</a></li><li><a href="../public/buy.html">Buy books</a></li></ul></div>
+          <div><h4>Company</h4><ul><li><a href="../public/about.html">About</a></li><li><a href="../public/contact.html">Partner with us</a></li><li><a href="../auth/login.html">Login</a></li></ul></div>
+          <div><h4>Contact</h4><ul><li><a href="tel:+919972934418">+91 99729 34418</a></li><li><a href="mailto:support@learnbeingforward.in">support@learnbeingforward.in</a></li></ul></div>
+        </div>
+        <div class="bottom"><span>© 2026 Learn Being Forward</span><span>Privacy · Terms</span></div>
+      </div></footer>
+
+
+</body></html>

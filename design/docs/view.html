@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Document | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Dancing+Script:wght@600&display=swap">
+<link rel="stylesheet" href="../assets/styles.css"><link rel="stylesheet" href="../assets/docs.css">
+<style>body{background:#E9E4D8;margin:0}.doc-bar{position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 20px;flex-wrap:wrap}
+.doc-bar b{font-size:15px}.doc-bar .small{color:#D9DEE8}.doc-print-root{padding:28px 12px 60px}</style></head>
+<body class="doc-plain">
+<div class="doc-bar no-print"><div><b id="dt">Document</b><div class="small" id="ds"></div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" type="button" onclick="history.length>1?history.back():window.close()">Close</button>
+<button class="btn btn-gold btn-sm" type="button" onclick="window.print()">Download PDF</button></div></div>
+<div class="doc-print-root"><div class="doc-stack" id="out"></div></div>
+<script src="../assets/docs.js"></script>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search), type=q.get('type')||'college-mou', id=q.get('id')||'demo';
+  var T={'college-mou':'College MOU','trainer-mou':'Trainer MOU','college-invoice':'Tax invoice','trainer-advice':'Payment advice'};
+  var d=LBFDocs.get(id,type), m=LBFDocs.meta(id); if(q.get('unpaid')&&m.status!=='paid'){d.paidOn='';d.amountReceived='';d.payRef='';d.payMode='';}
+  document.getElementById('out').innerHTML=LBFDocs.render(type,d);
+  document.getElementById('dt').textContent=T[type]+' · '+(d.mouNo&&type==='college-mou'?d.mouNo:d.agNo&&type==='trainer-mou'?d.agNo:d.invNo&&type==='college-invoice'?d.invNo:d.advNo||'');
+  document.getElementById('ds').textContent=(q.get('signed')&&m.signedFile?'Signed copy on file: '+m.signedFile+' · ':'')+'Download PDF opens the print dialog — choose “Save as PDF”.';
+  document.title=document.getElementById('dt').textContent+' | Learn Being Forward';
+})();
+</script></body></html>

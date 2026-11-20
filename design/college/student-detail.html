@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aadhya Joshi | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="app" data-role="college" data-active="student-detail">
+<header class="app-band"><div class="container">
+<div id="topbar"></div>
+<div class="page-head"><div><div class="crumb">Students › Aadhya Joshi</div><h1>Aadhya Joshi</h1><p>Student · Crestview College of Engineering</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-ghost-light" href="students.html" ><svg width="16" height="16" aria-hidden="true"><use href="#i-arrowL"/></svg>Back to All Students</a></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<div class="row"><section class="card side"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Profile</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="stack" style="gap:18px"><div class="stat-inline"><span class="avatar lg">AJ</span><div><div class="h3">Aadhya Joshi</div><div class="small muted">aadhya.joshi6@extradata.in</div></div></div><div class="grid" style="--min:160px"><div><div class="label">USN</div><div class="strong" style="margin-top:4px">CR26EX006</div></div><div><div class="label">Father's name</div><div class="strong" style="margin-top:4px">Harsha Joshi</div></div><div><div class="label">Branch</div><div class="strong" style="margin-top:4px">Electronics &amp; Communication</div></div><div><div class="label">Semester</div><div class="strong" style="margin-top:4px">3</div></div><div><div class="label">College</div><div class="strong" style="margin-top:4px">Crestview College of Engineering</div></div><div><div class="label">CV</div><div class="strong" style="margin-top:4px"><span class="muted">Not uploaded</span></div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px"><button class="btn btn-primary btn-sm" type="button" ><svg width="16" height="16" aria-hidden="true"><use href="#i-edit"/></svg>Edit details</button><a class="btn btn-sm" href="#" ><svg width="16" height="16" aria-hidden="true"><use href="#i-key"/></svg>Reset password</a></div></div></section><section class="card grow"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Enrollments (2)</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><p class="small muted" style="margin:-8px 0 14px">Click a course to see session-by-session attendance.</p><div class="stack" style="gap:12px"><a class="box enr" href="enrollment-detail.html"><div class="split" style="flex-wrap:wrap;gap:8px;align-items:flex-start"><div><div class="h3">Java & DSA</div><div class="small muted">Trainer: Not yet assigned · 18/20 classes attended</div>
+<div class="small muted">Not placed in a training batch yet</div></div><div style="text-align:right"><span class="pill success">Certificate issued</span><div style="margin-top:8px"><div style="display:flex;gap:8px;align-items:center"><div class="progress success" style="width:120px"><span style="width:90%"></span></div><span class="small strong">90%</span></div></div></div></div>
+<div class="alert warning" style="margin-top:12px;padding:8px 12px"><svg width="16" height="16" aria-hidden="true"><use href="#i-target"/></svg><span>No trainer or batch is linked, but 18 classes and a trainer-approved certificate are recorded — link the batch so the record is complete.</span></div><span class="small strong" style="color:var(--navy);margin-top:10px;display:inline-flex;gap:4px;align-items:center">Session-by-session progress <svg width="14" height="14" aria-hidden="true"><use href="#i-arrowR"/></svg></span></a><a class="box enr" href="enrollment-detail.html"><div class="split" style="flex-wrap:wrap;gap:8px;align-items:flex-start"><div><div class="h3">Full-Stack Development</div><div class="small muted">Trainer: Demo Trainer · 0/0 classes attended</div>
+<div class="small muted">Batch: Full-Stack Development — Batch 1</div></div><div style="text-align:right"><span class="pill success">Certificate issued by exception</span><div class="small muted" style="margin-top:6px;max-width:220px">College asked for it; Learn Being Forward approved. The 75% rule doesn’t apply.</div><div style="margin-top:8px"><div style="display:flex;gap:8px;align-items:center"><div class="progress danger" style="width:120px"><span style="width:0%"></span></div><span class="small strong">0%</span></div></div></div></div>
+<span class="small strong" style="color:var(--navy);margin-top:10px;display:inline-flex;gap:4px;align-items:center">Session-by-session progress <svg width="14" height="14" aria-hidden="true"><use href="#i-arrowR"/></svg></span></a></div></section></div><script>
+(function(){const I=(n)=>`<svg width="16" height="16" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+function toast(t){document.querySelectorAll('.toast').forEach(x=>x.remove());const el=document.createElement('div');el.className='toast';el.innerHTML=I('check')+t;document.body.appendChild(el);setTimeout(()=>el.remove(),2600);}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-confirm]');if(!b)return;e.preventDefault();
+ const ov=document.createElement('div');ov.className='ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
+ ov.innerHTML=`<div class="ov-card"><h2 class="h2">${b.dataset.confirm}</h2><p class="muted" style="margin-top:6px">${b.dataset.body||''}</p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button class="btn" type="button" data-x>Cancel</button><button class="btn ${b.dataset.kind||'btn-primary'}" type="button" id="go">${b.dataset.go||'Confirm'}</button></div></div>`;
+ document.body.appendChild(ov);ov.querySelector('#go').focus();
+ ov.addEventListener('click',x=>{if(x.target===ov||x.target.closest('[data-x]'))ov.remove();});
+ ov.querySelector('#go').onclick=()=>{ov.remove();toast(b.dataset.done||'Done');if(b.dataset.after==='row'){const r=b.closest('tr,li');if(r){const c=r.querySelector('[data-status]');if(c){c.innerHTML='<span class="pill success">Issued</span>';}b.remove();}}};
+});})();
+</script>
+</div></main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/layout.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+/* Learn Being Forward — printable documents (MOUs, invoices, payment advice).
+   A4 pages with a double border, brand header, watermark and page footer.
+   Print / "Save as PDF" from the browser gives the downloadable file. */
+.doc-stack{display:flex;flex-direction:column;align-items:center;gap:24px}
+.doc-page{position:relative;width:210mm;min-height:297mm;background:#fff;color:#1F2633;box-shadow:0 10px 30px rgba(28,43,74,.14);
+  padding:14mm 16mm 20mm;font-family:Poppins,system-ui,sans-serif;font-size:10.5pt;line-height:1.6;overflow:hidden;page-break-after:always;break-after:page}
+.doc-page:last-child{page-break-after:auto;break-after:auto}
+.doc-page::before{content:"";position:absolute;inset:6mm;border:2px solid #1C2B4A;pointer-events:none}
+.doc-page::after{content:"";position:absolute;inset:7.6mm;border:1px solid #C9973C;pointer-events:none}
+.doc-wm{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10mm;pointer-events:none;opacity:.055;transform:rotate(-30deg);z-index:0}
+.doc-wm svg{width:70mm;height:70mm;color:#1C2B4A}
+.doc-wm span{font-weight:700;font-size:40pt;letter-spacing:.12em;color:#1C2B4A;white-space:nowrap}
+.doc-body{position:relative;z-index:1}
+.doc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#1C2B4A;color:#fff;margin:0 -2mm 0;padding:5mm 6mm;border-bottom:3px solid #C9973C}
+.doc-brand{display:flex;align-items:center;gap:10px}
+.doc-brand svg{width:30px;height:30px;color:#C9973C}
+.doc-brand b{display:block;font-size:15pt;letter-spacing:.02em;line-height:1.1}
+.doc-brand b span{color:#C9973C}
+.doc-brand small{display:block;font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:#D9DEE8;margin-top:2px}
+.doc-head .meta{text-align:right;font-size:8pt;color:#D9DEE8;line-height:1.5}
+.doc-company{text-align:center;font-size:8.5pt;color:#5D6472;padding:3mm 0 4mm;border-bottom:1px solid #E4DFD3;margin-bottom:6mm}
+.doc-company strong{color:#1C2B4A;font-size:10pt;letter-spacing:.04em}
+.doc-title{text-align:center;margin:4mm 0 2mm}
+.doc-title h1{font-size:20pt;letter-spacing:.06em;color:#1C2B4A;margin:0;text-transform:uppercase}
+.doc-title p{margin:1mm 0 0;color:#8A6420;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:9pt}
+.doc-page h2{font-size:11.5pt;color:#1C2B4A;margin:5mm 0 2mm;padding-bottom:1.2mm;border-bottom:1px solid #E4DFD3;text-transform:uppercase;letter-spacing:.04em}
+.doc-page h2 .n{color:#C9973C;margin-right:6px}
+.doc-page p{margin:0 0 2.4mm;text-align:justify}
+.doc-page ol,.doc-page ul{margin:0 0 2.4mm;padding-left:6mm}
+.doc-page li{margin-bottom:1.2mm;text-align:justify}
+.doc-page table{width:100%;border-collapse:collapse;margin:2mm 0 4mm;font-size:9.5pt}
+.doc-page th,.doc-page td{border:1px solid #CFC8B8;padding:2mm 3mm;text-align:left;vertical-align:top}
+.doc-page th{background:#F4F1E8;color:#1C2B4A;font-weight:600;width:38%}
+.doc-page table.items th{width:auto}
+.doc-page td.num,.doc-page th.num{text-align:right;white-space:nowrap}
+.doc-page tr.total td{font-weight:700;background:#F6EBD3;color:#1C2B4A}
+.doc-parties{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin:4mm 0}
+.doc-party{border:1px solid #E4DFD3;border-left:3px solid #C9973C;border-radius:2mm;padding:3mm 4mm;background:#FAF7F0;font-size:9.5pt}
+.doc-party .lbl{font-size:7.5pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8A6420}
+.doc-party b{display:block;color:#1C2B4A;font-size:10.5pt;margin:1mm 0}
+.doc-foot{position:absolute;left:16mm;right:16mm;bottom:10mm;display:flex;justify-content:space-between;align-items:center;font-size:7.5pt;color:#5D6472;z-index:1}
+.doc-foot .init{display:flex;gap:6mm}
+.doc-foot .init span{border-top:1px solid #9AA1AE;padding-top:1mm;min-width:28mm;text-align:center}
+.doc-sign{display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:8mm}
+.doc-sign .blk{border:1px solid #E4DFD3;border-radius:2mm;padding:4mm}
+.doc-sign .date{font-size:9pt;margin-bottom:3mm}
+.doc-sign .pad{height:18mm;border-bottom:1.5px solid #1C2B4A;display:flex;align-items:flex-end;justify-content:center;padding-bottom:1mm}
+.doc-sign .pad img{max-height:20mm;max-width:100%}
+.doc-sign .pad .typed{font-family:"Dancing Script",cursive;font-size:22pt;color:#1C2B4A}
+.doc-sign .pad .sig-empty{color:#9AA1AE;font-size:8.5pt}
+.doc-witness{display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:7mm;font-size:8.5pt;color:#5D6472}
+.doc-witness div{border-top:1px solid #9AA1AE;padding-top:1.5mm}
+.doc-sign .who{font-size:9pt;margin-top:2mm}
+.doc-sign .who b{display:block;color:#1C2B4A}
+.doc-note{background:#F6EBD3;border-left:3px solid #C9973C;padding:2.5mm 4mm;border-radius:1.5mm;font-size:9pt;margin:2mm 0 4mm}
+.doc-paid{position:absolute;right:18mm;top:44mm;border:3px solid #1F8A4C;color:#1F8A4C;font-weight:700;font-size:22pt;letter-spacing:.2em;padding:1mm 6mm;border-radius:3mm;transform:rotate(-12deg);opacity:.85;z-index:2}
+.doc-kv{display:grid;grid-template-columns:1fr 1fr;gap:2mm 8mm;font-size:9.5pt;margin-bottom:4mm}
+.doc-kv div span{color:#5D6472;display:block;font-size:8pt;text-transform:uppercase;letter-spacing:.08em}
+.doc-kv div b{color:#1C2B4A}
+/* values filled from the editor are tinted on screen so they are easy to spot */
+.fv{background:rgba(201,151,60,.16);border-radius:2px;padding:0 2px}
+.fv.blank{background:rgba(185,28,28,.10);color:#7F1D1D}
+.doc-plain .fv{background:none;padding:0}
+.doc-plain .fv.blank{background:none;color:inherit}
+/* scaled preview inside the editor */
+.doc-preview{background:#E9E4D8;border-radius:12px;padding:18px;max-height:calc(100vh - 140px);overflow:auto}
+.doc-preview .doc-stack{zoom:.62;gap:18px}
+@media print{
+  @page{size:A4;margin:0}
+  body{background:#fff!important}
+  body>*:not(.doc-print-root){display:none!important}
+  .doc-print-root{display:block!important}
+  .doc-stack{gap:0}
+  .doc-page{box-shadow:none;margin:0}
+  .fv{background:none!important;padding:0!important;color:inherit!important}
+  .no-print{display:none!important}
+}
+@media print{
+  .doc-print-root{padding:0!important}
+  .doc-page{height:297mm;min-height:0;overflow:hidden;box-sizing:border-box}
+  html,body{margin:0!important;padding:0!important}
+}
+.doc-kv.k4{grid-template-columns:repeat(4,1fr)}
+.doc-page.compact{font-size:9.5pt;line-height:1.5}
+.doc-page.compact .doc-company{padding:2mm 0 3mm;margin-bottom:3mm}
+.doc-page.compact .doc-title h1{font-size:18pt}
+.doc-page.compact th,.doc-page.compact td{padding:1.3mm 3mm}
+.doc-page.compact table{margin:1.5mm 0 3mm;font-size:9pt}
+.doc-page.compact h2{margin:3mm 0 2mm}
+.doc-page.compact .doc-parties{margin:3mm 0}

@@ -20,6 +20,7 @@ html {
 }
 
 :root {
+  --font-poppins: 'Poppins', system-ui, sans-serif;
   --color-indigo: #1c2b4a;
   --color-indigo-dark: #121b30;
   --color-gold: #c9973c;

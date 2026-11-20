@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Certificate | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Eczar:wght@400;500&family=Dancing+Script:wght@600&display=swap"><link rel="stylesheet" href="../assets/cert.css">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body data-layout="public" data-active="">
+<header class="band"><div class="container"><div id="topbar"></div></div>
+<div class="container band-hero"><div class="eyebrow">Certificate verification</div><h1 id="vh">Certificate</h1><p id="vp">Check that a Learn Being Forward certificate is genuine.</p></div></header>
+<main class="container">
+<section class="card lift" id="vres" aria-live="polite"></section>
+<section class="card"><div class="ct-fit" id="vcert"></div></section>
+<section class="card"><label class="field"><span>Check another certificate</span><div style="display:flex;gap:8px;flex-wrap:wrap"><input class="input" id="vid" placeholder="Certificate ID, e.g. LBF-C-2026-00417" style="flex:1 1 220px" aria-label="Certificate ID"><button class="btn btn-gold" type="button" id="vgo">Verify</button></div><span class="hint">The ID and link are printed at the bottom right of every certificate.</span></label></section>
+</main>
+<script src="../assets/layout.js"></script>
+<script src="../assets/cert.js"></script>
+<script>(function(){const I=n=>`<svg width="20" height="20" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+function show(id){id=(id||'').trim().toUpperCase();const r=LBFCert.ISSUED[id],res=document.getElementById('vres'),c=document.getElementById('vcert');c.closest('section').hidden=!r;
+ if(!id){res.innerHTML='<p class="muted">Enter a certificate ID below, or open the link printed on the certificate.</p>';return;}
+ if(!r){res.innerHTML=`<div class="alert danger">${I('x')}<span>No certificate found with ID <b>${id.replace(/[<>&]/g,'')}</b>. Check the ID, or contact support@learnbeingforward.in.</span></div>`;document.getElementById('vh').textContent='Certificate not found';return;}
+ document.getElementById('vh').textContent='Certificate';document.getElementById('vp').textContent=r.name+' · '+r.course;
+ res.innerHTML=`<div class="split" style="flex-wrap:wrap;gap:12px"><div class="stat-inline"><span class="icon-box" style="background:var(--success-soft);color:var(--success)">${I('check')}</span><div><div class="h3">Valid certificate</div><div class="small muted">Issued by Learn Being Forward · ID ${id}</div></div></div><span class="pill success">Verified</span></div>
+ <div class="grid" style="--min:170px;margin-top:16px"><div><div class="label">Awarded to</div><div class="strong">${r.name}</div></div><div><div class="label">Course</div><div class="strong">${r.course}</div></div><div><div class="label">College</div><div class="strong">${LBFCert.get(r.batch).college}</div></div><div><div class="label">Issued on</div><div class="strong">${new Date(r.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div></div></div>`;
+ c.innerHTML=LBFCert.render(Object.assign(LBFCert.get(r.batch),{course:r.course}),{name:r.name,id,date:r.date,course:r.course});LBFCert.fit(c);}
+const q=new URLSearchParams(location.search).get('id')||'LBF-C-2026-00593';show(q);
+document.getElementById('vgo').onclick=()=>show(document.getElementById('vid').value);document.getElementById('vid').addEventListener('keydown',e=>{if(e.key==='Enter')show(e.target.value);});})();</script>
+</body></html>

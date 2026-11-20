@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Batch Certificate | Learn Being Forward</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/styles.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Eczar:wght@400;500&family=Dancing+Script:wght@600&display=swap"><link rel="stylesheet" href="../assets/cert.css">
+</head>
+<body data-layout="app" data-role="super-admin" data-active="certificate-editor">
+<header class="app-band"><div class="container">
+<div id="topbar"></div>
+<div class="page-head"><div><div class="crumb">Accounts › Trainers › Batches › Full-Stack Development — Batch 1 › Certificate</div><h1>Batch certificate</h1><p>Full-Stack Development — Batch 1 · Crestview College of Engineering. Made automatically when the batch was created; change anything below.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-ghost-light" href="batch-admin.html" ><svg width="16" height="16" aria-hidden="true"><use href="#i-arrowL"/></svg>Back to batch</a></div></div>
+</div></header>
+<main class="container"><div class="lift stack">
+<div class="alert info"><svg width="18" height="18" aria-hidden="true"><use href="#i-award"/></svg><span><b>Filled in by itself:</b> student name, course name, issue date and certificate ID. You only need to check the college name — shorten it, or decide where it breaks onto two lines.</span></div><div class="ce-wrap"><section class="card ce-form"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Edit</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="stack" style="gap:14px"><label class="field"><span>College name (as printed)</span><input class="input" data-k="college" placeholder=""><span class="hint">Long names break onto two lines automatically.</span></label><div class="small strong" id="ce-lines" style="color:var(--gold-text);margin-top:-6px"></div><label class="field"><span>Or choose the two lines yourself</span><textarea class="textarea" rows="2" data-k="collegeLines" placeholder="Christ Institute of Technology
+Science and Technology"></textarea><span class="hint">Put each line on its own line. Leave empty for automatic.</span></label><label class="field"><span>Course name</span><input class="input" data-k="course" placeholder=""></label><label class="field"><span>Ribbon heading</span><input class="input" data-k="heading" placeholder=""></label><label class="field"><span>Line under the student name</span><input class="input" data-k="completed" placeholder=""></label><label class="field"><span>Programme line</span><textarea class="textarea" rows="2" data-k="line" placeholder=""></textarea><span class="hint">{college} and {course} are replaced automatically.</span></label><div class="grid" style="--min:200px"><label class="field"><span>Signatory name</span><input class="input" data-k="signName" placeholder=""></label><label class="field"><span>Signatory title</span><input class="input" data-k="signTitle" placeholder=""></label></div><div class="grid" style="--min:200px"><label class="field"><span>Typed signature</span><input class="input" data-k="signTyped" placeholder=""></label><label class="field"><span>Signature image</span><input class="input" type="file" accept="image/*" id="ce-sig"><span class="hint">PNG with a clear background.</span></label></div><label class="field"><span>Verification note</span><textarea class="textarea" rows="2" data-k="verifyNote" placeholder=""></textarea></label><div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px"><button class="btn btn-sm" type="button" id="ce-reset"><svg width="16" height="16" aria-hidden="true"><use href="#i-refresh"/></svg>Reset</button><button class="btn btn-gold" type="button" id="ce-save"><svg width="16" height="16" aria-hidden="true"><use href="#i-check"/></svg>Save certificate</button></div></div></section><section class="card ce-prev"><div class="split" style="margin-bottom:18px"><div><h2 class="h2">Preview</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap"></div></div><div class="split" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><span class="small muted">Preview for</span><select class="select" id="ce-stu" style="max-width:260px"><option value="0">Aadhya Mehta</option><option value="1">Deepak Chauhan</option><option value="2">Myra Gupta</option><option value="3">Varun Kumar</option><option value="4">Varun Patel</option><option value="5">Sai Chauhan</option></select></div><div class="ct-fit" id="ce-out"></div></section></div><script>
+document.addEventListener('DOMContentLoaded',function(){const B='cce-fsd-b1';let t=LBFCert.get(B);const $=s=>document.querySelector(s);
+const ROSTER=[["Aadhya Mehta", "LBF-C-2026-00610"], ["Deepak Chauhan", "LBF-C-2026-00611"], ["Myra Gupta", "LBF-C-2026-00601"], ["Varun Kumar", "LBF-C-2026-00602"], ["Varun Patel", "LBF-C-2026-00612"], ["Sai Chauhan", "LBF-C-2026-00613"]];
+function draw(){const st=ROSTER[+$('#ce-stu').value]||ROSTER[0];$('#ce-out').innerHTML=LBFCert.render(t,{name:st[0],id:st[1],date:'2026-11-07',course:t.course});LBFCert.fit($('#ce-out'));
+ const L=LBFCert.collegeLines(t);$('#ce-lines').textContent=L.length>1?'Shown on 2 lines: “'+L[0]+'” / “'+L[1]+'”':'Shown on 1 line';}
+document.querySelectorAll('[data-k]').forEach(el=>{el.value=t[el.dataset.k]||'';el.addEventListener('input',()=>{t[el.dataset.k]=el.value;draw();});});
+$('#ce-stu').addEventListener('change',draw);
+$('#ce-sig').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{t.signImg=r.result;draw();};r.readAsDataURL(f);});
+$('#ce-reset').onclick=()=>{t=Object.assign({},LBFCert.DEFAULT);document.querySelectorAll('[data-k]').forEach(el=>el.value=t[el.dataset.k]||'');draw();};
+$('#ce-save').onclick=()=>{LBFCert.put(B,t);document.querySelectorAll('.toast').forEach(x=>x.remove());const el=document.createElement('div');el.className='toast';el.innerHTML='<svg width="16" height="16"><use href="#i-check"/></svg>Certificate saved — every certificate in this batch uses it';document.body.appendChild(el);setTimeout(()=>el.remove(),2800);};
+draw();});
+</script>
+</div></main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/layout.js"></script>
+<script src="../assets/cert.js"></script>
+</body>
+</html>
