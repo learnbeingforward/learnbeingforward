@@ -28,7 +28,7 @@ export function AuthTabs({ colleges }: { colleges: College[] }) {
   return (
     <section
       className="card"
-      style={{ maxWidth: mode === "signup" ? 520 : 480, marginLeft: "auto", marginRight: "auto", marginTop: -84, position: "relative" }}
+      style={{ maxWidth: mode === "signup" ? 520 : 480, marginLeft: "auto", marginRight: "auto", marginTop: -140, position: "relative" }}
     >
       <div className="segmented" role="tablist" style={{ display: "flex", marginBottom: 24 }}>
         <button type="button" role="tab" aria-pressed={mode === "login"} style={{ flex: 1 }} onClick={() => setMode("login")}>

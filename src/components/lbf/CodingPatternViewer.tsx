@@ -29,6 +29,33 @@ export function CodingPatternViewer({ level, name, unlocked }: { level: string; 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  const levelNum = Number(level.replace("level-", ""));
+  const prevHref = levelNum > 1 ? `/coding-patterns/level-${String(levelNum - 1).padStart(2, "0")}` : null;
+  const nextHref = levelNum < 14 ? `/coding-patterns/level-${String(levelNum + 1).padStart(2, "0")}` : null;
+
+  const toolbar = (
+    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        {prevHref && (
+          <Link className="btn btn-sm" href={prevHref}>
+            <Icon name="arrowL" size={14} />
+            Level {String(levelNum - 1).padStart(2, "0")}
+          </Link>
+        )}
+        {nextHref && (
+          <Link className="btn btn-sm" href={nextHref}>
+            Level {String(levelNum + 1).padStart(2, "0")}
+            <Icon name="arrowR" size={14} />
+          </Link>
+        )}
+      </div>
+      <button type="button" className="btn btn-sm" onClick={() => setIsFullscreen(true)}>
+        <Icon name="grid" size={14} />
+        Full screen
+      </button>
+    </div>
+  );
+
   if (isFullscreen) {
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "#fff" }}>
@@ -60,12 +87,7 @@ export function CodingPatternViewer({ level, name, unlocked }: { level: string; 
       }}
     >
       <div className="lift">
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-          <button type="button" className="btn btn-sm" onClick={() => setIsFullscreen(true)}>
-            <Icon name="grid" size={14} />
-            Full screen
-          </button>
-        </div>
+        {toolbar}
         <iframe src={iframeSrc} title={`${name} visualiser`} style={{ width: "100%", height: "80vh", border: 0, display: "block", borderRadius: 16 }} />
       </div>
     </PublicShell>

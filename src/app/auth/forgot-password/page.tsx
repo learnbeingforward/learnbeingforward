@@ -7,10 +7,10 @@ export const metadata: Metadata = { title: "Forgot Password" };
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="lbf-scope">
+    <>
       <PublicHeader
         active=""
-        bandStyle={{ paddingBottom: 108 }}
+        bandStyle={{ paddingBottom: 180 }}
         eyebrow="Account recovery"
         title={
           <span style={{ fontSize: 34 }}>
@@ -20,11 +20,11 @@ export default function ForgotPasswordPage() {
         description="Enter your account email and we'll send you a secure reset link."
       />
       <main className="container">
-        <div className="row" style={{ marginTop: -84, justifyContent: "center" }}>
+        <div className="row" style={{ marginTop: -140, justifyContent: "center" }}>
           <ForgotPasswordForm />
         </div>
       </main>
       <SiteFooter />
-    </div>
+    </>
   );
 }
