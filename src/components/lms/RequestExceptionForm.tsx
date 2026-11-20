@@ -19,6 +19,7 @@ export function RequestExceptionForm({
   pct: number;
 }) {
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const action = requestAttendanceException.bind(null, enrollmentId);
 
   if (sent) {
@@ -32,8 +33,13 @@ export function RequestExceptionForm({
   return (
     <form
       action={async (formData) => {
-        await action(formData);
-        setSent(true);
+        setError(null);
+        try {
+          await action(formData);
+          setSent(true);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Couldn't send the request.");
+        }
       }}
       className="rounded-xl border border-border bg-white p-4"
     >
@@ -45,10 +51,12 @@ export function RequestExceptionForm({
       <Textarea
         name="reason"
         required
+        minLength={20}
         rows={3}
-        placeholder="Reason the student couldn't attend classes..."
+        placeholder="Reason the student couldn't attend classes (at least 20 characters)..."
         className="mt-3"
       />
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
       <Button type="submit" size="sm" className="mt-3 w-full bg-indigo text-white hover:bg-indigo/90">
         Send Request
       </Button>

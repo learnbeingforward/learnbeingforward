@@ -19,8 +19,8 @@ export async function requestAttendanceException(enrollmentId: string, formData:
     throw new Error("Only a college admin can submit this request.");
   }
   const reason = String(formData.get("reason") ?? "").trim();
-  if (!reason) {
-    throw new Error("A reason is required.");
+  if (reason.length < 20) {
+    throw new Error("Enter a reason of at least 20 characters so there's a clear record for the exception.");
   }
 
   const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId } });
