@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { canViewBuyListing } from "@/lib/buy-visibility";
 import { prisma } from "@/lib/prisma";
 import { PublicShell } from "@/components/lbf/PublicShell";
+import { Icon } from "@/components/lbf/icons";
 
 export const revalidate = 0;
 
@@ -11,86 +12,148 @@ export default async function BuyModulePage({ params }: { params: Promise<{ cour
 
   const course = await prisma.course.findUnique({
     where: { slug: courseSlug },
-    include: { buyListing: true },
+    include: { buyListing: true, modules: { orderBy: { order: "asc" } } },
   });
   if (!course || !course.buyListing || !course.buyListing.enabled) notFound();
   if (!(await canViewBuyListing(course.buyListing))) notFound();
 
-  const [mod, content, locks] = await Promise.all([
-    prisma.courseModule.findUnique({ where: { id: moduleId } }),
+  const mod = course.modules.find((m) => m.id === moduleId);
+  if (!mod) notFound();
+
+  const [content, locks] = await Promise.all([
     prisma.courseContent.findMany({ where: { courseModuleId: moduleId }, include: { courseSubModule: true }, orderBy: { title: "asc" } }),
     prisma.buyPreviewLock.findMany({ where: { buyListingId: course.buyListing.id } }),
   ]);
-  if (!mod || mod.courseId !== course.id) notFound();
 
   const moduleLock = locks.find((l) => l.courseModuleId === moduleId);
   const contentLockByContentId = new Map(locks.filter((l) => l.courseContentId).map((l) => [l.courseContentId!, l]));
+
+  const bookIndex = course.modules.findIndex((m) => m.id === moduleId);
+  const prevMod = bookIndex > 0 ? course.modules[bookIndex - 1] : null;
+  const nextMod = bookIndex < course.modules.length - 1 ? course.modules[bookIndex + 1] : null;
+  const off = course.buyListing.mrp && course.buyListing.mrp > course.buyListing.price
+    ? Math.round((1 - course.buyListing.price / course.buyListing.mrp) * 100)
+    : 0;
 
   return (
     <PublicShell
       header={{
         active: "buy",
         heroContent: (
-          <div className="container" style={{ marginTop: 40 }}>
-            <Link href={`/buy/${course.slug}`} style={{ color: "var(--on-navy-muted)", textDecoration: "none", fontSize: 13 }}>
-              ← Back to {course.name}
-            </Link>
-            <h1 style={{ color: "#fff", fontSize: 32, marginTop: 10 }}>{mod.title}</h1>
+          <div className="container band-hero">
+            <div className="eyebrow">
+              <Link href="/buy" style={{ color: "inherit" }}>
+                Buy
+              </Link>{" "}
+              ›{" "}
+              <Link href={`/buy/${course.slug}`} style={{ color: "inherit" }}>
+                {course.name}
+              </Link>
+            </div>
+            <h1>{mod.mainPdfTitle ?? `${mod.title} — Complete Course Notes`}</h1>
+            <p>
+              Book {bookIndex + 1} of {course.modules.length} in {course.name}
+            </p>
           </div>
         ),
       }}
     >
       <div className="row lift">
-        <section className="card grow">
-          {mod.mainPdfUrl && (
-            <div className="box" style={{ marginBottom: 14 }}>
-              <div className="split">
-                <span className="strong">{mod.mainPdfTitle ?? "Course book"}</span>
-                {moduleLock?.previewFileUrl ? (
-                  <a className="btn btn-sm" href={moduleLock.previewFileUrl} target="_blank" rel="noopener noreferrer">
-                    Preview first {moduleLock.previewPages} pages
-                  </a>
-                ) : (
-                  <span className="pill">Full access after purchase</span>
-                )}
+        <div className="stack grow" style={{ gap: 20, minWidth: 0 }}>
+          <section className="card">
+            <div className="split" style={{ flexWrap: "wrap", gap: 12 }}>
+              <div className="stat-inline">
+                <span className="icon-box gold">
+                  <Icon name="book" size={16} />
+                </span>
+                <div>
+                  <div className="strong">Full course book</div>
+                  <div className="small muted">PDF · emailed after purchase</div>
+                </div>
               </div>
+              {moduleLock?.previewFileUrl ? (
+                <a className="btn" href={moduleLock.previewFileUrl} target="_blank" rel="noopener noreferrer">
+                  <Icon name="eye" size={16} />
+                  Read {moduleLock.previewPages} free pages
+                </a>
+              ) : (
+                <span className="pill">
+                  <Icon name="lock" size={12} /> Full access after purchase
+                </span>
+              )}
             </div>
-          )}
+          </section>
 
-          <h2 className="h2" style={{ marginBottom: 14 }}>Sub-modules</h2>
-          {content.length === 0 ? (
-            <p className="empty">Nothing published for this module yet.</p>
-          ) : (
-            <ul className="list">
-              {content.map((item) => {
-                const lock = contentLockByContentId.get(item.id);
-                return (
-                  <li key={item.id} className="list-row">
-                    <span className="grow">
-                      <span className="strong" style={{ display: "block" }}>{item.courseSubModule ? item.courseSubModule.title : item.title}</span>
-                    </span>
-                    {lock?.previewFileUrl ? (
-                      <a className="btn btn-sm" href={lock.previewFileUrl} target="_blank" rel="noopener noreferrer">
-                        Preview first {lock.previewPages} pages
-                      </a>
-                    ) : (
-                      <span className="pill">Full access after purchase</span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+          <section className="card">
+            <h2 className="h3" style={{ marginBottom: 12 }}>
+              Sub-modules in this book ({content.length})
+            </h2>
+            {content.length === 0 ? (
+              <p className="empty">Nothing published for this module yet.</p>
+            ) : (
+              <ul className="list">
+                {content.map((item) => {
+                  const lock = contentLockByContentId.get(item.id);
+                  const title = item.courseSubModule ? item.courseSubModule.title : item.title;
+                  return (
+                    <li key={item.id} className="list-row">
+                      <span className="icon-box">
+                        <Icon name="file" size={16} />
+                      </span>
+                      <div className="grow">
+                        <div className="strong">{title}</div>
+                        <div className="small muted">Notes, code and practice</div>
+                      </div>
+                      {lock?.previewFileUrl ? (
+                        <a className="btn btn-sm" href={lock.previewFileUrl} target="_blank" rel="noopener noreferrer">
+                          Preview {lock.previewPages} pages
+                        </a>
+                      ) : (
+                        <span className="pill">
+                          <Icon name="lock" size={12} /> Full access after purchase
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
-        <aside className="side stack">
-          <div className="card stack" style={{ gap: 14 }}>
-            <div className="h3">Get this course</div>
-            <span style={{ fontWeight: 700, fontSize: 28, color: "var(--navy)" }}>₹{course.buyListing.price}</span>
-            <Link className="btn btn-gold" href={`/buy/${course.slug}/checkout`}>
-              Buy now
-            </Link>
+          <div className="split">
+            {prevMod ? (
+              <Link className="btn btn-sm" href={`/buy/${course.slug}/${prevMod.id}`}>
+                <Icon name="arrowL" size={16} />
+                Previous book
+              </Link>
+            ) : (
+              <span />
+            )}
+            {nextMod && (
+              <Link className="btn btn-sm" href={`/buy/${course.slug}/${nextMod.id}`}>
+                Next book
+                <Icon name="arrowR" size={16} />
+              </Link>
+            )}
           </div>
+        </div>
+
+        <aside className="card side" style={{ position: "sticky", top: 16 }}>
+          <div className="label">Get this course</div>
+          <div className="by-price big">
+            <b>₹{course.buyListing.price}</b>
+            {off > 0 && <s>₹{course.buyListing.mrp}</s>}
+          </div>
+          <p className="small muted" style={{ margin: "8px 0 14px" }}>
+            This book comes with all {course.modules.length} books of {course.name}.
+          </p>
+          <Link className="btn btn-gold" style={{ width: "100%" }} href={`/buy/${course.slug}/checkout`}>
+            <Icon name="cart" size={16} />
+            Buy now
+          </Link>
+          <Link className="btn" style={{ width: "100%", marginTop: 8 }} href={`/buy/${course.slug}`}>
+            See all books
+          </Link>
         </aside>
       </div>
     </PublicShell>

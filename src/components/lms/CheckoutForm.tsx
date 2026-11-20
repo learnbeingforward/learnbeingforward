@@ -1,15 +1,32 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Icon } from "@/components/lbf/icons";
 import { createCourseOrder, type CreateOrderState } from "@/lib/actions/buy";
 
-export function CheckoutForm({ listingId }: { listingId: string }) {
+const STEPS = ["Your details", "Pay by UPI", "Done"] as const;
+
+export function CheckoutForm({
+  listingId,
+  price,
+  payeeName,
+  upiId,
+  qrDataUrl,
+}: {
+  listingId: string;
+  price: number;
+  payeeName: string | null;
+  upiId: string | null;
+  qrDataUrl: string | null;
+}) {
   const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+
   const [state, formAction, isPending] = useActionState<CreateOrderState, FormData>(
     createCourseOrder.bind(null, listingId),
     null
@@ -21,29 +38,104 @@ export function CheckoutForm({ listingId }: { listingId: string }) {
     }
   }, [state, router]);
 
+  function continueToPayment() {
+    if (!name.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
+      setDetailsError("Enter your name and a valid email.");
+      return;
+    }
+    setDetailsError(null);
+    setStep(2);
+  }
+
   return (
-    <form action={formAction} className="space-y-4 rounded-xl border border-border bg-white p-6">
-      <div>
-        <Label htmlFor="buyerName">Your name</Label>
-        <Input id="buyerName" name="buyerName" required className="mt-1.5" />
-      </div>
-      <div>
-        <Label htmlFor="buyerEmail">Email — your books are sent here</Label>
-        <Input id="buyerEmail" name="buyerEmail" type="email" required className="mt-1.5" />
-      </div>
-      <div>
-        <Label htmlFor="buyerPhone">Phone (optional)</Label>
-        <Input id="buyerPhone" name="buyerPhone" className="mt-1.5" />
-      </div>
-      <div>
-        <Label htmlFor="utr">UPI transaction ID (UTR)</Label>
-        <Input id="utr" name="utr" required pattern="\d{12}" maxLength={12} inputMode="numeric" placeholder="12-digit number from your UPI app" className="mt-1.5" />
-      </div>
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-      <Button type="submit" disabled={isPending} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        I have paid — submit
-      </Button>
-    </form>
+    <>
+      <ol className="ed-steps" style={{ margin: "0 0 20px" }}>
+        {STEPS.map((label, i) => (
+          <li key={label} className={i + 1 < step ? "done" : i + 1 === step ? "now" : ""}>
+            <span>{i + 1 < step ? <Icon name="check" size={14} /> : i + 1}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
+
+      {step === 1 && (
+        <>
+          <h2 className="h3" style={{ marginBottom: 14 }}>
+            Where should we send your books?
+          </h2>
+          <div className="stack" style={{ gap: 14 }}>
+            <label className="field">
+              <span>
+                Your name <span className="req">*</span>
+              </span>
+              <input className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+            </label>
+            <label className="field">
+              <span>
+                Email — your books are sent here <span className="req">*</span>
+              </span>
+              <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label className="field">
+              Phone <span className="muted" style={{ fontWeight: 400 }}>(optional)</span>
+              <input className="input" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </label>
+            {detailsError && <span className="error-text">{detailsError}</span>}
+            <button className="btn btn-gold" type="button" onClick={continueToPayment}>
+              Continue to payment
+              <Icon name="arrowR" size={16} />
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <h2 className="h3" style={{ marginBottom: 14 }}>
+            Pay ₹{price} by UPI
+          </h2>
+          <div className="by-pay" style={{ marginTop: 0 }}>
+            <div style={{ textAlign: "center" }}>
+              {qrDataUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qrDataUrl} alt="UPI QR code" width={168} height={168} style={{ margin: "0 auto" }} />
+              )}
+              {payeeName && <div className="strong" style={{ marginTop: 8 }}>{payeeName}</div>}
+              {upiId && <div className="small muted">{upiId}</div>}
+            </div>
+            <form action={formAction} className="stack" style={{ gap: 12 }}>
+              <input type="hidden" name="buyerName" value={name} />
+              <input type="hidden" name="buyerEmail" value={email} />
+              <input type="hidden" name="buyerPhone" value={phone} />
+              <ol className="small" style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+                <li>
+                  Open any UPI app and scan the QR, or pay to <b>{upiId}</b>.
+                </li>
+                <li>
+                  Pay exactly <b>₹{price}</b>.
+                </li>
+                <li>Copy the 12-digit UTR / transaction ID from the app and enter it below.</li>
+              </ol>
+              <label className="field">
+                <span>
+                  UPI transaction ID (UTR) <span className="req">*</span>
+                </span>
+                <input className="input" name="utr" inputMode="numeric" pattern="\d{12}" maxLength={12} required placeholder="12-digit number" />
+              </label>
+              {state?.error && <span className="error-text">{state.error}</span>}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn" type="button" onClick={() => setStep(1)}>
+                  <Icon name="arrowL" size={16} />
+                  Back
+                </button>
+                <button className="btn btn-gold" type="submit" disabled={isPending}>
+                  {isPending ? "Submitting…" : "I have paid — submit"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+    </>
   );
 }
