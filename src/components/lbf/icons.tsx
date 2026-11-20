@@ -50,6 +50,12 @@ import {
   Link2,
   Video,
   MapPin,
+  Menu,
+  GripVertical,
+  Globe,
+  ShoppingCart,
+  Folder,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -102,6 +108,12 @@ export const ICONS: Record<string, LucideIcon> = {
   link: Link2,
   video: Video,
   mapPin: MapPin,
+  menu: Menu,
+  grip: GripVertical,
+  globe: Globe,
+  cart: ShoppingCart,
+  folder: Folder,
+  wand: Wand2,
 };
 
 export type IconName = keyof typeof ICONS;

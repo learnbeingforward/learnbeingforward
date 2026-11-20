@@ -24,6 +24,8 @@ export function SiteFooter() {
               <li><Link href="/courses">Courses</Link></li>
               <li><Link href="/technologies">Technologies</Link></li>
               <li><Link href="/team">Trainers</Link></li>
+              <li><Link href="/coding-patterns">Coding Patterns</Link></li>
+              <li><Link href="/buy">Buy books</Link></li>
             </ul>
           </div>
           <div>
