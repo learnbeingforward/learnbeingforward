@@ -21,7 +21,7 @@ export function CollegeProfileForm({ college }: { college: College }) {
     <form action={formAction} className="stack" style={{ gap: 16 }}>
       <div className="stat-inline">
         <span className="avatar lg">{initials}</span>
-        <FileUploadField name="photoUrl" label="Upload logo" category="photo" defaultUrl={college.photoUrl} />
+        <FileUploadField name="photoUrl" label="Upload logo" category="photo" defaultUrl={college.photoUrl} compact />
       </div>
       <label className="field">
         <span>

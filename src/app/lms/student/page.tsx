@@ -5,7 +5,7 @@ import { AppShell } from "@/components/lbf/AppShell";
 import { STUDENT_NAV } from "@/components/lbf/nav-config";
 import { Icon } from "@/components/lbf/icons";
 import { BackLink } from "@/components/lms/BackLink";
-import { EnrollmentProgressView } from "@/components/lms/EnrollmentProgressView";
+import { StudentCourseProgressView } from "@/components/lms/StudentCourseProgressView";
 import { getEnrollmentProgress } from "@/lib/enrollment-progress";
 import { ATTENDANCE_THRESHOLD } from "@/lib/constants";
 import { format } from "date-fns";
@@ -30,10 +30,31 @@ export default async function StudentDashboardPage({
     const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId }, select: { studentId: true } });
     const progress = enrollment?.studentId === userId ? await getEnrollmentProgress(enrollmentId) : null;
 
+    if (!progress) {
+      return (
+        <AppShell nav={STUDENT_NAV} active="dashboard" user={shellUser} crumb="My Dashboard" title="Course progress" subtitle="Not available">
+          <BackLink href="/lms/student" label="Back to Dashboard" />
+          <p className="muted">You&apos;re not enrolled in this course.</p>
+        </AppShell>
+      );
+    }
+
     return (
-      <AppShell nav={STUDENT_NAV} active="dashboard" user={shellUser} crumb="Welcome back" title="Course progress" subtitle="Session-by-session detail">
-        <BackLink href="/lms/student" label="Back to Dashboard" />
-        {!progress ? <p className="muted">You&apos;re not enrolled in this course.</p> : <EnrollmentProgressView progress={progress} />}
+      <AppShell
+        nav={STUDENT_NAV}
+        active="dashboard"
+        user={shellUser}
+        crumb={`My Dashboard › ${progress.courseName}`}
+        title={progress.courseName}
+        subtitle={`${progress.studentName}${progress.trainerName ? ` · Trainer: ${progress.trainerName}` : ""}`}
+        actions={
+          <Link className="btn btn-ghost-light" href="/lms/student">
+            <Icon name="arrowL" size={16} />
+            Back to dashboard
+          </Link>
+        }
+      >
+        <StudentCourseProgressView progress={progress} />
       </AppShell>
     );
   }

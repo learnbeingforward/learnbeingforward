@@ -1,18 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateStudentProfile, type UpdateProfileState } from "@/lib/actions/profile";
 import { BRANCH_OPTIONS } from "@/lib/constants";
@@ -34,68 +22,81 @@ export function StudentProfileForm({ student }: { student: Student }) {
     updateStudentProfile,
     null
   );
+  const initials = student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="name">
-            Full Name
-            <RequiredMark />
-          </Label>
-          <Input id="name" name="name" required defaultValue={student.name} className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Email</Label>
-          <Input value={student.email} disabled className="mt-1.5 bg-cream" />
-        </div>
-        <div>
-          <Label>College</Label>
-          <Input value={student.collegeName ?? "—"} disabled className="mt-1.5 bg-cream" />
-        </div>
-        <div>
-          <Label htmlFor="branch">Branch (optional)</Label>
-          <Select name="branch" defaultValue={student.branch ?? undefined}>
-            <SelectTrigger className="mt-1.5 w-full">
-              <SelectValue placeholder="Select branch" />
-            </SelectTrigger>
-            <SelectContent>
-              {BRANCH_OPTIONS.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="semester">Semester (optional)</Label>
-          <Input id="semester" name="semester" type="number" min="1" max="8" defaultValue={student.semester ?? ""} className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="usn">USN / Roll Number (optional)</Label>
-          <Input id="usn" name="usn" defaultValue={student.usn ?? ""} className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="fatherName">Father&apos;s Name (optional)</Label>
-          <Input id="fatherName" name="fatherName" defaultValue={student.fatherName ?? ""} className="mt-1.5" />
-        </div>
+    <form action={formAction} className="stack" style={{ gap: 16 }}>
+      <div className="stat-inline">
+        <span className="avatar lg">{initials}</span>
+        <FileUploadField name="photoUrl" label="Upload photo" category="photo" defaultUrl={student.photoUrl} compact />
+      </div>
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          <span>
+            Full name <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="text" name="name" required defaultValue={student.name} />
+        </label>
+        <label className="field">
+          <span>Email</span>
+          <input className="input" value={student.email} disabled />
+        </label>
+        <label className="field">
+          <span>College</span>
+          <input className="input" value={student.collegeName ?? "—"} disabled />
+        </label>
+      </div>
+      <div className="grid" style={{ ["--min" as string]: "200px" }}>
+        <label className="field">
+          <span>Branch</span>
+          <select className="select" name="branch" defaultValue={student.branch ?? ""}>
+            <option value="">Select branch</option>
+            {BRANCH_OPTIONS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Semester</span>
+          <select className="select" name="semester" defaultValue={student.semester ?? ""}>
+            <option value="">Select semester</option>
+            {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>USN / roll number</span>
+          <input className="input" type="text" name="usn" defaultValue={student.usn ?? ""} />
+        </label>
+        <label className="field">
+          <span>Father&apos;s name</span>
+          <input className="input" type="text" name="fatherName" defaultValue={student.fatherName ?? ""} />
+        </label>
       </div>
 
-      <FileUploadField name="photoUrl" label="Profile Photo (optional)" category="photo" defaultUrl={student.photoUrl} />
-      <FileUploadField name="cvUrl" label="CV / Resume (optional)" category="cv" defaultUrl={student.cvUrl} />
+      <FileUploadField
+        name="cvUrl"
+        label="CV / resume"
+        category="cv"
+        defaultUrl={student.cvUrl}
+        listRow
+        emptyText="No CV uploaded — placement teams can't share your profile yet."
+      />
 
-      {state?.ok && (
-        <p className="flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Saved.
-        </p>
-      )}
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {state?.ok && <span className="small" style={{ color: "var(--success-text)" }}>Saved.</span>}
+      {state?.error && <span className="error-text">{state.error}</span>}
 
-      <Button type="submit" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Save
-      </Button>
+      <div className="split">
+        <span className="hint">Email and college are managed by your college.</span>
+        <button className="btn btn-primary" type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Save"}
+        </button>
+      </div>
     </form>
   );
 }

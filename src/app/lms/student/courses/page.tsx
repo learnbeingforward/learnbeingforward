@@ -17,6 +17,14 @@ const DOMAIN_ICONS: Record<(typeof DOMAIN_ORDER)[number], IconName> = {
   APTITUDE: "target",
   SOFT_SKILL: "message",
 };
+const COURSE_ICON_OVERRIDES: Record<string, IconName> = {
+  "Backend Development": "settings",
+  "Data Science / AI Fundamentals": "chart",
+  "Frontend Development": "grid",
+  "Full-Stack Development": "layers",
+  "Java & DSA": "code",
+  Robotics: "target",
+};
 
 export default async function BrowseCoursesPage() {
   const session = await auth();
@@ -49,7 +57,7 @@ export default async function BrowseCoursesPage() {
             <article key={course.id} className="box stack" style={{ gap: 10 }}>
               <div className="split">
                 <span className="icon-box navy">
-                  <Icon name={DOMAIN_ICONS[domain]} size={20} />
+                  <Icon name={COURSE_ICON_OVERRIDES[course.name] ?? DOMAIN_ICONS[domain]} size={20} />
                 </span>
                 {enrollmentId ? (
                   <span className="pill success">Enrolled</span>
