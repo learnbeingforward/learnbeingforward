@@ -1,9 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Icon } from "@/components/lbf/icons";
 import {
   createLoginForExistingTrainer,
   type CreateLoginForTrainerState,
@@ -28,44 +26,28 @@ export function CreateTrainerLoginButton({
 
   if (state?.ok) {
     return (
-      <div className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-800">
-        <p className="flex items-center gap-1 font-semibold text-green-700">
-          <CheckCircle2 className="size-3.5" /> Login created
-        </p>
-        <p className="mt-1">
-          Email: <span className="font-mono">{state.email}</span>
-        </p>
-        <p>
-          Password: <span className="font-mono">{state.password}</span>
-        </p>
-      </div>
+      <span className="small" style={{ color: "var(--success-text)" }}>
+        Login created — {state.email} / {state.password}
+      </span>
     );
   }
 
   if (!open) {
     return (
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className="border-gold text-indigo"
-        onClick={() => setOpen(true)}
-      >
-        Create Login
-      </Button>
+      <button className="btn btn-sm" type="button" onClick={() => setOpen(true)}>
+        <Icon name="key" size={16} />
+        Create login
+      </button>
     );
   }
 
   return (
-    <form action={formAction} className="flex items-center gap-2">
-      {!hasEmail && (
-        <Input name="email" type="email" placeholder="Login email" required className="h-8 w-48 text-sm" />
-      )}
-      {state?.error && <p className="text-xs text-destructive">{state.error}</p>}
-      <Button type="submit" size="sm" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-3.5 animate-spin" />}
-        Confirm
-      </Button>
+    <form action={formAction} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      {!hasEmail && <input className="input" style={{ width: 190 }} name="email" type="email" placeholder="Login email" required />}
+      {state?.error && <span className="error-text">{state.error}</span>}
+      <button className="btn btn-primary btn-sm" type="submit" disabled={isPending}>
+        {isPending ? "Creating…" : "Confirm"}
+      </button>
     </form>
   );
 }

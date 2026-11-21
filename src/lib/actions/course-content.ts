@@ -187,6 +187,81 @@ export async function removeModuleMainPdf(courseModuleId: string) {
   revalidatePath("/lms/student/content");
 }
 
+export async function createCourse(name: string) {
+  await requireCompany();
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Enter a course name.");
+  const courseId = await createMinimalCourse(trimmed);
+  revalidatePath("/lms/company/course-content");
+  return courseId;
+}
+
+export async function createCourseModule(courseId: string, title: string) {
+  await requireCompany();
+  const trimmed = title.trim();
+  if (!trimmed) throw new Error("Enter a module name.");
+  const moduleId = await createMinimalCourseModule(courseId, trimmed);
+  revalidatePath("/lms/company/course-content");
+  return moduleId;
+}
+
+export async function createCourseSubModule(courseModuleId: string, title: string) {
+  await requireCompany();
+  const trimmed = title.trim();
+  if (!trimmed) throw new Error("Enter a sub-module name.");
+  const subModuleId = await createMinimalCourseSubModule(courseModuleId, trimmed);
+  revalidatePath("/lms/company/course-content");
+  return subModuleId;
+}
+
+export async function renameCourse(courseId: string, name: string) {
+  await requireCompany();
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  await prisma.course.update({ where: { id: courseId }, data: { name: trimmed } });
+  revalidatePath("/lms/company/course-content");
+}
+
+export async function renameCourseModule(courseModuleId: string, title: string) {
+  await requireCompany();
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  await prisma.courseModule.update({ where: { id: courseModuleId }, data: { title: trimmed } });
+  revalidatePath("/lms/company/course-content");
+}
+
+export async function renameCourseSubModule(courseSubModuleId: string, title: string) {
+  await requireCompany();
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  await prisma.courseSubModule.update({ where: { id: courseSubModuleId }, data: { title: trimmed } });
+  revalidatePath("/lms/company/course-content");
+}
+
+export type DeleteNodeState = { ok: boolean; error?: string };
+
+export async function deleteCourseModule(courseModuleId: string): Promise<DeleteNodeState> {
+  await requireCompany();
+  try {
+    await prisma.courseModule.delete({ where: { id: courseModuleId } });
+    revalidatePath("/lms/company/course-content");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Can't delete — sessions or content still reference this module." };
+  }
+}
+
+export async function deleteCourseSubModule(courseSubModuleId: string): Promise<DeleteNodeState> {
+  await requireCompany();
+  try {
+    await prisma.courseSubModule.delete({ where: { id: courseSubModuleId } });
+    revalidatePath("/lms/company/course-content");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Can't delete — content still references this sub-module." };
+  }
+}
+
 export async function deleteCourseContent(contentId: string) {
   await requireCompany();
   await prisma.courseContent.delete({ where: { id: contentId } });

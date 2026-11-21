@@ -4,23 +4,12 @@ import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { CreateTrainerLoginButton } from "@/components/lms/CreateTrainerLoginButton";
+import { TrainersTable } from "@/components/lms/TrainersTable";
 import { updateTrainerRate } from "@/lib/actions/trainers";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 
-const TRAINER_SORTERS: Record<string, (a: { name: string; batches: unknown[]; hourlyRate: number }, b: { name: string; batches: unknown[]; hourlyRate: number }) => number> = {
-  name: (a, b) => a.name.localeCompare(b.name),
-  batches: (a, b) => b.batches.length - a.batches.length,
-  rate: (a, b) => b.hourlyRate - a.hourlyRate,
-};
-
-export default async function CompanyTrainersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sort?: string }>;
-}) {
-  const { sort } = await searchParams;
+export default async function CompanyTrainersPage() {
   const { session, keys, hasUnread } = await requireCompanyPageAccess(["trainers.manage", "trainers.invoices"]);
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
@@ -28,12 +17,10 @@ export default async function CompanyTrainersPage({
   const canManage = keys.includes("trainers.manage");
   const canInvoices = keys.includes("trainers.invoices");
 
-  const [trainersRaw, pendingBatchRequests] = await Promise.all([
+  const [trainers, pendingBatchRequests] = await Promise.all([
     prisma.trainer.findMany({ include: { loginUser: true, batches: true }, orderBy: { name: "asc" } }),
     prisma.batchRequest.count({ where: { status: "PENDING" } }),
   ]);
-  const sortKey = sort && sort in TRAINER_SORTERS ? sort : "name";
-  const trainers = [...trainersRaw].sort(TRAINER_SORTERS[sortKey]);
 
   return (
     <AppShell
@@ -88,76 +75,27 @@ export default async function CompanyTrainersPage({
       </div>
 
       <section className="card">
-        <h2 className="h2">All trainers ({trainers.length})</h2>
-        <p className="small muted" style={{ marginTop: 4, marginBottom: 18 }}>
-          Create new trainer accounts from the Add Account page — trainers without a login yet can get one below.
-        </p>
+        <div className="split" style={{ marginBottom: 18 }}>
+          <div>
+            <h2 className="h2">All trainers ({trainers.length})</h2>
+            <p className="subtitle">Create trainer accounts from Add Account — trainers without a login can get one here.</p>
+          </div>
+        </div>
         {trainers.length === 0 ? (
           <p className="empty">No trainers yet.</p>
         ) : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>
-                    <Link href="/lms/company/trainers?sort=name" style={{ color: "inherit", textDecoration: sortKey === "name" ? "underline" : "none" }}>
-                      Trainer
-                    </Link>
-                  </th>
-                  <th>
-                    <Link href="/lms/company/trainers?sort=batches" style={{ color: "inherit", textDecoration: sortKey === "batches" ? "underline" : "none" }}>
-                      Batches
-                    </Link>
-                  </th>
-                  <th>Login</th>
-                  <th>
-                    <Link href="/lms/company/trainers?sort=rate" style={{ color: "inherit", textDecoration: sortKey === "rate" ? "underline" : "none" }}>
-                      Hourly rate
-                    </Link>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {trainers.map((trainer) => (
-                  <tr key={trainer.id}>
-                    <td>
-                      <div className="stat-inline">
-                        <span className="avatar sm">{trainer.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
-                        <div>
-                          <div className="strong">{trainer.name}</div>
-                          <div className="small muted">{trainer.email ?? "—"}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{trainer.batches.length} batch{trainer.batches.length !== 1 ? "es" : ""}</td>
-                    <td>
-                      {trainer.loginUser ? (
-                        <span className="pill success">Active</span>
-                      ) : (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span className="pill warning">No login yet</span>
-                          <CreateTrainerLoginButton trainerId={trainer.id} hasEmail={!!trainer.email} hasLogin={!!trainer.loginUser} />
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {canManage ? (
-                        <form action={updateTrainerRate.bind(null, trainer.id)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span className="input-group" style={{ width: 130 }}>
-                            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }}>₹</span>
-                            <input className="input" type="number" min={0} name="hourlyRate" defaultValue={trainer.hourlyRate} />
-                          </span>
-                          <button className="btn btn-primary btn-sm" type="submit">Save</button>
-                        </form>
-                      ) : (
-                        <>₹{trainer.hourlyRate}/hr</>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TrainersTable
+            trainers={trainers.map((t) => ({
+              id: t.id,
+              name: t.name,
+              email: t.email,
+              batchCount: t.batches.length,
+              hasLogin: !!t.loginUser,
+              hourlyRate: t.hourlyRate,
+              rateAction: canManage ? updateTrainerRate.bind(null, t.id) : null,
+            }))}
+            canManage={canManage}
+          />
         )}
       </section>
     </AppShell>

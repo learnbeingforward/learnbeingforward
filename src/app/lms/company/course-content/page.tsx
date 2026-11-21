@@ -1,18 +1,33 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { Icon } from "@/components/lbf/icons";
+import { DomainTabs } from "@/components/lbf/DomainTabs";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { DeleteButton } from "@/components/lms/DeleteButton";
 import { AddCourseContentForm } from "@/components/lms/AddCourseContentForm";
 import { SetModuleMainPdfForm } from "@/components/lms/SetModuleMainPdfForm";
 import { BackLink } from "@/components/lms/BackLink";
-import { deleteCourseContent } from "@/lib/actions/course-content";
+import { CourseStudioSidebar } from "@/components/lms/CourseStudioSidebar";
+import { InlineRenameInput } from "@/components/lms/InlineRenameInput";
+import { TreeDeleteButton } from "@/components/lms/TreeDeleteButton";
+import { TreeAddChildButton } from "@/components/lms/TreeAddChildButton";
+import {
+  deleteCourseContent,
+  renameCourseModule,
+  renameCourseSubModule,
+  createCourseModule,
+  createCourseSubModule,
+  deleteCourseModule,
+  deleteCourseSubModule,
+} from "@/lib/actions/course-content";
 import { decideBulkContentRequest } from "@/lib/actions/content-access";
 import { format } from "date-fns";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+const DOMAIN_LABEL: Record<string, string> = { TECHNICAL: "Technical", APTITUDE: "Aptitude", SOFT_SKILL: "Soft skill" };
 
 export default async function CompanyCourseContentPage({
   searchParams,
@@ -25,8 +40,8 @@ export default async function CompanyCourseContentPage({
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
   const [courses, modules, subModules, content, pendingCount, pendingBulkRows] = await Promise.all([
-    prisma.course.findMany({ orderBy: { name: "asc" } }),
-    prisma.courseModule.findMany({ orderBy: { title: "asc" } }),
+    prisma.course.findMany({ orderBy: { name: "asc" }, include: { buyListing: true } }),
+    prisma.courseModule.findMany({ orderBy: { order: "asc" } }),
     prisma.courseSubModule.findMany({ orderBy: { order: "asc" } }),
     prisma.courseContent.findMany({
       include: { course: true, courseModule: true, courseSubModule: true, links: true },
@@ -65,6 +80,21 @@ export default async function CompanyCourseContentPage({
     };
   });
 
+  const sidebarCourses = courses.map((c) => ({
+    id: c.id,
+    name: c.name,
+    moduleCount: modules.filter((m) => m.courseId === c.id).length,
+    itemCount: content.filter((item) => item.courseId === c.id).length,
+    onBuy: !!c.buyListing,
+  }));
+
+  const selectedCourse = courseId ? courses.find((c) => c.id === courseId) : undefined;
+  const selectedModule = moduleId ? modules.find((m) => m.id === moduleId) : undefined;
+  const courseModules = selectedCourse ? modules.filter((m) => m.courseId === selectedCourse.id) : [];
+  const pdfCount =
+    (selectedCourse ? content.filter((item) => item.courseId === selectedCourse.id).length : 0) +
+    courseModules.filter((m) => m.mainPdfUrl).length;
+
   return (
     <AppShell
       nav={nav}
@@ -72,8 +102,8 @@ export default async function CompanyCourseContentPage({
       user={shellUser}
       hasUnread={hasUnread}
       crumb="Course Content"
-      title="Course content"
-      subtitle="Internal only — not on the public site. Students request a module once their batch has had that class."
+      title="Course Studio"
+      subtitle="Create courses, modules, sub-modules and topics, attach PDFs, and choose when each batch gets them."
     >
       {bulkGroups.length > 0 && (
         <section className="card">
@@ -115,25 +145,30 @@ export default async function CompanyCourseContentPage({
         </Link>
       )}
 
-      <div className="row">
-        <section className="card side">
-          <h2 className="h2" style={{ marginBottom: 18 }}>Add content</h2>
-          <AddCourseContentForm courses={courses} modules={modules} subModules={subModules} />
-        </section>
+      <div className="st-wrap">
+        <CourseStudioSidebar courses={sidebarCourses} selectedCourseId={selectedCourse?.id} />
 
-        <section className="card grow">
-          {courseId && moduleId ? (
-            <>
-              <BackLink href={`/lms/company/course-content?courseId=${courseId}`} label="Back to modules" />
-              {(() => {
-                const mod = modules.find((m) => m.id === moduleId);
-                return mod ? <SetModuleMainPdfForm courseModuleId={mod.id} mainPdfTitle={mod.mainPdfTitle} mainPdfUrl={mod.mainPdfUrl} /> : null;
-              })()}
+        <section className="st-main">
+          {!selectedCourse ? (
+            <section className="card">
+              <h2 className="h2" style={{ marginBottom: 18 }}>Pick a course</h2>
+              <p className="muted">Select a course on the left, or create a new one, to manage its structure.</p>
+              <div className="row" style={{ marginTop: 18 }}>
+                <section className="card side">
+                  <h2 className="h2" style={{ marginBottom: 18 }}>Add content</h2>
+                  <AddCourseContentForm courses={courses} modules={modules} subModules={subModules} />
+                </section>
+              </div>
+            </section>
+          ) : moduleId && selectedModule ? (
+            <section className="card">
+              <BackLink href={`/lms/company/course-content?courseId=${selectedCourse.id}`} label="Back to structure" />
+              <SetModuleMainPdfForm courseModuleId={selectedModule.id} mainPdfTitle={selectedModule.mainPdfTitle} mainPdfUrl={selectedModule.mainPdfUrl} />
               <h2 className="h2" style={{ margin: "18px 0" }}>
-                {modules.find((m) => m.id === moduleId)?.title} Content ({content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length})
+                {selectedModule.title} Content ({content.filter((c) => c.courseId === selectedCourse.id && c.courseModuleId === moduleId).length})
               </h2>
               <div className="stack" style={{ gap: 10 }}>
-                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).map((item) => (
+                {content.filter((c) => c.courseId === selectedCourse.id && c.courseModuleId === moduleId).map((item) => (
                   <div key={item.id} className="box">
                     <div className="split">
                       <div>
@@ -151,56 +186,182 @@ export default async function CompanyCourseContentPage({
                     )}
                   </div>
                 ))}
-                {content.filter((c) => c.courseId === courseId && c.courseModuleId === moduleId).length === 0 && <p className="empty">Nothing added for this module yet.</p>}
+                {content.filter((c) => c.courseId === selectedCourse.id && c.courseModuleId === moduleId).length === 0 && (
+                  <p className="empty">Nothing added for this module yet.</p>
+                )}
               </div>
-            </>
-          ) : courseId ? (
-            <>
-              <BackLink href="/lms/company/course-content" label="Back to all courses" />
-              <h2 className="h2" style={{ marginBottom: 18 }}>{courses.find((c) => c.id === courseId)?.name} — Modules</h2>
-              <div className="grid" style={{ ["--min" as string]: "240px" }}>
-                {modules
-                  .filter((m) => m.courseId === courseId && (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl))
-                  .map((mod) => {
-                    const count = content.filter((c) => c.courseId === courseId && c.courseModuleId === mod.id).length;
-                    return (
-                      <Link key={mod.id} className="list-row" href={`/lms/company/course-content?courseId=${courseId}&moduleId=${mod.id}`}>
-                        <span className="icon-box gold"><Icon name="book" size={18} /></span>
-                        <span className="grow">
-                          <span className="strong" style={{ display: "block" }}>{mod.title}</span>
-                          <span className="small muted">
-                            {count > 0 && `${count} item${count !== 1 ? "s" : ""}`}
-                            {count > 0 && mod.mainPdfUrl && " · "}
-                            {mod.mainPdfUrl && "Course book attached"}
-                            {count === 0 && !mod.mainPdfUrl && "0 items"}
-                          </span>
-                        </span>
-                        <Icon name="chevR" size={16} />
-                      </Link>
-                    );
-                  })}
+              <div style={{ marginTop: 18 }}>
+                <AddCourseContentForm courses={courses} modules={modules} subModules={subModules} />
               </div>
-              {!modules.some((m) => m.courseId === courseId && (content.some((c) => c.courseId === courseId && c.courseModuleId === m.id) || m.mainPdfUrl)) && (
-                <p className="empty">Nothing added for this course yet.</p>
-              )}
-            </>
+            </section>
           ) : (
             <>
-              <h2 className="h2" style={{ marginBottom: 18 }}>Browse by course</h2>
-              <div className="grid" style={{ ["--min" as string]: "240px" }}>
-                {courses.map((course) => {
-                  const count = content.filter((c) => c.courseId === course.id).length;
-                  return (
-                    <Link key={course.id} className="list-row" href={`/lms/company/course-content?courseId=${course.id}`}>
-                      <span className="icon-box gold"><Icon name="book" size={18} /></span>
-                      <span className="grow">
-                        <span className="strong" style={{ display: "block" }}>{course.name}</span>
-                        <span className="small muted">{count} item{count !== 1 ? "s" : ""}</span>
-                      </span>
-                      <Icon name="chevR" size={16} />
+              <div className="card st-head">
+                <div className="split" style={{ flexWrap: "wrap", gap: 12 }}>
+                  <div>
+                    <div className="label">
+                      {DOMAIN_LABEL[selectedCourse.domain] ?? selectedCourse.domain} · {selectedCourse.isPlaceholder ? "Draft" : "Live"}
+                    </div>
+                    <h2 className="h2" style={{ marginTop: 4 }}>{selectedCourse.name}</h2>
+                    <div className="st-badges">
+                      {!selectedCourse.isPlaceholder && (
+                        <span className="pill success">
+                          <Icon name="globe" size={12} /> On website
+                        </span>
+                      )}
+                      <span className="pill">{pdfCount} PDF{pdfCount !== 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Link className="btn btn-sm" href="/lms/student/content">
+                      <Icon name="eye" size={16} />
+                      Student view
                     </Link>
-                  );
-                })}
+                  </div>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  <DomainTabs
+                    tabs={[
+                      { key: "structure", label: "Structure" },
+                      { key: "release", label: "Share with batches" },
+                      { key: "settings", label: "Course settings" },
+                    ]}
+                    panels={{
+                      structure: (
+                        <div className="st-body">
+                          <div className="card">
+                            <div className="split" style={{ marginBottom: 12 }}>
+                              <div>
+                                <h3 className="h3">Structure</h3>
+                                <p className="small muted">Course → Module → Sub-module. Click a name to rename.</p>
+                              </div>
+                            </div>
+                            <ul className="st-tree">
+                              {courseModules.map((mod) => {
+                                const modPdfCount = content.filter((c) => c.courseModuleId === mod.id).length;
+                                return (
+                                  <Fragment key={mod.id}>
+                                    <li className="st-node" style={{ ["--d" as string]: 0 }}>
+                                      <span className="st-grip" title="Drag to reorder">
+                                        <Icon name="grip" size={16} />
+                                      </span>
+                                      <button className="st-tog" type="button" aria-label="Collapse">
+                                        <Icon name="chevD" size={14} />
+                                      </button>
+                                      <span className="st-lvl l0">Module</span>
+                                      <InlineRenameInput defaultValue={mod.title} action={renameCourseModule.bind(null, mod.id)} ariaLabel="Module name" />
+                                      {mod.mainPdfUrl ? (
+                                        <span className="st-chip gold" title={mod.mainPdfTitle ?? undefined}>
+                                          <Icon name="book" size={12} />
+                                          Book
+                                        </span>
+                                      ) : null}
+                                      <span className="small muted">{modPdfCount}</span>
+                                      <span className="st-acts">
+                                        <TreeAddChildButton
+                                          title="Add sub-module inside"
+                                          promptLabel="New sub-module name"
+                                          action={async (title) => {
+                                            "use server";
+                                            await createCourseSubModule(mod.id, title);
+                                          }}
+                                        />
+                                        <Link className="btn-icon" href={`/lms/company/course-content?courseId=${selectedCourse.id}&moduleId=${mod.id}`} title="Details">
+                                          <Icon name="edit" size={16} />
+                                        </Link>
+                                        <TreeDeleteButton title="Delete" action={deleteCourseModule.bind(null, mod.id)} />
+                                      </span>
+                                    </li>
+                                    {subModules
+                                      .filter((sm) => sm.courseModuleId === mod.id)
+                                      .map((sm) => {
+                                        const smPdf = content.find((c) => c.courseSubModuleId === sm.id);
+                                        return (
+                                          <li key={sm.id} className="st-node" style={{ ["--d" as string]: 1 }}>
+                                            <span className="st-grip" title="Drag to reorder">
+                                              <Icon name="grip" size={16} />
+                                            </span>
+                                            <button className="st-tog" type="button" aria-label="Collapse" style={{ visibility: "hidden" }}>
+                                              <Icon name="chevD" size={14} />
+                                            </button>
+                                            <span className="st-lvl l1">Sub-module</span>
+                                            <InlineRenameInput defaultValue={sm.title} action={renameCourseSubModule.bind(null, sm.id)} ariaLabel="Sub-module name" />
+                                            {smPdf ? (
+                                              <span className="st-chip ok" title={smPdf.title}>
+                                                <Icon name="file" size={12} />
+                                                PDF
+                                              </span>
+                                            ) : (
+                                              <span className="small muted">No PDF yet</span>
+                                            )}
+                                            <span className="st-acts">
+                                              <Link className="btn-icon" href={`/lms/company/course-content?courseId=${selectedCourse.id}&moduleId=${mod.id}`} title="Details">
+                                                <Icon name="edit" size={16} />
+                                              </Link>
+                                              <TreeDeleteButton title="Delete" action={deleteCourseSubModule.bind(null, sm.id)} />
+                                            </span>
+                                          </li>
+                                        );
+                                      })}
+                                  </Fragment>
+                                );
+                              })}
+                            </ul>
+                            {courseModules.length === 0 && <p className="empty">No modules yet — add the first one below.</p>}
+                            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+                              <TreeAddChildButton
+                                variant="full"
+                                title="Add module"
+                                promptLabel="New module name"
+                                action={async (title) => {
+                                  "use server";
+                                  await createCourseModule(selectedCourse.id, title);
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <aside className="card st-detail">
+                            <div className="empty" style={{ border: 0 }}>
+                              <span className="icon-box gold" style={{ margin: "0 auto 10px" }}>
+                                <Icon name="edit" size={16} />
+                              </span>
+                              <div className="h3" style={{ color: "var(--text)" }}>Select an item</div>
+                              <p className="small muted" style={{ marginTop: 6 }}>
+                                Press the edit icon on any row to attach its PDF and learn-more links.
+                              </p>
+                            </div>
+                          </aside>
+                        </div>
+                      ),
+                      release: (
+                        <div className="card">
+                          <div className="empty">
+                            <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+                              <Icon name="users" size={22} />
+                            </span>
+                            <div className="h3" style={{ color: "var(--text)" }}>Sharing with batches isn&apos;t set up yet.</div>
+                            <p className="small muted" style={{ marginTop: 6 }}>
+                              This will let you choose exactly when each batch gets this course&apos;s content — coming soon.
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                      settings: (
+                        <div className="card">
+                          <div className="empty">
+                            <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+                              <Icon name="settings" size={22} />
+                            </span>
+                            <div className="h3" style={{ color: "var(--text)" }}>Course settings aren&apos;t set up yet.</div>
+                            <p className="small muted" style={{ marginTop: 6 }}>
+                              This will let you edit this course&apos;s name, category and public description — coming soon.
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}
