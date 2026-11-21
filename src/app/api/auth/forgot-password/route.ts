@@ -11,6 +11,7 @@ const CATEGORY_BY_ROLE: Record<string, "STUDENT" | "COLLEGE" | "TRAINER" | "ADMI
   COLLEGE_ADMIN: "COLLEGE",
   TRAINER: "TRAINER",
   ADMIN2: "ADMIN",
+  BUYER: "ADMIN",
 };
 
 export async function POST(request: Request) {
