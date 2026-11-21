@@ -1,20 +1,13 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/lbf/icons";
 
 export function DeleteButton({ action }: { action: () => Promise<void> }) {
   return (
     <form action={action}>
-      <Button
-        type="submit"
-        variant="outline"
-        size="icon-sm"
-        className="border-border text-muted-foreground hover:border-red-300 hover:text-red-600"
-        title="Delete"
-      >
-        <Trash2 className="size-3.5" />
-      </Button>
+      <button type="submit" className="btn-icon danger" title="Delete">
+        <Icon name="trash" size={16} />
+      </button>
     </form>
   );
 }
