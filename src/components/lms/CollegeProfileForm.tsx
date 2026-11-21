@@ -1,11 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateCollegeProfile, type UpdateProfileState } from "@/lib/actions/profile";
 
@@ -20,36 +15,34 @@ export function CollegeProfileForm({ college }: { college: College }) {
     updateCollegeProfile,
     null
   );
+  const initials = college.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="name">
-            College Name
-            <RequiredMark />
-          </Label>
-          <Input id="name" name="name" required defaultValue={college.name} className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="contactEmail">Contact Email (optional)</Label>
-          <Input id="contactEmail" name="contactEmail" type="email" defaultValue={college.contactEmail ?? ""} className="mt-1.5" />
-        </div>
+    <form action={formAction} className="stack" style={{ gap: 16 }}>
+      <div className="stat-inline">
+        <span className="avatar lg">{initials}</span>
+        <FileUploadField name="photoUrl" label="Upload logo" category="photo" defaultUrl={college.photoUrl} />
       </div>
+      <label className="field">
+        <span>
+          College name <span className="req" aria-hidden="true">*</span>
+        </span>
+        <input className="input" type="text" name="name" required defaultValue={college.name} />
+      </label>
+      <label className="field">
+        <span>Contact email</span>
+        <input className="input" type="email" name="contactEmail" defaultValue={college.contactEmail ?? ""} />
+      </label>
 
-      <FileUploadField name="photoUrl" label="College Logo / Photo (optional)" category="photo" defaultUrl={college.photoUrl} />
+      {state?.ok && <span className="small" style={{ color: "var(--success-text)" }}>Saved.</span>}
+      {state?.error && <span className="error-text">{state.error}</span>}
 
-      {state?.ok && (
-        <p className="flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Saved.
-        </p>
-      )}
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-
-      <Button type="submit" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Save
-      </Button>
+      <div className="split">
+        <span />
+        <button className="btn btn-primary" type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Save"}
+        </button>
+      </div>
     </form>
   );
 }

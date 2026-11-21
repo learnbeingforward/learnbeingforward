@@ -4,13 +4,13 @@
  * a third "Partial" state for anything in between. */
 export function writtenAnswerBadge(marksAwarded: number | null, maxMarks: number) {
   if (marksAwarded === null) {
-    return { label: "Not graded yet", className: "bg-amber-100 text-amber-700 hover:bg-amber-100" };
+    return { label: "Not graded yet", pillClass: "warning" };
   }
   if (marksAwarded >= maxMarks) {
-    return { label: `Correct · ${marksAwarded}/${maxMarks}`, className: "bg-green-100 text-green-700 hover:bg-green-100" };
+    return { label: `Correct · ${marksAwarded}/${maxMarks}`, pillClass: "success" };
   }
   if (marksAwarded <= 0) {
-    return { label: `Wrong · ${marksAwarded}/${maxMarks}`, className: "bg-red-100 text-red-700 hover:bg-red-100" };
+    return { label: `Wrong · ${marksAwarded}/${maxMarks}`, pillClass: "danger" };
   }
-  return { label: `Partial · ${marksAwarded}/${maxMarks}`, className: "bg-gold/20 text-indigo hover:bg-gold/20" };
+  return { label: `Partial · ${marksAwarded}/${maxMarks}`, pillClass: "gold" };
 }

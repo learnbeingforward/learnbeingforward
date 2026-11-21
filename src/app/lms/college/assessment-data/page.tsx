@@ -75,7 +75,7 @@ export default async function CollegeAssessmentDataPage({
                     {ans.isCorrect ? "Correct" : "Wrong"} · {ans.marksAwarded ?? 0}/{ans.question.marks}
                   </span>
                 ) : (
-                  <span className={`pill ${writtenAnswerBadge(ans.marksAwarded, ans.question.marks).className.includes("green") ? "success" : "warning"}`}>
+                  <span className={`pill ${writtenAnswerBadge(ans.marksAwarded, ans.question.marks).pillClass}`}>
                     {writtenAnswerBadge(ans.marksAwarded, ans.question.marks).label}
                   </span>
                 )}

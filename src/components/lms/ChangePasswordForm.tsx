@@ -1,11 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
+import { Icon } from "@/components/lbf/icons";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { changeOwnPassword, type ChangePasswordState } from "@/lib/actions/profile";
 
 export function ChangePasswordForm() {
@@ -15,35 +12,27 @@ export function ChangePasswordForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="currentPassword">
-            Current Password
-            <RequiredMark />
-          </Label>
-          <Input id="currentPassword" name="currentPassword" type="password" required className="mt-1.5" />
-        </div>
-        <div>
-          <Label htmlFor="newPassword">
-            New Password
-            <RequiredMark />
-          </Label>
-          <Input id="newPassword" name="newPassword" type="password" minLength={8} required className="mt-1.5" />
-        </div>
-      </div>
+    <form action={formAction} className="grid" style={{ ["--min" as string]: "220px", alignItems: "end" }}>
+      <label className="field">
+        <span>
+          Current password <span className="req" aria-hidden="true">*</span>
+        </span>
+        <PasswordField name="currentPassword" required />
+      </label>
+      <label className="field">
+        <span>
+          New password <span className="req" aria-hidden="true">*</span>
+        </span>
+        <PasswordField name="newPassword" minLength={8} required />
+      </label>
 
-      {state?.ok && (
-        <p className="flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Password changed.
-        </p>
-      )}
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {state?.ok && <span className="small" style={{ color: "var(--success-text)" }}>Password changed.</span>}
+      {state?.error && <span className="error-text">{state.error}</span>}
 
-      <Button type="submit" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Change Password
-      </Button>
+      <button className="btn btn-primary" type="submit" disabled={isPending}>
+        <Icon name="lock" size={16} />
+        {isPending ? "Changing…" : "Change password"}
+      </button>
     </form>
   );
 }
