@@ -202,131 +202,163 @@ export async function createCourseOrder(
   return { ok: true, orderId: order.id, token };
 }
 
+export type OrderActionState = { ok: boolean; error?: string } | null;
+
+function errorMessage(err: unknown) {
+  return err instanceof Error ? err.message : "Something went wrong.";
+}
+
 /**
  * Confirming payment is also the only moment a buyer gets an actual account —
  * never at checkout. A buyer who already has an account (e.g. a repeat
  * purchase with the same email) keeps their existing password; this just
  * attaches the new order to it and emails a "here's your new purchase"
  * notice instead of fresh credentials.
+ *
+ * Every step is wrapped so a failure (most commonly SMTP not being
+ * configured) comes back as a typed error the admin actually sees, instead
+ * of an unhandled server-action crash or a silently-swallowed console.error.
  */
-export async function confirmOrderPaid(orderId: string) {
+export async function confirmOrderPaid(orderId: string, _prevState: OrderActionState, _formData: FormData): Promise<OrderActionState> {
   await requireCompany();
-
-  const order = await prisma.courseOrder.findUnique({
-    where: { id: orderId },
-    include: { buyListing: { include: { course: true } } },
-  });
-  if (!order || order.status === "PAID") return;
-
-  let buyer = await prisma.user.findUnique({ where: { email: order.buyerEmail } });
-  let generatedPassword: string | null = null;
-
-  if (!buyer) {
-    generatedPassword = generatePassword();
-    buyer = await prisma.user.create({
-      data: {
-        name: order.buyerName,
-        email: order.buyerEmail,
-        phone: order.buyerPhone,
-        passwordHash: await bcrypt.hash(generatedPassword, 10),
-        role: "BUYER",
-      },
-    });
-  } else if (buyer.role !== "BUYER") {
-    // An existing student/staff account happens to share this email — don't
-    // silently repurpose it. The order still gets marked paid so nothing is
-    // lost; it's just not auto-linked to a login.
-    buyer = null;
-  }
-
-  await prisma.courseOrder.update({
-    where: { id: orderId },
-    data: { status: "PAID", paidAt: new Date(), buyerUserId: buyer?.id ?? null },
-  });
-
-  const loginUrl = "https://learnbeingforward.in/auth";
-  const lines = generatedPassword
-    ? [
-        `Hi ${order.buyerName},`,
-        "",
-        `Thanks for purchasing ${order.buyListing.course.name}. We've created an account for you so you can view your book inside the website — it can't be downloaded or shared, only viewed there.`,
-        "",
-        `Login: ${loginUrl}`,
-        `Email: ${order.buyerEmail}`,
-        `Password: ${generatedPassword}`,
-        "",
-        "You can change this password any time from your Profile page once you're logged in.",
-        "",
-        "— Learn Being Forward",
-      ]
-    : [
-        `Hi ${order.buyerName},`,
-        "",
-        `Thanks for purchasing ${order.buyListing.course.name} — it's now available in your existing account.`,
-        "",
-        `Login: ${loginUrl}`,
-        "",
-        "— Learn Being Forward",
-      ];
 
   try {
-    await sendMail({
-      to: order.buyerEmail,
-      subject: `Your ${order.buyListing.course.name} purchase is ready`,
-      text: lines.join("\n"),
+    const order = await prisma.courseOrder.findUnique({
+      where: { id: orderId },
+      include: { buyListing: { include: { course: true } } },
     });
-    await prisma.courseOrder.update({ where: { id: orderId }, data: { emailSentAt: new Date() } });
-  } catch (err) {
-    console.error("[buy] Failed to email purchase confirmation:", err);
-    // The order and account still exist either way — a failed send here
-    // shouldn't undo the sale. The admin can resend credentials manually.
-  }
+    if (!order) return { ok: false, error: "This order no longer exists." };
+    if (order.status === "PAID") return { ok: true };
 
-  revalidatePath("/lms/company/edit-site/buy/orders");
-  revalidatePath(`/buy/order/${orderId}`);
+    let buyer = await prisma.user.findUnique({ where: { email: order.buyerEmail } });
+    let generatedPassword: string | null = null;
+
+    if (!buyer) {
+      generatedPassword = generatePassword();
+      buyer = await prisma.user.create({
+        data: {
+          name: order.buyerName,
+          email: order.buyerEmail,
+          phone: order.buyerPhone,
+          passwordHash: await bcrypt.hash(generatedPassword, 10),
+          role: "BUYER",
+        },
+      });
+    } else if (buyer.role !== "BUYER") {
+      // An existing student/staff account happens to share this email — don't
+      // silently repurpose it. The order still gets marked paid so nothing is
+      // lost; it's just not auto-linked to a login.
+      buyer = null;
+    }
+
+    await prisma.courseOrder.update({
+      where: { id: orderId },
+      data: { status: "PAID", paidAt: new Date(), buyerUserId: buyer?.id ?? null },
+    });
+
+    const loginUrl = "https://learnbeingforward.in/auth";
+    const lines = generatedPassword
+      ? [
+          `Hi ${order.buyerName},`,
+          "",
+          `Thanks for purchasing ${order.buyListing.course.name}. We've created an account for you so you can view your book inside the website — it can't be downloaded or shared, only viewed there.`,
+          "",
+          `Login: ${loginUrl}`,
+          `Email: ${order.buyerEmail}`,
+          `Password: ${generatedPassword}`,
+          "",
+          "You can change this password any time from your Profile page once you're logged in.",
+          "",
+          "— Learn Being Forward",
+        ]
+      : [
+          `Hi ${order.buyerName},`,
+          "",
+          `Thanks for purchasing ${order.buyListing.course.name} — it's now available in your existing account.`,
+          "",
+          `Login: ${loginUrl}`,
+          "",
+          "— Learn Being Forward",
+        ];
+
+    try {
+      await sendMail({
+        to: order.buyerEmail,
+        subject: `Your ${order.buyListing.course.name} purchase is ready`,
+        text: lines.join("\n"),
+      });
+      await prisma.courseOrder.update({ where: { id: orderId }, data: { emailSentAt: new Date() } });
+    } catch (err) {
+      console.error("[buy] Failed to email purchase confirmation:", err);
+      // The order and account still exist either way — a failed send here
+      // shouldn't undo the sale, but the admin needs to actually see why.
+      revalidatePath("/lms/company/edit-site/buy/orders");
+      revalidatePath(`/buy/order/${orderId}`);
+      return { ok: false, error: `Payment confirmed and the account exists, but the email failed to send: ${errorMessage(err)}` };
+    }
+
+    revalidatePath("/lms/company/edit-site/buy/orders");
+    revalidatePath(`/buy/order/${orderId}`);
+    return { ok: true };
+  } catch (err) {
+    console.error("[buy] confirmOrderPaid failed:", err);
+    return { ok: false, error: errorMessage(err) };
+  }
 }
 
-export async function rejectOrder(orderId: string, formData: FormData) {
+export async function rejectOrder(orderId: string, _prevState: OrderActionState, formData: FormData): Promise<OrderActionState> {
   await requireCompany();
 
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (!reason) throw new Error("Select a reason for rejecting this order.");
+  try {
+    const reason = String(formData.get("reason") ?? "").trim();
+    if (!reason) return { ok: false, error: "Select a reason for rejecting this order." };
 
-  const order = await prisma.courseOrder.findUnique({ where: { id: orderId } });
-  if (!order || order.status !== "PENDING") return;
+    const order = await prisma.courseOrder.findUnique({ where: { id: orderId } });
+    if (!order || order.status !== "PENDING") return { ok: true };
 
-  await prisma.courseOrder.update({ where: { id: orderId }, data: { status: "CANCELLED", rejectReason: reason } });
-  revalidatePath("/lms/company/edit-site/buy/orders");
-  revalidatePath(`/buy/order/${orderId}`);
+    await prisma.courseOrder.update({ where: { id: orderId }, data: { status: "CANCELLED", rejectReason: reason } });
+    revalidatePath("/lms/company/edit-site/buy/orders");
+    revalidatePath(`/buy/order/${orderId}`);
+    return { ok: true };
+  } catch (err) {
+    console.error("[buy] rejectOrder failed:", err);
+    return { ok: false, error: errorMessage(err) };
+  }
 }
 
 /** Re-sends the "your purchase is ready" notice for an already-confirmed
  * order — never a fresh password (none is retained after the first email),
  * just the login URL and a pointer to "Forgot password" if needed. */
-export async function resendOrderEmail(orderId: string) {
+export async function resendOrderEmail(orderId: string, _prevState: OrderActionState, _formData: FormData): Promise<OrderActionState> {
   await requireCompany();
 
-  const order = await prisma.courseOrder.findUnique({
-    where: { id: orderId },
-    include: { buyListing: { include: { course: true } } },
-  });
-  if (!order || order.status !== "PAID") return;
+  try {
+    const order = await prisma.courseOrder.findUnique({
+      where: { id: orderId },
+      include: { buyListing: { include: { course: true } } },
+    });
+    if (!order || order.status !== "PAID") return { ok: false, error: "This order isn't marked paid yet." };
 
-  const loginUrl = "https://learnbeingforward.in/auth";
-  const lines = [
-    `Hi ${order.buyerName},`,
-    "",
-    `Here's your purchase again — ${order.buyListing.course.name}, viewable inside your account.`,
-    "",
-    `Login: ${loginUrl}`,
-    `Email: ${order.buyerEmail}`,
-    "",
-    "Forgotten your password? Use \"Forgot password\" on the login page.",
-    "",
-    "— Learn Being Forward",
-  ];
+    const loginUrl = "https://learnbeingforward.in/auth";
+    const lines = [
+      `Hi ${order.buyerName},`,
+      "",
+      `Here's your purchase again — ${order.buyListing.course.name}, viewable inside your account.`,
+      "",
+      `Login: ${loginUrl}`,
+      `Email: ${order.buyerEmail}`,
+      "",
+      "Forgotten your password? Use \"Forgot password\" on the login page.",
+      "",
+      "— Learn Being Forward",
+    ];
 
-  await sendMail({ to: order.buyerEmail, subject: `Your ${order.buyListing.course.name} purchase — resent`, text: lines.join("\n") });
-  await prisma.courseOrder.update({ where: { id: orderId }, data: { emailSentAt: new Date() } });
-  revalidatePath("/lms/company/edit-site/buy/orders");
+    await sendMail({ to: order.buyerEmail, subject: `Your ${order.buyListing.course.name} purchase — resent`, text: lines.join("\n") });
+    await prisma.courseOrder.update({ where: { id: orderId }, data: { emailSentAt: new Date() } });
+    revalidatePath("/lms/company/edit-site/buy/orders");
+    return { ok: true };
+  } catch (err) {
+    console.error("[buy] resendOrderEmail failed:", err);
+    return { ok: false, error: errorMessage(err) };
+  }
 }

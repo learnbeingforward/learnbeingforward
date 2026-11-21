@@ -4,7 +4,7 @@ import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
-import { confirmOrderPaid, rejectOrder, resendOrderEmail } from "@/lib/actions/buy";
+import { ConfirmOrderButton, RejectOrderForm, ResendOrderEmailButton } from "@/components/lms/OrderActionButtons";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
 const REJECT_REASONS = ["No payment with this UTR", "Amount does not match", "Duplicate order"];
@@ -23,10 +23,23 @@ export default async function BuyOrdersPage() {
   const paid = orders.filter((o) => o.status === "PAID");
   const rejected = orders.filter((o) => o.status === "CANCELLED");
   const revenue = paid.reduce((sum, o) => sum + o.amount, 0);
+  const smtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  const unemailedPaidCount = paid.filter((o) => !o.emailSentAt).length;
 
   return (
     <AppShell nav={nav} active="edit-site" user={shellUser} hasUnread={hasUnread} crumb="Overview › Edit Site › Buy › Orders" title="Orders" subtitle="Check the UTR against your bank or UPI app before confirming.">
       <BackLink href="/lms/company/edit-site/buy" label="Back to Buy" />
+
+      {!smtpConfigured && (
+        <div className="alert danger">
+          <Icon name="shield" size={18} className="shrink-0" />
+          <span>
+            Email isn&apos;t configured on this server (SMTP_HOST/SMTP_USER/SMTP_PASS are missing), so buyers aren&apos;t getting their login details —
+            {unemailedPaidCount > 0 && ` ${unemailedPaidCount} paid order${unemailedPaidCount !== 1 ? "s are" : " is"} still unemailed. `}
+            Set those in the server&apos;s environment (your Hostinger mailbox&apos;s SMTP settings), then use Resend below.
+          </span>
+        </div>
+      )}
 
       <section className="card">
         <div className="grid" style={{ ["--min" as string]: "170px" }}>
@@ -84,32 +97,8 @@ export default async function BuyOrdersPage() {
                     </td>
                     <td className="actions">
                       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                        <details>
-                          <summary style={{ display: "inline-flex", cursor: "pointer", listStyle: "none" }}>
-                            <span className="btn btn-danger btn-sm">Reject</span>
-                          </summary>
-                          <form action={rejectOrder.bind(null, o.id)} className="stack" style={{ gap: 8, marginTop: 8, maxWidth: 260 }}>
-                            <select className="select" name="reason" required defaultValue="">
-                              <option value="" disabled>
-                                Select a reason…
-                              </option>
-                              {REJECT_REASONS.map((r) => (
-                                <option key={r} value={r}>
-                                  {r}
-                                </option>
-                              ))}
-                            </select>
-                            <button className="btn btn-sm" type="submit">
-                              Confirm reject
-                            </button>
-                          </form>
-                        </details>
-                        <form action={confirmOrderPaid.bind(null, o.id)}>
-                          <button className="btn btn-success btn-sm" type="submit">
-                            <Icon name="check" size={16} />
-                            Confirm
-                          </button>
-                        </form>
+                        <RejectOrderForm orderId={o.id} reasons={REJECT_REASONS} />
+                        <ConfirmOrderButton orderId={o.id} />
                       </div>
                     </td>
                   </tr>
@@ -134,18 +123,15 @@ export default async function BuyOrdersPage() {
                   </div>
                   <div className="small muted">
                     {o.buyerEmail} · ₹{o.amount}
-                    {o.status === "PAID" && o.emailSentAt && " · login details emailed"}
                     {o.status === "CANCELLED" && o.rejectReason && ` · ${o.rejectReason}`}
                   </div>
+                  {o.status === "PAID" && (
+                    <span className={`pill ${o.emailSentAt ? "success" : "warning"}`} style={{ marginTop: 4, display: "inline-block" }}>
+                      {o.emailSentAt ? "Login details emailed" : "Not emailed yet"}
+                    </span>
+                  )}
                 </div>
-                {o.status === "PAID" && (
-                  <form action={resendOrderEmail.bind(null, o.id)}>
-                    <button className="btn btn-sm" type="submit">
-                      <Icon name="mail" size={16} />
-                      Resend
-                    </button>
-                  </form>
-                )}
+                {o.status === "PAID" && <ResendOrderEmailButton orderId={o.id} />}
                 <span className={`pill ${o.status === "PAID" ? "success" : "danger"}`}>{o.status === "PAID" ? "Paid" : "Rejected"}</span>
               </li>
             ))}
