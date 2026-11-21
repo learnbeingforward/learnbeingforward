@@ -1,15 +1,11 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { getLucideIcon, LUCIDE_CATALOG } from "@/lib/lucide-catalog";
 import { DeleteButton } from "@/components/lms/DeleteButton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createHomeFeature, deleteHomeFeature } from "@/lib/actions/site-content";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
@@ -21,34 +17,65 @@ export default async function EditHomePage() {
   const features = await prisma.homeFeature.findMany({ orderBy: { order: "asc" } });
 
   return (
-    <AppShell nav={nav} active="edit-site" user={shellUser} hasUnread={hasUnread} crumb="Overview › Edit Site › Home Page" title="Home Page" subtitle="Edit site — What We Do pillars">
+    <AppShell
+      nav={nav}
+      active="edit-site"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Overview › Edit Site › Home Page"
+      title="Home page"
+      subtitle={'"What we do" pillars shown on the public homepage.'}
+      actions={
+        <Link className="btn btn-ghost-light" href="/lms/company/edit-site">
+          <Icon name="arrowL" size={16} />
+          Back to Edit Site
+        </Link>
+      }
+    >
       <div className="row">
         <section className="card side">
-          <h2 className="h2" style={{ marginBottom: 18 }}>Add new pillar</h2>
-          <form action={createHomeFeature} className="space-y-5">
-            <div>
-              <Label htmlFor="icon">Icon<RequiredMark /></Label>
-              <Select name="icon" required>
-                <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select icon" /></SelectTrigger>
-                <SelectContent>
-                  {LUCIDE_CATALOG.map((i) => <SelectItem key={i.name} value={i.name}>{i.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="title">Title<RequiredMark /></Label>
-              <Input id="title" name="title" required className="mt-1.5" placeholder="e.g. AI & Emerging Tech Training" />
-            </div>
-            <div>
-              <Label htmlFor="description">Description<RequiredMark /></Label>
-              <Textarea id="description" name="description" required rows={3} className="mt-1.5" />
-            </div>
-            <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">Add Pillar</Button>
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Add new pillar
+          </h2>
+          <form action={createHomeFeature} className="stack" style={{ gap: 16 }}>
+            <label className="field">
+              <span>
+                Icon <span className="req" aria-hidden="true">*</span>
+              </span>
+              <select className="select" name="icon" required defaultValue="">
+                <option value="" disabled>
+                  Select icon
+                </option>
+                {LUCIDE_CATALOG.map((i) => (
+                  <option key={i.name} value={i.name}>
+                    {i.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>
+                Title <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="text" name="title" required placeholder="e.g. AI & Emerging Tech Training" />
+            </label>
+            <label className="field">
+              <span>
+                Description <span className="req" aria-hidden="true">*</span>
+              </span>
+              <textarea className="textarea" name="description" required rows={3} />
+            </label>
+            <button className="btn btn-primary" type="submit">
+              <Icon name="plus" size={16} />
+              Add pillar
+            </button>
           </form>
         </section>
 
         <section className="card grow">
-          <h2 className="h2" style={{ marginBottom: 18 }}>Current pillars ({features.length})</h2>
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Current pillars ({features.length})
+          </h2>
           <ul className="list">
             {features.map((f) => {
               const FeatureIcon = getLucideIcon(f.icon);

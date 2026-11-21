@@ -1,15 +1,14 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { DeleteButton } from "@/components/lms/DeleteButton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { createTeamMember, deleteTeamMember } from "@/lib/actions/site-content";
+import { FileUploadField } from "@/components/lms/FileUploadField";
+import { createTeamMember, deleteTeamMember, updateSiteSettings } from "@/lib/actions/site-content";
 import { parseJsonArray } from "@/lib/json-array";
+import { getSiteSettings } from "@/lib/site-settings";
 import { CreateTrainerLoginForm } from "@/components/lms/CreateTrainerLoginForm";
 import { EditTeamMemberDialog } from "@/components/lms/EditTeamMemberDialog";
 
@@ -19,93 +18,189 @@ export default async function EditEmployeesPage() {
   const { session, keys, hasUnread } = await requireCompanyPageAccess("overview.edit-site");
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
-  const members = await prisma.teamMember.findMany({ orderBy: { order: "asc" } });
+  const [members, siteSettings] = await Promise.all([prisma.teamMember.findMany({ orderBy: { order: "asc" } }), getSiteSettings()]);
 
   return (
-    <AppShell nav={nav} active="edit-site" user={shellUser} hasUnread={hasUnread} crumb="Overview › Edit Site › Employees" title="Employees" subtitle="Edit site — Team profiles">
+    <AppShell
+      nav={nav}
+      active="edit-site"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Overview › Edit Site › Employees"
+      title="Employees & contacts"
+      subtitle="Profiles shown on the public Team and Contact pages."
+      actions={
+        <Link className="btn btn-ghost-light" href="/lms/company/edit-site">
+          <Icon name="arrowL" size={16} />
+          Back to Edit Site
+        </Link>
+      }
+    >
       <section className="card">
-        <h2 className="h2" style={{ marginBottom: 4 }}>Create trainer login</h2>
+        <h2 className="h2" style={{ marginBottom: 4 }}>
+          Create trainer login
+        </h2>
         <p className="small muted" style={{ marginBottom: 18, maxWidth: 640 }}>
-          This creates an internal login for the LMS trainer dashboard — separate from the public Team page profile below. A trainer doesn&apos;t need a public Team entry to log in, and adding one here doesn&apos;t publish anything publicly.
+          This creates an internal login for the LMS trainer dashboard — separate from the public Team page profile below. A trainer doesn&apos;t
+          need a public Team entry to log in, and adding one here doesn&apos;t publish anything publicly.
         </p>
         <CreateTrainerLoginForm />
       </section>
 
       <div className="row">
-        <section className="card side">
-          <h2 className="h2" style={{ marginBottom: 18 }}>Add new employee / trainer</h2>
-          <form action={createTeamMember} className="space-y-5">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="name">Full Name<RequiredMark /></Label>
-                <Input id="name" name="name" required className="mt-1.5" />
-              </div>
-              <div>
-                <Label htmlFor="role">Role / Designation<RequiredMark /></Label>
-                <Input id="role" name="role" required className="mt-1.5" placeholder="e.g. Full-Stack Trainer" />
-              </div>
-              <div>
-                <Label htmlFor="experienceYears">Years of Experience<RequiredMark /></Label>
-                <Input id="experienceYears" name="experienceYears" type="number" min="0" required className="mt-1.5" />
-              </div>
-              <div className="flex items-center gap-2 pt-6">
-                <input type="checkbox" id="isFreelancer" name="isFreelancer" className="size-4" />
-                <Label htmlFor="isFreelancer" className="cursor-pointer">Freelance Trainer</Label>
-              </div>
+        <section className="card grow">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Add employee / trainer profile
+          </h2>
+          <form action={createTeamMember} className="stack" style={{ gap: 16 }}>
+            <div className="stat-inline">
+              <span className="avatar lg">+</span>
+              <FileUploadField name="photoUrl" label="Upload photo" category="photo" compact />
             </div>
-            <div>
-              <Label htmlFor="background">Background (optional)</Label>
-              <Textarea id="background" name="background" rows={2} className="mt-1.5" placeholder="Short summary of their expertise" />
+            <div className="grid" style={{ ["--min" as string]: "200px" }}>
+              <label className="field">
+                <span>
+                  Full name <span className="req" aria-hidden="true">*</span>
+                </span>
+                <input className="input" type="text" name="name" required />
+              </label>
+              <label className="field">
+                <span>
+                  Role / title <span className="req" aria-hidden="true">*</span>
+                </span>
+                <input className="input" type="text" name="role" required placeholder="e.g. Aptitude Trainer" />
+              </label>
             </div>
-            <div>
-              <Label htmlFor="specialties">Specialties (optional, comma-separated)</Label>
-              <Input id="specialties" name="specialties" className="mt-1.5" placeholder="React, Node.js, MongoDB" />
+            <div className="grid" style={{ ["--min" as string]: "200px" }}>
+              <label className="field">
+                <span>Experience (years)</span>
+                <input className="input" type="number" min={0} name="experienceYears" />
+              </label>
+              <label className="field">
+                <span>Type</span>
+                <select className="select" name="isFreelancer" defaultValue="">
+                  <option value="">Full-time employee</option>
+                  <option value="on">Freelance trainer</option>
+                </select>
+              </label>
             </div>
-            <div>
-              <Label htmlFor="colleges">Colleges Trained At (optional, comma-separated, freelancers only)</Label>
-              <Input id="colleges" name="colleges" className="mt-1.5" placeholder="RV College of Engineering, PES University" />
+            <label className="field">
+              <span>Background (optional)</span>
+              <textarea className="textarea" name="background" rows={2} placeholder="Short summary of their expertise" />
+            </label>
+            <label className="field">
+              <span>Skills (comma separated)</span>
+              <input className="input" type="text" name="specialties" placeholder="Java, Spring Boot, SQL" />
+            </label>
+            <label className="field">
+              <span>Colleges trained at (freelance)</span>
+              <input className="input" type="text" name="colleges" placeholder="RV College of Engineering, PES University" />
+            </label>
+            <FileUploadField name="cvUrl" label="CV / profile PDF (optional)" category="cv" />
+            <div className="split">
+              <span />
+              <button className="btn btn-primary" type="submit">
+                <Icon name="plus" size={16} />
+                Add profile
+              </button>
             </div>
-            <div>
-              <Label htmlFor="photoUrl">Photo URL (optional)</Label>
-              <Input id="photoUrl" name="photoUrl" className="mt-1.5" placeholder="https://... (leave blank for a generated avatar)" />
-            </div>
-            <div>
-              <Label htmlFor="cvUrl">CV / Profile PDF URL (optional)</Label>
-              <Input id="cvUrl" name="cvUrl" className="mt-1.5" placeholder="https://... link to a hosted PDF" />
-            </div>
-            <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">Add Employee</Button>
           </form>
         </section>
 
-        <section className="card grow">
-          <h2 className="h2" style={{ marginBottom: 18 }}>Current team ({members.length})</h2>
-          <div className="stack" style={{ gap: 12, maxHeight: 700, overflowY: "auto" }}>
-            {members.map((m) => {
-              const specialties = parseJsonArray(m.specialties);
-              const colleges = parseJsonArray(m.colleges);
-              return (
-                <div key={m.id} className="box" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                  <EditTeamMemberDialog
-                    member={{
-                      id: m.id,
-                      name: m.name,
-                      role: m.role,
-                      experienceYears: m.experienceYears,
-                      background: m.background,
-                      specialties,
-                      isFreelancer: m.isFreelancer,
-                      colleges,
-                      photoUrl: m.photoUrl,
-                      cvUrl: m.cvUrl,
-                    }}
-                  />
-                  <DeleteButton action={deleteTeamMember.bind(null, m.id)} />
-                </div>
-              );
-            })}
-          </div>
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 4 }}>
+            Company contact
+          </h2>
+          <p className="subtitle" style={{ marginBottom: 18 }}>
+            Shown in the footer and on the Contact page.
+          </p>
+          <form action={updateSiteSettings} className="stack" style={{ gap: 16 }}>
+            <label className="field">
+              <span>
+                Name <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="text" name="companyContactName" required defaultValue={siteSettings.companyContactName} />
+            </label>
+            <label className="field">
+              <span>
+                Phone <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="tel" name="companyContactPhone" required defaultValue={siteSettings.companyContactPhone} />
+            </label>
+            <label className="field">
+              <span>
+                Email <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="email" name="companyContactEmail" required defaultValue={siteSettings.companyContactEmail} />
+            </label>
+            <button className="btn btn-primary" type="submit">
+              Save company contact
+            </button>
+          </form>
         </section>
       </div>
+
+      <section className="card">
+        <div className="split" style={{ marginBottom: 18 }}>
+          <h2 className="h2">Published profiles ({members.length})</h2>
+        </div>
+        <div className="table-wrap">
+          <table className="table m-cards" style={{ minWidth: 640 }}>
+            <thead>
+              <tr>
+                <th>Profile</th>
+                <th>Experience</th>
+                <th>Type</th>
+                <th>Order</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => {
+                const specialties = parseJsonArray(m.specialties);
+                const colleges = parseJsonArray(m.colleges);
+                const initials = m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                return (
+                  <tr key={m.id}>
+                    <td data-label="Profile">
+                      <div className="stat-inline">
+                        <span className="avatar sm">{initials}</span>
+                        <div>
+                          <div className="strong">{m.name}</div>
+                          <div className="small muted">{m.role}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td data-label="Experience">{m.experienceYears} yrs</td>
+                    <td data-label="Type">
+                      <span className={`pill ${m.isFreelancer ? "info" : ""}`}>{m.isFreelancer ? "Freelance" : "Employee"}</span>
+                    </td>
+                    <td data-label="Order">{m.order}</td>
+                    <td data-label="" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <EditTeamMemberDialog
+                        member={{
+                          id: m.id,
+                          name: m.name,
+                          role: m.role,
+                          experienceYears: m.experienceYears,
+                          background: m.background,
+                          specialties,
+                          isFreelancer: m.isFreelancer,
+                          colleges,
+                          photoUrl: m.photoUrl,
+                          cvUrl: m.cvUrl,
+                        }}
+                      />
+                      <DeleteButton action={deleteTeamMember.bind(null, m.id)} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {members.length === 0 && <p className="empty">No team profiles yet.</p>}
+      </section>
     </AppShell>
   );
 }

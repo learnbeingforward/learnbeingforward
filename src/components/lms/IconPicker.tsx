@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Icon } from "@/components/lbf/icons";
 import { ICON_CATALOG } from "@/lib/icon-catalog";
 
 export function IconPicker({
@@ -23,19 +21,19 @@ export function IconPicker({
   return (
     <div>
       <input type="hidden" name={name} value={selected} />
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+      <label className="input-group">
+        <Icon name="search" size={16} />
+        <input
+          className="input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search technology name (e.g. React, MySQL, Docker)"
-          className="pl-9"
         />
-      </div>
+      </label>
 
-      <div className="mt-3 grid max-h-64 grid-cols-4 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-6">
+      <div className="grid" style={{ ["--min" as string]: "70px", gap: 8, marginTop: 12, maxHeight: 260, overflowY: "auto" }}>
         {filtered.slice(0, 60).map((item) => {
-          const Icon = item.Icon;
+          const ItemIcon = item.Icon;
           const isSelected = selected === item.name;
           return (
             <button
@@ -43,26 +41,31 @@ export function IconPicker({
               type="button"
               onClick={() => setSelected(item.name)}
               title={item.label}
-              className={cn(
-                "flex flex-col items-center gap-1 rounded-lg border border-transparent p-2 text-center transition-colors hover:bg-cream",
-                isSelected && "border-gold bg-gold/10"
-              )}
+              className="box"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                padding: 8,
+                textAlign: "center",
+                borderColor: isSelected ? "var(--gold)" : undefined,
+                background: isSelected ? "var(--gold-soft)" : undefined,
+              }}
             >
-              <Icon className="size-6 text-indigo" />
-              <span className="line-clamp-1 text-[10px] text-muted-foreground">{item.label}</span>
+              <ItemIcon size={22} style={{ color: "var(--navy)" }} />
+              <span className="small muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+                {item.label}
+              </span>
             </button>
           );
         })}
-        {filtered.length === 0 && (
-          <p className="col-span-full py-4 text-center text-sm text-muted-foreground">
-            No matching icon found.
-          </p>
-        )}
+        {filtered.length === 0 && <p className="empty" style={{ gridColumn: "1 / -1" }}>No matching icon found.</p>}
       </div>
 
       {selected && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Selected: <span className="font-medium text-indigo">{ICON_CATALOG.find((i) => i.name === selected)?.label}</span>
+        <p className="small muted" style={{ marginTop: 8 }}>
+          Selected: <span className="strong">{ICON_CATALOG.find((i) => i.name === selected)?.label}</span>
         </p>
       )}
     </div>
