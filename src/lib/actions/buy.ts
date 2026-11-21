@@ -211,9 +211,9 @@ function errorMessage(err: unknown) {
 /**
  * Confirming payment is also the only moment a buyer gets an actual account —
  * never at checkout. A buyer who already has an account (e.g. a repeat
- * purchase with the same email) keeps their existing password; this just
- * attaches the new order to it and emails a "here's your new purchase"
- * notice instead of fresh credentials.
+ * purchase with the same email) gets a freshly generated password each time
+ * too, so every confirmation email is self-sufficient — the buyer never has
+ * to go hunting for a separate "forgot password" email to actually log in.
  *
  * Every step is wrapped so a failure (most commonly SMTP not being
  * configured) comes back as a typed error the admin actually sees, instead
@@ -232,6 +232,7 @@ export async function confirmOrderPaid(orderId: string, _prevState: OrderActionS
 
     let buyer = await prisma.user.findUnique({ where: { email: order.buyerEmail } });
     let generatedPassword: string | null = null;
+    const isNewAccount = !buyer;
 
     if (!buyer) {
       generatedPassword = generatePassword();
@@ -249,6 +250,9 @@ export async function confirmOrderPaid(orderId: string, _prevState: OrderActionS
       // silently repurpose it. The order still gets marked paid so nothing is
       // lost; it's just not auto-linked to a login.
       buyer = null;
+    } else {
+      generatedPassword = generatePassword();
+      buyer = await prisma.user.update({ where: { id: buyer.id }, data: { passwordHash: await bcrypt.hash(generatedPassword, 10) } });
     }
 
     await prisma.courseOrder.update({
@@ -261,7 +265,9 @@ export async function confirmOrderPaid(orderId: string, _prevState: OrderActionS
       ? [
           `Hi ${order.buyerName},`,
           "",
-          `Thanks for purchasing ${order.buyListing.course.name}. We've created an account for you so you can view your book inside the website — it can't be downloaded or shared, only viewed there.`,
+          isNewAccount
+            ? `Thanks for purchasing ${order.buyListing.course.name}. We've created an account for you so you can view your book inside the website — it can't be downloaded or shared, only viewed there.`
+            : `Thanks for purchasing ${order.buyListing.course.name} — it's now available in your account. We've also reset your password so these details work right away.`,
           "",
           `Login: ${loginUrl}`,
           `Email: ${order.buyerEmail}`,
@@ -339,6 +345,18 @@ export async function resendOrderEmail(orderId: string, _prevState: OrderActionS
     });
     if (!order || order.status !== "PAID") return { ok: false, error: "This order isn't marked paid yet." };
 
+    // Resend always includes a working password rather than pointing at a
+    // separate "forgot password" email — a buyer reaching for Resend usually
+    // can't log in in the first place, so a second email they'd also have to
+    // find and trust isn't a real fix. Generating a fresh one here means this
+    // one email is enough on its own.
+    let passwordLine: string | null = null;
+    if (order.buyerUserId) {
+      const freshPassword = generatePassword();
+      await prisma.user.update({ where: { id: order.buyerUserId }, data: { passwordHash: await bcrypt.hash(freshPassword, 10) } });
+      passwordLine = freshPassword;
+    }
+
     const loginUrl = "https://learnbeingforward.in/auth";
     const lines = [
       `Hi ${order.buyerName},`,
@@ -347,8 +365,7 @@ export async function resendOrderEmail(orderId: string, _prevState: OrderActionS
       "",
       `Login: ${loginUrl}`,
       `Email: ${order.buyerEmail}`,
-      "",
-      "Forgotten your password? Use \"Forgot password\" on the login page.",
+      ...(passwordLine ? [`Password: ${passwordLine}`, "", "We've reset your password so these details work right away."] : []),
       "",
       "— Learn Being Forward",
     ];
