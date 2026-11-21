@@ -1,19 +1,14 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
+import { Icon } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
-import { DeleteButton } from "@/components/lms/DeleteButton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCourse, deleteCourse, createCourseModule, deleteCourseModule, createCourseSubModule, deleteCourseSubModule } from "@/lib/actions/site-content";
+import { createCourse, deleteCourse, createCourseModule, createCourseSubModule, deleteCourseSubModule } from "@/lib/actions/site-content";
 import { TechCheckboxGrid } from "@/components/lms/TechCheckboxGrid";
-import { SubModuleModuleSelect } from "@/components/lms/SubModuleModuleSelect";
 
 const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: "Company admin", ADMIN2: "Company admin", EMPLOYEE: "Employee" };
+const CATEGORY_LABEL: Record<string, string> = { TECHNICAL: "Technical", APTITUDE: "Aptitude", SOFT_SKILL: "Soft Skills" };
 
 export default async function EditCoursesPage() {
   const { session, keys, hasUnread } = await requireCompanyPageAccess("overview.edit-site");
@@ -27,136 +22,224 @@ export default async function EditCoursesPage() {
   ]);
 
   return (
-    <AppShell nav={nav} active="edit-site" user={shellUser} hasUnread={hasUnread} crumb="Overview › Edit Site › Courses" title="Courses" subtitle="Edit site — Courses & curriculum">
+    <AppShell
+      nav={nav}
+      active="edit-site"
+      user={shellUser}
+      hasUnread={hasUnread}
+      crumb="Overview › Edit Site › Courses"
+      title="Courses & curriculum"
+      subtitle="Add courses and modules. Each module topic becomes a selectable sub-module for course content."
+      actions={
+        <Link className="btn btn-ghost-light" href="/lms/company/edit-site">
+          <Icon name="arrowL" size={16} />
+          Back to Edit Site
+        </Link>
+      }
+    >
       <div className="row">
-        <div className="side stack" style={{ gap: 20 }}>
-          <section className="card">
-            <h2 className="h2" style={{ marginBottom: 18 }}>Add new course</h2>
-            <form action={createCourse} className="space-y-5">
-              <div>
-                <Label htmlFor="name">Course Name<RequiredMark /></Label>
-                <Input id="name" name="name" required className="mt-1.5" placeholder="e.g. Cloud Computing" />
-              </div>
-              <div>
-                <Label htmlFor="category">Category<RequiredMark /></Label>
-                <Input id="category" name="category" required className="mt-1.5" placeholder="e.g. Development" />
-              </div>
-              <div>
-                <Label htmlFor="shortDescription">Short Description (optional — for the course card)</Label>
-                <Textarea id="shortDescription" name="shortDescription" rows={2} className="mt-1.5" />
-              </div>
-              <div>
-                <Label htmlFor="description">Full Description<RequiredMark /></Label>
-                <Textarea id="description" name="description" required rows={4} className="mt-1.5" />
-              </div>
-              <div>
-                <Label>Technologies Covered</Label>
-                <div className="mt-1.5"><TechCheckboxGrid technologies={technologies} name="techSlugs" /></div>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="isPlaceholder" name="isPlaceholder" className="size-4" />
-                <Label htmlFor="isPlaceholder" className="cursor-pointer">Mark as placeholder syllabus (real content not provided yet)</Label>
-              </div>
-              <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">Create Course</Button>
-            </form>
-          </section>
-
-          <section className="card">
-            <h2 className="h2" style={{ marginBottom: 18 }}>Add module to a course</h2>
-            <form action={createCourseModule} className="space-y-5">
-              <div>
-                <Label htmlFor="courseId">Course<RequiredMark /></Label>
-                <Select name="courseId" required>
-                  <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select course" /></SelectTrigger>
-                  <SelectContent>
-                    {courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="trackTitle">Track / Section Title (optional)</Label>
-                <Input id="trackTitle" name="trackTitle" className="mt-1.5" placeholder="e.g. Programming Track (leave blank for a single unnamed section)" />
-              </div>
-              <div>
-                <Label htmlFor="title">Module Title<RequiredMark /></Label>
-                <Input id="title" name="title" required className="mt-1.5" placeholder="e.g. Java Fundamentals" />
-              </div>
-              <div>
-                <Label htmlFor="level">Level (optional)</Label>
-                <Input id="level" name="level" className="mt-1.5" placeholder="e.g. Fundamentals" />
-              </div>
-              <div>
-                <Label htmlFor="topics">Topics / Sub-Modules (one per line)<RequiredMark /></Label>
-                <p className="mt-1 text-xs text-muted-foreground">Each line becomes a selectable sub-module when attaching course content later.</p>
-                <Textarea id="topics" name="topics" required rows={4} className="mt-1.5" placeholder={"Syntax & data types\nControl flow\nOOP basics"} />
-              </div>
-              <div>
-                <Label htmlFor="delivery">Delivery Note (optional)</Label>
-                <Input id="delivery" name="delivery" className="mt-1.5" placeholder="e.g. Hands-on labs with daily practice problems." />
-              </div>
-              <div>
-                <Label>Technologies</Label>
-                <div className="mt-1.5"><TechCheckboxGrid technologies={technologies} name="techSlugs" /></div>
-              </div>
-              <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">Add Module</Button>
-            </form>
-          </section>
-
-          <section className="card">
-            <h2 className="h2" style={{ marginBottom: 18 }}>Add a sub-module</h2>
-            <form action={createCourseSubModule} className="space-y-5">
-              <div>
-                <Label htmlFor="courseModuleId">Module<RequiredMark /></Label>
-                <SubModuleModuleSelect modules={modulesForSelect} />
-              </div>
-              <div>
-                <Label htmlFor="subModuleTitle">Sub-Module Title<RequiredMark /></Label>
-                <Input id="subModuleTitle" name="title" required className="mt-1.5" placeholder="e.g. Exception Handling" />
-              </div>
-              <Button type="submit" className="w-full bg-indigo text-white hover:bg-indigo/90">Add Sub-Module</Button>
-            </form>
-          </section>
-        </div>
-
         <section className="card grow">
-          <h2 className="h2" style={{ marginBottom: 18 }}>Current courses ({courses.length})</h2>
-          <div className="stack" style={{ gap: 12, maxHeight: 900, overflowY: "auto" }}>
-            {courses.map((course) => (
-              <div key={course.id} className="box">
-                <div className="split">
-                  <div>
-                    <div className="strong">{course.name}</div>
-                    <div className="small muted">{course.modules.length} module{course.modules.length !== 1 ? "s" : ""}</div>
-                  </div>
-                  <DeleteButton action={deleteCourse.bind(null, course.id)} />
-                </div>
-                {course.modules.length > 0 && (
-                  <div className="stack" style={{ gap: 8, marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-                    {course.modules.map((mod) => (
-                      <div key={mod.id} className="small">
-                        <div className="split">
-                          <span className="strong" style={{ fontSize: 13 }}>{mod.trackTitle} — {mod.title}</span>
-                          <DeleteButton action={deleteCourseModule.bind(null, mod.id)} />
-                        </div>
-                        {mod.subModules.length > 0 && (
-                          <div className="stack" style={{ gap: 2, marginLeft: 12 }}>
-                            {mod.subModules.map((sm) => (
-                              <div key={sm.id} className="split muted">
-                                <span>— {sm.title}</span>
-                                <DeleteButton action={deleteCourseSubModule.bind(null, sm.id)} />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Add new course
+          </h2>
+          <form action={createCourse} className="stack" style={{ gap: 16 }}>
+            <div className="grid" style={{ ["--min" as string]: "200px" }}>
+              <label className="field">
+                <span>
+                  Course name <span className="req" aria-hidden="true">*</span>
+                </span>
+                <input className="input" type="text" name="name" required />
+              </label>
+              <label className="field">
+                <span>
+                  Category <span className="req" aria-hidden="true">*</span>
+                </span>
+                <select className="select" name="category" required defaultValue="TECHNICAL">
+                  <option value="TECHNICAL">Technical</option>
+                  <option value="APTITUDE">Aptitude</option>
+                  <option value="SOFT_SKILL">Soft Skills</option>
+                </select>
+              </label>
+            </div>
+            <label className="field">
+              <span>Short description (course card)</span>
+              <input className="input" type="text" name="shortDescription" />
+            </label>
+            <label className="field">
+              <span>
+                Full description <span className="req" aria-hidden="true">*</span>
+              </span>
+              <textarea className="textarea" name="description" required rows={4} />
+            </label>
+            <div className="field">
+              Technologies covered
+              <TechCheckboxGrid technologies={technologies} name="techSlugs" />
+            </div>
+            <label className="check">
+              <input type="checkbox" name="isPlaceholder" /> Mark as placeholder syllabus (real content not provided yet)
+            </label>
+            <div className="split">
+              <span />
+              <button className="btn btn-primary" type="submit">
+                <Icon name="plus" size={16} />
+                Create course
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="card side">
+          <h2 className="h2" style={{ marginBottom: 18 }}>
+            Add module to a course
+          </h2>
+          <form action={createCourseModule} className="stack" style={{ gap: 16 }}>
+            <label className="field">
+              <span>
+                Course <span className="req" aria-hidden="true">*</span>
+              </span>
+              <select className="select" name="courseId" required defaultValue="">
+                <option value="" disabled>
+                  Select course
+                </option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="grid" style={{ ["--min" as string]: "160px" }}>
+              <label className="field">
+                <span>Track / section title</span>
+                <input className="input" type="text" name="trackTitle" placeholder="e.g. DSA Track" />
+              </label>
+              <label className="field">
+                <span>Level</span>
+                <select className="select" name="level" defaultValue="">
+                  <option value="">—</option>
+                  <option value="Fundamentals">Fundamentals</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </label>
+            </div>
+            <label className="field">
+              <span>
+                Module title <span className="req" aria-hidden="true">*</span>
+              </span>
+              <input className="input" type="text" name="title" required />
+            </label>
+            <label className="field">
+              <span>
+                Topics / sub-modules (one per line) <span className="req" aria-hidden="true">*</span>
+              </span>
+              <textarea className="textarea" name="topics" required rows={5} placeholder={"Arrays & strings\nLinked lists\nStacks & queues"} />
+              <span className="hint">Each line becomes a sub-module when attaching course content.</span>
+            </label>
+            <label className="field">
+              <span>Delivery note</span>
+              <input className="input" type="text" name="delivery" placeholder="e.g. Daily problem sets with walkthroughs" />
+            </label>
+            <button className="btn btn-primary" type="submit">
+              <Icon name="plus" size={16} />
+              Add module
+            </button>
+          </form>
         </section>
       </div>
+
+      <section className="card">
+        <div className="split" style={{ marginBottom: 18 }}>
+          <h2 className="h2">Existing courses</h2>
+        </div>
+        <div className="table-wrap">
+          <table className="table m-cards" style={{ minWidth: 600 }}>
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Category</th>
+                <th>Modules</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses.map((course) => (
+                <tr key={course.id}>
+                  <td data-label="Course">
+                    <span className="strong">{course.name}</span>
+                  </td>
+                  <td data-label="Category">{CATEGORY_LABEL[course.domain] ?? course.domain}</td>
+                  <td data-label="Modules">{course.modules.length}</td>
+                  <td data-label="Status">
+                    <span className={`pill ${course.isPlaceholder ? "warning" : "success"}`}>{course.isPlaceholder ? "Placeholder" : "Live"}</span>
+                  </td>
+                  <td data-label="">
+                    <form action={deleteCourse.bind(null, course.id)}>
+                      <button className="btn btn-sm" type="submit">
+                        <Icon name="trash" size={16} />
+                        Delete
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {courses.length === 0 && <p className="empty">No courses yet.</p>}
+      </section>
+
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>
+          Add a sub-module to an existing module
+        </h2>
+        <form action={createCourseSubModule} className="row" style={{ alignItems: "flex-end" }}>
+          <label className="field grow">
+            <span>
+              Module <span className="req" aria-hidden="true">*</span>
+            </span>
+            <select className="select" name="courseModuleId" required defaultValue="">
+              <option value="" disabled>
+                Select module
+              </option>
+              {modulesForSelect.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.course.name} — {m.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field grow">
+            <span>
+              Sub-module title <span className="req" aria-hidden="true">*</span>
+            </span>
+            <input className="input" type="text" name="title" required placeholder="e.g. Exception Handling" />
+          </label>
+          <button className="btn btn-primary" type="submit">
+            <Icon name="plus" size={16} />
+            Add sub-module
+          </button>
+        </form>
+        <ul className="list" style={{ marginTop: 18 }}>
+          {courses.flatMap((course) =>
+            course.modules.flatMap((mod) =>
+              mod.subModules.map((sm) => (
+                <li key={sm.id} className="list-row">
+                  <span className="grow small">
+                    {course.name} — {mod.title} — {sm.title}
+                  </span>
+                  <form action={deleteCourseSubModule.bind(null, sm.id)}>
+                    <button className="btn-icon danger" type="submit" title="Delete">
+                      <Icon name="trash" size={16} />
+                    </button>
+                  </form>
+                </li>
+              ))
+            )
+          )}
+        </ul>
+      </section>
     </AppShell>
   );
 }

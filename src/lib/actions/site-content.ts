@@ -36,13 +36,16 @@ function revalidateMarketing() {
 
 // ---------- Courses ----------
 
+const DOMAIN_LABEL: Record<string, string> = { TECHNICAL: "Technical", APTITUDE: "Aptitude", SOFT_SKILL: "Soft Skills" };
+
 export async function createCourse(formData: FormData) {
   await requireCompany();
 
   const name = String(formData.get("name") ?? "").trim();
   const shortDescription = String(formData.get("shortDescription") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const category = String(formData.get("category") ?? "Development").trim();
+  const domainRaw = String(formData.get("category") ?? "TECHNICAL").trim();
+  const domain = domainRaw in DOMAIN_LABEL ? (domainRaw as "TECHNICAL" | "APTITUDE" | "SOFT_SKILL") : "TECHNICAL";
   const techSlugs = formData.getAll("techSlugs").map(String);
   const isPlaceholder = formData.get("isPlaceholder") === "on";
 
@@ -60,7 +63,8 @@ export async function createCourse(formData: FormData) {
       name,
       shortDescription: shortDescription || description.slice(0, 140),
       description,
-      category,
+      category: DOMAIN_LABEL[domain],
+      domain,
       techSlugs: JSON.stringify(techSlugs),
       isPlaceholder,
       order: (maxOrder._max.order ?? 0) + 1,

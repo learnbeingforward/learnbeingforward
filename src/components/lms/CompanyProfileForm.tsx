@@ -1,11 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RequiredMark } from "@/components/ui/required-mark";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { updateCompanyProfile, type UpdateProfileState } from "@/lib/actions/profile";
 
@@ -31,76 +26,71 @@ export function CompanyProfileForm({
     updateCompanyProfile,
     null
   );
+  const initials = admin.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
+    <form action={formAction} className="stack" style={{ gap: 16 }}>
+      <div className="stat-inline">
+        <span className="avatar lg">{initials}</span>
         <div>
-          <Label htmlFor="name">
-            Name
-            <RequiredMark />
-          </Label>
-          <Input id="name" name="name" required defaultValue={admin.name} className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Email</Label>
-          <Input value={admin.email} disabled className="mt-1.5 bg-cream" />
-        </div>
-      </div>
-
-      <FileUploadField name="photoUrl" label="Photo (optional)" category="photo" defaultUrl={admin.photoUrl} />
-
-      {showBank && (
-        <div>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-indigo">
-            Bank Details (auto-included on college invoices)
-          </h3>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="companyBankAccountName">Account Holder (optional)</Label>
-              <Input
-                id="companyBankAccountName"
-                name="companyBankAccountName"
-                defaultValue={bank.companyBankAccountName ?? ""}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="companyBankName">Bank Name (optional)</Label>
-              <Input id="companyBankName" name="companyBankName" defaultValue={bank.companyBankName ?? ""} className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="companyBankAccountNumber">Account Number (optional)</Label>
-              <Input
-                id="companyBankAccountNumber"
-                name="companyBankAccountNumber"
-                defaultValue={bank.companyBankAccountNumber ?? ""}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="companyBankIfsc">IFSC (optional)</Label>
-              <Input id="companyBankIfsc" name="companyBankIfsc" defaultValue={bank.companyBankIfsc ?? ""} className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="companyGstNumber">GST Number (optional)</Label>
-              <Input id="companyGstNumber" name="companyGstNumber" defaultValue={bank.companyGstNumber ?? ""} className="mt-1.5" />
-            </div>
+          <FileUploadField name="photoUrl" label="Change photo" category="photo" defaultUrl={admin.photoUrl} compact />
+          <div className="hint" style={{ marginTop: 6 }}>
+            JPG or PNG, up to 2 MB
           </div>
         </div>
+      </div>
+      <div className="grid" style={{ ["--min" as string]: "220px" }}>
+        <label className="field">
+          <span>
+            Name <span className="req" aria-hidden="true">*</span>
+          </span>
+          <input className="input" type="text" name="name" required defaultValue={admin.name} />
+        </label>
+        <label className="field">
+          <span>Email</span>
+          <input className="input" type="email" value={admin.email} disabled />
+        </label>
+      </div>
+
+      {showBank && (
+        <>
+          <div className="label" style={{ marginTop: 8 }}>
+            Bank details · auto-included on college invoices
+          </div>
+          <div className="grid" style={{ ["--min" as string]: "200px" }}>
+            <label className="field">
+              <span>Account holder</span>
+              <input className="input" type="text" name="companyBankAccountName" defaultValue={bank.companyBankAccountName ?? ""} />
+            </label>
+            <label className="field">
+              <span>Bank name</span>
+              <input className="input" type="text" name="companyBankName" defaultValue={bank.companyBankName ?? ""} />
+            </label>
+            <label className="field">
+              <span>Account number</span>
+              <input className="input" type="text" name="companyBankAccountNumber" defaultValue={bank.companyBankAccountNumber ?? ""} />
+            </label>
+            <label className="field">
+              <span>IFSC</span>
+              <input className="input" type="text" name="companyBankIfsc" defaultValue={bank.companyBankIfsc ?? ""} />
+            </label>
+            <label className="field">
+              <span>GST number</span>
+              <input className="input" type="text" name="companyGstNumber" defaultValue={bank.companyGstNumber ?? ""} />
+            </label>
+          </div>
+        </>
       )}
 
-      {state?.ok && (
-        <p className="flex items-center gap-1.5 text-sm text-green-700">
-          <CheckCircle2 className="size-4" /> Saved.
-        </p>
-      )}
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+      {state?.ok && <span className="small" style={{ color: "var(--success-text)" }}>Saved.</span>}
+      {state?.error && <span className="error-text">{state.error}</span>}
 
-      <Button type="submit" disabled={isPending} className="bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Save
-      </Button>
+      <div className="split">
+        <span />
+        <button className="btn btn-primary" type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Save changes"}
+        </button>
+      </div>
     </form>
   );
 }
