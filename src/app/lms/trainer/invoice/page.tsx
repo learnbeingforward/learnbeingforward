@@ -133,20 +133,47 @@ export default async function TrainerInvoicePage({
             Ready to invoice ({billable.length} session{billable.length !== 1 ? "s" : ""})
           </h2>
           {billable.length === 0 ? (
-            <div className="empty">
-              <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
-                <Icon name="clock" size={22} />
-              </span>
-              <div className="h3" style={{ color: "var(--text)" }}>
-                No completed sessions are ready to invoice yet.
+            <>
+              <div className="empty">
+                <span className="icon-box gold" style={{ margin: "0 auto 10px", width: 48, height: 48, borderRadius: "50%" }}>
+                  <Icon name="clock" size={22} />
+                </span>
+                <div className="h3" style={{ color: "var(--text)" }}>
+                  No completed sessions are ready to invoice yet.
+                </div>
+                <p className="small muted" style={{ marginTop: 6 }}>
+                  This fills up as you mark attendance for your classes.
+                </p>
               </div>
-              <p className="small muted" style={{ marginTop: 6 }}>
-                This fills up as you mark attendance for your classes.
-              </p>
-            </div>
+              <div className="label" style={{ margin: "18px 0 10px" }}>
+                How a ready session looks
+              </div>
+              <div className="table-wrap">
+                <table className="table m-cards" style={{ minWidth: 560 }}>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Batch</th>
+                      <th>Module</th>
+                      <th>Hours</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-label="Date">Sep 16</td>
+                      <td data-label="Batch">Sunrise — Backend — B1</td>
+                      <td data-label="Module">Server Frameworks</td>
+                      <td data-label="Hours">2</td>
+                      <td data-label="Amount">₹2,000</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <div className="table-wrap">
-              <table className="table" style={{ minWidth: 560 }}>
+              <table className="table m-cards" style={{ minWidth: 560 }}>
                 <thead>
                   <tr>
                     <th>Date</th>
@@ -159,13 +186,13 @@ export default async function TrainerInvoicePage({
                 <tbody>
                   {billable.map((s) => (
                     <tr key={s.id}>
-                      <td>{format(s.sessionDate, "MMM d")}</td>
-                      <td>
+                      <td data-label="Date">{format(s.sessionDate, "MMM d")}</td>
+                      <td data-label="Batch">
                         {s.batch.college.name} — {s.batch.name}
                       </td>
-                      <td>{s.courseModule?.title ?? s.topic ?? "—"}</td>
-                      <td>2</td>
-                      <td>₹{2 * trainer.hourlyRate}</td>
+                      <td data-label="Module">{s.courseModule?.title ?? s.topic ?? "—"}</td>
+                      <td data-label="Hours">2</td>
+                      <td data-label="Amount">₹{2 * trainer.hourlyRate}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -196,13 +223,15 @@ export default async function TrainerInvoicePage({
         </section>
       </div>
 
-      {pastInvoices.length > 0 && (
-        <section className="card">
-          <h2 className="h2" style={{ marginBottom: 18 }}>
-            Past invoices
-          </h2>
+      <section className="card">
+        <h2 className="h2" style={{ marginBottom: 18 }}>
+          Past invoices
+        </h2>
+        {pastInvoices.length === 0 ? (
+          <p className="empty">No invoices submitted yet.</p>
+        ) : (
           <div className="table-wrap">
-            <table className="table" style={{ minWidth: 520 }}>
+            <table className="table m-cards" style={{ minWidth: 520 }}>
               <thead>
                 <tr>
                   <th>Invoice</th>
@@ -214,14 +243,14 @@ export default async function TrainerInvoicePage({
               <tbody>
                 {pastInvoices.map((inv) => (
                   <tr key={inv.id}>
-                    <td>
+                    <td data-label="Invoice">
                       <Link href={`/lms/trainer/invoice?invoiceId=${inv.id}`} className="strong">
                         INV-{inv.id.slice(-6).toUpperCase()}
                       </Link>
                     </td>
-                    <td>{format(inv.submittedAt, "MMM yyyy")}</td>
-                    <td>₹{inv.totalAmount}</td>
-                    <td>
+                    <td data-label="Period">{format(inv.submittedAt, "MMM yyyy")}</td>
+                    <td data-label="Amount">₹{inv.totalAmount}</td>
+                    <td data-label="Status">
                       <span
                         className={`pill ${
                           !inv.submitted ? "" : inv.status === "APPROVED" ? "success" : inv.status === "REJECTED" ? "danger" : "warning"
@@ -235,8 +264,8 @@ export default async function TrainerInvoicePage({
               </tbody>
             </table>
           </div>
-        </section>
-      )}
+        )}
+      </section>
     </AppShell>
   );
 }

@@ -44,7 +44,7 @@ export default async function TrainerAttendancePage({
             <p className="muted">No sessions awaiting attendance.</p>
           ) : (
             <div className="table-wrap">
-              <table className="table" style={{ minWidth: 820 }}>
+              <table className="table m-cards" style={{ minWidth: 820 }}>
                 <thead>
                   <tr>
                     <th>Session</th>
@@ -57,26 +57,26 @@ export default async function TrainerAttendancePage({
                 <tbody>
                   {pending.map((s) => (
                     <tr key={s.id}>
-                      <td>
+                      <td data-label="Session">
                         <div className="strong">{format(s.sessionDate, "EEE, MMM d, yyyy")}</div>
                         <div className="small muted">
                           Slot {s.slotNumber} · {s.startTime}–{s.endTime}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Batch">
                         {s.batch.college.name} — {s.batch.name}
                       </td>
-                      <td>{s.courseModule?.title ?? s.topic ?? "—"}</td>
-                      <td>
+                      <td data-label="Module">{s.courseModule?.title ?? s.topic ?? "—"}</td>
+                      <td data-label="Status">
                         {s.sessionDate < new Date() ? (
                           <span className="pill danger">Overdue</span>
                         ) : (
                           <span className="pill warning">Pending</span>
                         )}
                       </td>
-                      <td className="actions">
+                      <td data-label="">
                         <Link className="btn btn-primary btn-sm" href={`/lms/trainer/attendance?sessionId=${s.id}`}>
-                          {s.sessionDate < new Date() ? "Mark now" : "Mark attendance"}
+                          Mark attendance
                         </Link>
                       </td>
                     </tr>
@@ -132,20 +132,25 @@ export default async function TrainerAttendancePage({
       }
     >
       <section className="card">
-        <div className="split" style={{ marginBottom: 16, gap: 12 }}>
-          <div className="stat-inline">
-            <span className="icon-box gold">
-              <Icon name="calendar" size={18} />
-            </span>
-            <div>
-              <div className="strong">
-                {format(trainingSession.sessionDate, "EEE, MMM d, yyyy")} · Slot {trainingSession.slotNumber} ({trainingSession.startTime}–{trainingSession.endTime})
-              </div>
-              <div className="small muted">Module: {moduleTitle}</div>
-            </div>
-          </div>
-        </div>
         <MarkAttendanceList
+          sessionInfo={
+            <div className="stat-inline">
+              <span className="icon-box gold">
+                <Icon name="calendar" size={18} />
+              </span>
+              <div>
+                <div className="strong">
+                  {format(trainingSession.sessionDate, "EEE, MMM d, yyyy")} · Slot {trainingSession.slotNumber} ({trainingSession.startTime}–{trainingSession.endTime})
+                </div>
+                <div className="small muted">
+                  Module: {moduleTitle} ·{" "}
+                  <span className={`pill ${trainingSession.sessionDate < new Date() ? "danger" : "warning"}`}>
+                    {trainingSession.sessionDate < new Date() ? "Overdue" : "Pending"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
           moduleTitle={moduleTitle}
           students={trainingSession.batch.enrollments.map((e) => ({ enrollmentId: e.id, name: e.student.name, usn: e.student.usn }))}
           action={submitSessionAttendance.bind(null, trainingSession.id)}

@@ -17,11 +17,7 @@ export default async function TrainerSchedulePage() {
   });
 
   const now = new Date();
-  // Past sessions with no attendance taken are overdue, not "upcoming" — a
-  // session from months ago sitting in the same list as tomorrow's class
-  // made it easy to miss that it still needed marking.
-  const overdue = sessions.filter((s) => !s.attendanceTaken && s.sessionDate < now);
-  const pending = sessions.filter((s) => !s.attendanceTaken && s.sessionDate >= now);
+  const upcomingAndPending = sessions.filter((s) => !s.attendanceTaken);
 
   function groupByDate(list: typeof sessions) {
     const byDate: { date: Date; sessions: typeof sessions }[] = [];
@@ -32,9 +28,14 @@ export default async function TrainerSchedulePage() {
     }
     return byDate;
   }
-  const overdueByDate = groupByDate(overdue);
-  const byDate = groupByDate(sessions);
-  const upcoming = pending.slice(0, 6);
+  const byDate = groupByDate(upcomingAndPending);
+
+  // The timeline sidebar follows whichever batch has the soonest session
+  // still needing attendance — that's the batch the trainer is most likely
+  // mid-way through right now.
+  const timelineBatchId = upcomingAndPending[0]?.batchId ?? sessions[0]?.batchId;
+  const timelineBatch = timelineBatchId ? sessions.find((s) => s.batchId === timelineBatchId)?.batch : undefined;
+  const timelineSessions = timelineBatchId ? sessions.filter((s) => s.batchId === timelineBatchId).slice(0, 8) : [];
 
   return (
     <AppShell nav={TRAINER_NAV} active="schedule" user={{ name: trainer.name, subtitle: "Trainer" }} crumb="Schedule" title="Your schedule" subtitle="All classes assigned to you.">
@@ -43,18 +44,29 @@ export default async function TrainerSchedulePage() {
       ) : (
         <div className="row">
           <section className="card grow">
-            {overdueByDate.length > 0 && (
-              <div style={{ marginBottom: 24 }}>
-                <h2 className="h2" style={{ marginBottom: 18, color: "var(--danger)" }}>
-                  Overdue — needs attendance ({overdue.length})
-                </h2>
-                {overdueByDate.map((group) => (
-                  <div key={`overdue-${group.date.toISOString()}`} style={{ marginBottom: 16 }}>
-                    <div className="label" style={{ marginBottom: 10 }}>
-                      {format(group.date, "EEE, MMM d, yyyy")}
-                    </div>
-                    <ul className="list">
-                      {group.sessions.map((s) => (
+            <div className="split" style={{ marginBottom: 18 }}>
+              <div>
+                <h2 className="h2">Upcoming &amp; pending</h2>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="segmented">
+                  <button aria-pressed="true" type="button">List</button>
+                  <button aria-pressed="false" type="button">Calendar</button>
+                </div>
+              </div>
+            </div>
+            {byDate.length === 0 ? (
+              <p className="empty">Nothing pending right now.</p>
+            ) : (
+              byDate.map((group) => (
+                <div key={group.date.toISOString()} style={{ marginBottom: 16 }}>
+                  <div className="label" style={{ marginBottom: 10 }}>
+                    {format(group.date, "EEE, MMM d, yyyy")}
+                  </div>
+                  <ul className="list">
+                    {group.sessions.map((s) => {
+                      const overdue = s.sessionDate < now;
+                      return (
                         <li key={s.id} className="list-row" style={{ flexWrap: "wrap" }}>
                           <div style={{ textAlign: "center", minWidth: 70 }}>
                             <div className="strong">{s.startTime}</div>
@@ -66,68 +78,28 @@ export default async function TrainerSchedulePage() {
                               {s.batch.college.name} — {s.batch.name}
                             </div>
                           </div>
-                          <span className="pill danger">Overdue</span>
-                          <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
-                            Mark now
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-                <div className="divider" />
-              </div>
-            )}
-            <h2 className="h2" style={{ marginBottom: 18 }}>
-              All sessions
-            </h2>
-            {byDate.map((group) => (
-              <div key={group.date.toISOString()} style={{ marginBottom: 16 }}>
-                <div className="label" style={{ marginBottom: 10 }}>
-                  {format(group.date, "EEE, MMM d, yyyy")}
-                </div>
-                <ul className="list">
-                  {group.sessions.map((s) => (
-                    <li key={s.id} className="list-row" style={{ flexWrap: "wrap" }}>
-                      <div style={{ textAlign: "center", minWidth: 70 }}>
-                        <div className="strong">{s.startTime}</div>
-                        <div className="small muted">Slot {s.slotNumber}</div>
-                      </div>
-                      <div className="grow">
-                        <div className="strong">{s.courseModule?.title ?? s.topic ?? "Topic TBD"}</div>
-                        <div className="small muted">
-                          {s.batch.college.name} — {s.batch.name}
-                        </div>
-                      </div>
-                      {s.attendanceTaken ? (
-                        <span className="pill success">Attendance taken</span>
-                      ) : s.sessionDate < now ? (
-                        <>
-                          <span className="pill danger">Overdue</span>
-                          <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
-                            Mark now
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          <span className="pill warning">Attendance pending</span>
+                          <span className={`pill ${overdue ? "danger" : "warning"}`}>
+                            {overdue ? "Attendance overdue" : "Attendance pending"}
+                          </span>
                           <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
                             Mark attendance
                           </Link>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))
+            )}
           </section>
           <section className="card side">
-            <h2 className="h2" style={{ marginBottom: 18 }}>
-              Next up
-            </h2>
+            <div className="split" style={{ marginBottom: 18 }}>
+              <div>
+                <h2 className="h2">{timelineBatch ? `${timelineBatch.name} timeline` : "Batch timeline"}</h2>
+              </div>
+            </div>
             <ul className="timeline">
-              {upcoming.map((s) => (
+              {timelineSessions.map((s) => (
                 <li key={s.id}>
                   <div className="strong">{s.courseModule?.title ?? s.topic ?? "Topic TBD"}</div>
                   <div className="small muted">
@@ -135,7 +107,7 @@ export default async function TrainerSchedulePage() {
                   </div>
                 </li>
               ))}
-              {upcoming.length === 0 && <li className="small muted">Nothing pending.</li>}
+              {timelineSessions.length === 0 && <li className="small muted">Nothing scheduled.</li>}
             </ul>
           </section>
         </div>

@@ -96,14 +96,12 @@ export async function getEligibleStudentsForBatch(batchId: string) {
     throw new Error("Not your batch.");
   }
 
-  const students = batch.enrollments
-    .map((e) => {
-      const total = e.attendanceRecords.length;
-      const present = e.attendanceRecords.filter((r) => r.present).length;
-      const pct = total > 0 ? Math.round((present / total) * 100) : 0;
-      return { enrollmentId: e.id, studentId: e.studentId, name: e.student.name, pct, eligible: total > 0 && pct >= ATTENDANCE_THRESHOLD };
-    })
-    .filter((s) => s.eligible);
+  const students = batch.enrollments.map((e) => {
+    const total = e.attendanceRecords.length;
+    const present = e.attendanceRecords.filter((r) => r.present).length;
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { enrollmentId: e.id, studentId: e.studentId, name: e.student.name, pct, eligible: total > 0 && pct >= ATTENDANCE_THRESHOLD };
+  });
 
   return { batchName: batch.name, courseName: batch.course.name, modules: batch.course.modules.map((m) => ({ id: m.id, title: m.title, hasBook: !!m.mainPdfUrl })), students };
 }

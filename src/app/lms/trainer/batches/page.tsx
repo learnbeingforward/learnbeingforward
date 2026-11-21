@@ -24,8 +24,9 @@ export default async function TrainerBatchesPage({
       where: { id: batchId },
       include: {
         college: true,
-        course: true,
+        course: { include: { modules: { orderBy: { order: "asc" } } } },
         trainingSessions: { include: { courseModule: true }, orderBy: [{ sessionDate: "asc" }, { slotNumber: "asc" }] },
+        enrollments: { include: { student: true, attendanceRecords: true } },
       },
     });
     if (!batch || batch.trainerId !== trainerId) {
@@ -41,68 +42,161 @@ export default async function TrainerBatchesPage({
     const completed = batch.trainingSessions.filter((s) => s.attendanceTaken);
     const overdue = batch.trainingSessions.filter((s) => !s.attendanceTaken && s.sessionDate < now);
     const upcoming = batch.trainingSessions.filter((s) => !s.attendanceTaken && s.sessionDate >= now);
+    const coveredModuleIds = new Set(completed.map((s) => s.courseModuleId).filter((id): id is string => !!id));
 
     return (
-      <AppShell nav={TRAINER_NAV} active="batches" user={shellUser} crumb="My Batches" title={batch.name} subtitle={`${batch.college.name} — ${batch.course.name}`}>
-        <BackLink href="/lms/trainer/batches" label="Back to My Batches" />
+      <AppShell
+        nav={TRAINER_NAV}
+        active="batches"
+        user={shellUser}
+        crumb={`My Batches › ${batch.name}`}
+        title={batch.name}
+        subtitle={`${batch.college.name} · ${batch.enrollments.length} students`}
+        actions={
+          <Link className="btn btn-ghost-light" href="/lms/trainer/batches">
+            <Icon name="arrowL" size={16} />
+            Back to My Batches
+          </Link>
+        }
+      >
         <section className="card">
-          <h2 className="h2" style={{ color: "var(--success-text)" }}>
-            Completed sessions ({completed.length})
-          </h2>
-          {completed.length === 0 ? (
-            <p className="muted" style={{ marginTop: 12 }}>No sessions completed yet.</p>
-          ) : (
-            <ul className="list" style={{ marginTop: 12 }}>
-              {completed.map((s) => (
-                <li key={s.id} className="list-row">
-                  <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
-                  <span className="small muted">
-                    {format(s.sessionDate, "MMM d, yyyy")} · Slot {s.slotNumber} ({s.startTime}–{s.endTime})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="grid" style={{ ["--min" as string]: "150px" }}>
+            <div className="tile">
+              <div className="label">Students</div>
+              <div className="value">{batch.enrollments.length}</div>
+            </div>
+            <div className="tile">
+              <div className="label">Completed sessions</div>
+              <div className="value">{completed.length}</div>
+            </div>
+            <div className="tile danger">
+              <div className="label">Attendance overdue</div>
+              <div className="value">{overdue.length}</div>
+            </div>
+            <div className="tile">
+              <div className="label">Modules covered</div>
+              <div className="value">
+                {coveredModuleIds.size} / {batch.course.modules.length}
+              </div>
+            </div>
+          </div>
         </section>
-        {overdue.length > 0 && (
-          <section className="card">
-            <h2 className="h2" style={{ color: "var(--danger)" }}>
-              Overdue — needs attendance ({overdue.length})
+        <div className="row">
+          <div className="stack grow" style={{ gap: 20 }}>
+            <section className="card">
+              <h2 className="h2" style={{ marginBottom: 18 }}>
+                Sessions
+              </h2>
+              <div className="label" style={{ marginBottom: 8 }}>
+                Waiting for attendance
+              </div>
+              {[...overdue, ...upcoming].length === 0 ? (
+                <p className="muted small">Nothing waiting on attendance.</p>
+              ) : (
+                <ul className="list">
+                  {[...overdue, ...upcoming].map((s) => (
+                    <li key={s.id} className="list-row" style={{ flexWrap: "wrap" }}>
+                      <span className="slot">
+                        Slot {s.slotNumber}
+                        <small>
+                          {s.startTime}–{s.endTime}
+                        </small>
+                      </span>
+                      <div className="grow">
+                        <div className="strong">{s.courseModule?.title ?? s.topic ?? "—"}</div>
+                        <div className="small muted">{format(s.sessionDate, "EEE, MMM d, yyyy")}</div>
+                      </div>
+                      <span className={`pill ${s.sessionDate < now ? "danger" : "warning"}`}>
+                        {s.sessionDate < now ? "Overdue" : "Pending"}
+                      </span>
+                      <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
+                        Mark attendance
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="label" style={{ margin: "18px 0 8px" }}>
+                Completed
+              </div>
+              {completed.length === 0 ? (
+                <p className="muted small">No sessions completed yet.</p>
+              ) : (
+                <ul className="list">
+                  {completed.map((s) => (
+                    <li key={s.id} className="list-row">
+                      <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
+                      <span className="small muted">{format(s.sessionDate, "MMM d, yyyy")}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <section className="card">
+              <h2 className="h2" style={{ marginBottom: 18 }}>
+                Students ({batch.enrollments.length})
+              </h2>
+              <div className="table-wrap">
+                <table className="table m-cards" style={{ minWidth: 560 }}>
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>USN</th>
+                      <th>Attended</th>
+                      <th>Attendance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batch.enrollments.map((e) => {
+                      const total = e.attendanceRecords.length;
+                      const present = e.attendanceRecords.filter((r) => r.present).length;
+                      const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+                      const initials = e.student.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+                      return (
+                        <tr key={e.id}>
+                          <td data-label="Student">
+                            <div className="stat-inline">
+                              <span className="avatar sm">{initials}</span>
+                              <div>
+                                <div className="strong">{e.student.name}</div>
+                                <div className="small muted">{batch.college.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td data-label="USN">{e.student.usn ?? "—"}</td>
+                          <td data-label="Attended">
+                            {present} / {total}
+                          </td>
+                          <td data-label="Attendance">
+                            {total === 0 ? <span className="muted small">No classes yet</span> : `${pct}%`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <section className="card side">
+            <h2 className="h2" style={{ marginBottom: 18 }}>
+              Course progress
             </h2>
-            <ul className="list" style={{ marginTop: 12 }}>
-              {overdue.map((s) => (
-                <li key={s.id} className="list-row">
-                  <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
-                  <span className="small muted">
-                    {format(s.sessionDate, "MMM d, yyyy")} · Slot {s.slotNumber} ({s.startTime}–{s.endTime})
+            <ul className="list">
+              {batch.course.modules.map((m) => (
+                <li key={m.id} className="split" style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                  <span className="strong">{m.title}</span>
+                  <span className={`pill ${coveredModuleIds.has(m.id) ? "success" : ""}`}>
+                    {coveredModuleIds.has(m.id) ? "Covered" : "Not started"}
                   </span>
-                  <Link className="btn btn-primary btn-sm" href="/lms/trainer/attendance">
-                    Mark now
-                  </Link>
                 </li>
               ))}
             </ul>
+            <p className="small muted" style={{ marginTop: 12 }}>
+              A module is covered when you mark attendance for a session on it. Present students then get its content.
+            </p>
           </section>
-        )}
-        <section className="card">
-          <h2 className="h2" style={{ color: "var(--warning-text)" }}>
-            Upcoming sessions ({upcoming.length})
-          </h2>
-          {upcoming.length === 0 ? (
-            <p className="muted" style={{ marginTop: 12 }}>Nothing scheduled yet.</p>
-          ) : (
-            <ul className="list" style={{ marginTop: 12 }}>
-              {upcoming.map((s) => (
-                <li key={s.id} className="list-row">
-                  <span className="grow strong">{s.courseModule?.title ?? s.topic ?? "—"}</span>
-                  <span className="small muted">
-                    {format(s.sessionDate, "MMM d, yyyy")} · Slot {s.slotNumber} ({s.startTime}–{s.endTime})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        </div>
       </AppShell>
     );
   }

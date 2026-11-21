@@ -1,19 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { RequiredMark } from "@/components/ui/required-mark";
+import { Icon } from "@/components/lbf/icons";
 import { FileUploadField } from "@/components/lms/FileUploadField";
 import { createSessionContent, type CreateSessionContentState } from "@/lib/actions/session-content";
 
@@ -44,89 +32,85 @@ export function UploadContentForm({
   );
 
   return (
-    <form action={formAction} className="space-y-5 rounded-xl border border-border bg-white p-6">
-      <div>
-        <Label htmlFor="title">
-          Title
-          <RequiredMark />
-        </Label>
-        <Input id="title" name="title" required className="mt-1.5" placeholder="e.g. Arrays & Time Complexity" />
-      </div>
-      <div>
-        <Label htmlFor="description">
-          Description
-          <RequiredMark />
-        </Label>
-        <Textarea id="description" name="description" required rows={3} className="mt-1.5" />
-      </div>
-      <div>
-        <Label htmlFor="courseId">
-          Course
-          <RequiredMark />
-        </Label>
-        <Select name="courseId" required value={courseId} onValueChange={(v) => setCourseId(String(v))}>
-          <SelectTrigger className="mt-1.5 w-full">
-            <SelectValue placeholder="Select course">
-              {(value: string | null) => courses.find((c) => c.id === value)?.name ?? "Select course"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
+    <form action={formAction} className="stack" style={{ gap: 14 }}>
+      <label className="field">
+        <span>
+          Title <span className="req" aria-hidden="true">*</span>
+        </span>
+        <input className="input" type="text" name="title" required placeholder="e.g. Arrays & Time Complexity" />
+      </label>
+      <label className="field">
+        <span>
+          Description <span className="req" aria-hidden="true">*</span>
+        </span>
+        <textarea className="textarea" name="description" required rows={3} />
+      </label>
+      <div className="grid" style={{ ["--min" as string]: "200px" }}>
+        <label className="field">
+          <span>
+            Course <span className="req" aria-hidden="true">*</span>
+          </span>
+          <select
+            className="select"
+            name="courseId"
+            required
+            value={courseId}
+            onChange={(e) => {
+              setCourseId(e.target.value);
+              setCourseModuleId("");
+            }}
+          >
+            <option value="">Select course</option>
             {courses.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
+              <option key={c.id} value={c.id}>
                 {c.name}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="courseModuleId">
-          Module
-          <RequiredMark />
-        </Label>
-        <Select name="courseModuleId" required disabled={!courseId} value={courseModuleId} onValueChange={(v) => setCourseModuleId(v ?? "")}>
-          <SelectTrigger className="mt-1.5 w-full">
-            <SelectValue placeholder={courseId ? "Select module" : "Select a course first"}>
-              {(value: string | null) => courseModules.find((m) => m.id === value)?.title ?? "Select module"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
+          </select>
+        </label>
+        <label className="field">
+          <span>
+            Module <span className="req" aria-hidden="true">*</span>
+          </span>
+          <select
+            className="select"
+            name="courseModuleId"
+            required
+            disabled={!courseId}
+            value={courseModuleId}
+            onChange={(e) => setCourseModuleId(e.target.value)}
+          >
+            <option value="">{courseId ? "Select module" : "Select a course first"}</option>
             {courseModules.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
+              <option key={m.id} value={m.id}>
                 {m.title}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
+          </select>
+        </label>
       </div>
       {subModuleOptions.length > 0 && (
-        <div>
-          <Label htmlFor="courseSubModuleId">Sub-Module (optional)</Label>
-          <Select name="courseSubModuleId">
-            <SelectTrigger className="mt-1.5 w-full">
-              <SelectValue placeholder="Select sub-module (if any)">
-                {(value: string | null) => subModuleOptions.find((sm) => sm.id === value)?.title ?? "Select sub-module (if any)"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {subModuleOptions.map((sm) => (
-                <SelectItem key={sm.id} value={sm.id}>
-                  {sm.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <label className="field">
+          <span>Sub-Module (optional)</span>
+          <select className="select" name="courseSubModuleId">
+            <option value="">Select sub-module (if any)</option>
+            {subModuleOptions.map((sm) => (
+              <option key={sm.id} value={sm.id}>
+                {sm.title}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
-      <FileUploadField name="fileUrl" typeFieldName="fileType" label="File (PDF, PPT, or Word)" category="content" />
+      <FileUploadField name="fileUrl" typeFieldName="fileType" label="File (PDF, PPT or Word)" category="content" />
 
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-      {state?.ok && <p className="text-sm text-green-700">Uploaded.</p>}
+      {state?.error && <span className="error-text">{state.error}</span>}
+      {state?.ok && <span className="small" style={{ color: "var(--success-text)" }}>Uploaded.</span>}
 
-      <Button type="submit" disabled={isPending} className="w-full bg-indigo text-white hover:bg-indigo/90">
-        {isPending && <Loader2 className="size-4 animate-spin" />}
-        Upload
-      </Button>
+      <button className="btn btn-primary" type="submit" disabled={isPending}>
+        <Icon name="upload" size={16} />
+        {isPending ? "Uploading…" : "Upload"}
+      </button>
     </form>
   );
 }

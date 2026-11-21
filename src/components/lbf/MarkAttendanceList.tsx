@@ -9,10 +9,12 @@ export function MarkAttendanceList({
   students,
   moduleTitle,
   action,
+  sessionInfo,
 }: {
   students: Student[];
   moduleTitle: string;
   action: (formData: FormData) => Promise<void>;
+  sessionInfo: React.ReactNode;
 }) {
   // undefined = not yet marked — nobody starts pre-marked, so submitting
   // without reviewing can't silently mark everyone present, unlock content
@@ -39,8 +41,8 @@ export function MarkAttendanceList({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="split" style={{ marginBottom: 16, gap: 12 }}>
-        <span className="h3">Students</span>
+      <div className="split" style={{ marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
+        {sessionInfo}
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="btn btn-sm" onClick={() => setPresent(Object.fromEntries(students.map((s) => [s.enrollmentId, true])))}>
             <Icon name="check" size={16} />
