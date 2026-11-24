@@ -109,6 +109,13 @@ export async function GET(req: NextRequest) {
   const ext = path.extname(absPath).toLowerCase();
   const contentType = MIME_BY_EXT[ext] ?? "application/octet-stream";
   const safeName = filename.replace(/["\r\n]/g, "").trim() || "document";
+  // HTTP header values are Latin-1 only — a title with an em dash, curly
+  // quote or any other non-Latin-1 character (very common here, e.g.
+  // "Course — Complete Notes") would otherwise throw when the header is set,
+  // turning the whole response into a 500 instead of ever serving the file.
+  // filename* carries the real UTF-8 name for clients that support it
+  // (RFC 5987); filename is an ASCII-safe fallback for ones that don't.
+  const asciiName = safeName.replace(/[^\x20-\x7E]/g, "-") || "document";
 
   let body: Uint8Array = new Uint8Array(buffer);
   if (isBuyer && ext === ".pdf") {
@@ -122,7 +129,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(new Uint8Array(body), {
     headers: {
       "Content-Type": contentType,
-      "Content-Disposition": `inline; filename="${safeName}${ext}"`,
+      "Content-Disposition": `inline; filename="${asciiName}${ext}"; filename*=UTF-8''${encodeURIComponent(safeName + ext)}`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
     },

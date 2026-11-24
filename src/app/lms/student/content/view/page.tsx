@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { STUDENT_NAV } from "@/components/lbf/nav-config";
 import { Icon } from "@/components/lbf/icons";
+import { PdfCanvasViewer } from "@/components/lms/PdfCanvasViewer";
 
 export default async function StudentContentViewerPage({
   searchParams,
@@ -24,13 +25,11 @@ export default async function StudentContentViewerPage({
   if (contentId) params.set("contentId", contentId);
   if (moduleId) params.set("moduleId", moduleId);
   if (sessionContentId) params.set("sessionContentId", sessionContentId);
-  const viewerSrc = `/api/content/view?${params.toString()}#toolbar=0&navpanes=0`;
+  const viewerSrc = `/api/content/view?${params.toString()}`;
 
   const viewer = (
-    <section className="card cv-main">
-      <div style={{ height: "80vh" }}>
-        <iframe src={viewerSrc} title={title ?? "Document"} style={{ width: "100%", height: "100%", border: "none" }} />
-      </div>
+    <section className="card cv-main" style={{ padding: 0, overflow: "hidden" }}>
+      <PdfCanvasViewer src={viewerSrc} title={title ?? "Document"} />
     </section>
   );
 

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/lbf/AppShell";
 import { BUYER_NAV } from "@/components/lbf/nav-config";
 import { BackLink } from "@/components/lms/BackLink";
+import { PdfCanvasViewer } from "@/components/lms/PdfCanvasViewer";
 
 export default async function BuyerContentViewerPage({
   searchParams,
@@ -17,15 +18,13 @@ export default async function BuyerContentViewerPage({
   const params = new URLSearchParams();
   if (contentId) params.set("contentId", contentId);
   if (moduleId) params.set("moduleId", moduleId);
-  const viewerSrc = `/api/content/view?${params.toString()}#toolbar=0&navpanes=0`;
+  const viewerSrc = `/api/content/view?${params.toString()}`;
 
   return (
     <AppShell nav={BUYER_NAV} active="purchases" user={shellUser} crumb="My Purchases" title={title ?? "Viewing"} subtitle="Viewable here only — not available to download or share.">
       <BackLink href={back || "/lms/buyer"} label="Back to My Purchases" />
       <section className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ height: "80vh" }}>
-          <iframe src={viewerSrc} title={title ?? "Document"} style={{ width: "100%", height: "100%", border: "none" }} />
-        </div>
+        <PdfCanvasViewer src={viewerSrc} title={title ?? "Document"} />
       </section>
     </AppShell>
   );
