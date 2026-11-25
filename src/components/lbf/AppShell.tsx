@@ -78,6 +78,17 @@ export function AppShell({
     });
   }
 
+  // Every crumb segment that matches a real nav group or page label becomes a
+  // link to it; the last segment (the page you're already on) and any
+  // free-text segment (a college name, an assessment title) that doesn't
+  // match anything in the nav just stay as plain text.
+  const crumbHrefByLabel: Record<string, string> = {};
+  for (const g of nav.groups) {
+    if (g.pages[0]) crumbHrefByLabel[g.label] = g.pages[0].href;
+    for (const p of g.pages) crumbHrefByLabel[p.label] = p.href;
+  }
+  const crumbParts = crumb ? crumb.split("›").map((s) => s.trim()).filter(Boolean) : [];
+
   let tabs = nav.groups.slice(0, 4);
   if (!tabs.some((g) => g.key === group.key)) tabs = tabs.slice(0, 3).concat([group]);
   const inTabs = tabs.some((g) => g.key === group.key);
@@ -149,7 +160,19 @@ export function AppShell({
 
           <div className="page-head">
             <div>
-              {crumb && <div className="crumb">{crumb}</div>}
+              {crumbParts.length > 0 && (
+                <div className="crumb">
+                  {crumbParts.map((part, i) => {
+                    const href = i < crumbParts.length - 1 ? crumbHrefByLabel[part] : undefined;
+                    return (
+                      <span key={i}>
+                        {i > 0 && " › "}
+                        {href ? <Link href={href}>{part}</Link> : part}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <h1>{title}</h1>
               {subtitle && <p>{subtitle}</p>}
             </div>

@@ -208,6 +208,8 @@ table.table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
 .sub-nav a.active{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
 .page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:28px}
 .page-head .crumb{font-size:12px;color:var(--on-navy-muted)}
+.page-head .crumb a{color:var(--on-navy-muted);text-decoration:none}
+.page-head .crumb a:hover{color:#fff;text-decoration:underline}
 .page-head h1{color:#fff;font-size:26px;font-weight:700;margin-top:4px}
 .page-head p{color:var(--on-navy-muted);margin-top:4px}
 .user-chip{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 4px;border-radius:999px;background:var(--navy-2)}

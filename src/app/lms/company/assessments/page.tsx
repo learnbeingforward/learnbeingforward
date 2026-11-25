@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
-import { DashboardShell } from "@/components/layout/DashboardShell";
 import { AppShell } from "@/components/lbf/AppShell";
 import { buildSuperAdminNav } from "@/components/lbf/nav-config";
 import { Icon, type IconName } from "@/components/lbf/icons";
 import { requireCompanyPageAccess } from "@/lib/employee-access";
 import { BackLink } from "@/components/lms/BackLink";
-import { Badge } from "@/components/ui/badge";
 import { CreateAssessmentForm } from "@/components/lms/CreateAssessmentForm";
 import { AssignAssessmentForm } from "@/components/lms/AssignAssessmentForm";
 import { deleteAssessment, type SectionKind } from "@/lib/actions/assessments";
@@ -94,7 +92,7 @@ export default async function CompanyAssessmentsPage({
     questionId?: string;
   }>;
 }) {
-  const { session, navLinks, keys, hasUnread } = await requireCompanyPageAccess("assessments.build");
+  const { session, keys, hasUnread } = await requireCompanyPageAccess("assessments.build");
   const nav = buildSuperAdminNav(session.user.role, keys);
   const shellUser = { name: session.user.name ?? "Admin", subtitle: ROLE_LABEL[session.user.role ?? ""] ?? "Admin" };
 
@@ -161,45 +159,50 @@ export default async function CompanyAssessmentsPage({
       );
     }
 
-    // ---------- Screens 2/3/4: Add/Edit a question (separate Assessment Portal design set — keep as-is) ----------
+    // ---------- Screens 2/3/4: Add/Edit a question (own indigo builder header below the
+    // normal top nav, so you can still navigate away without losing your place) ----------
     if (screen === "add-aptitude" || screen === "add-technical") {
       const kind = screen === "add-aptitude" ? "aptitude" : "technical";
       const existingQ = questionId ? assessment.questions.find((q) => q.id === questionId) : undefined;
       return (
-        <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
-          <McqQuestionBuilder
-            assessmentId={assessmentId}
-            assessmentTitle={assessment.title}
-            sectionName={sectionName ?? "Aptitude"}
-            kind={kind}
-            backHref={backHref}
-            progressLabel={`${assessment.questions.length} question${assessment.questions.length !== 1 ? "s" : ""} added`}
-            existing={existingQ}
-          />
-        </DashboardShell>
+        <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title={assessment.title}>
+          <div style={{ marginTop: 96 }}>
+            <McqQuestionBuilder
+              assessmentId={assessmentId}
+              assessmentTitle={assessment.title}
+              sectionName={sectionName ?? "Aptitude"}
+              kind={kind}
+              backHref={backHref}
+              progressLabel={`${assessment.questions.length} question${assessment.questions.length !== 1 ? "s" : ""} added`}
+              existing={existingQ}
+            />
+          </div>
+        </AppShell>
       );
     }
 
     if (screen === "add-coding") {
       const existingQ = questionId ? assessment.questions.find((q) => q.id === questionId) : undefined;
       return (
-        <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
-          <CodingQuestionBuilder
-            assessmentId={assessmentId}
-            assessmentTitle={assessment.title}
-            sectionName={sectionName ?? "Coding"}
-            backHref={backHref}
-            progressLabel={`${assessment.questions.length} question${assessment.questions.length !== 1 ? "s" : ""} added`}
-            existing={
-              existingQ
-                ? {
-                    ...existingQ,
-                    testCases: existingQ.testCases.map((tc) => ({ ...tc, label: tc.label, weight: tc.weight })),
-                  }
-                : undefined
-            }
-          />
-        </DashboardShell>
+        <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title={assessment.title}>
+          <div style={{ marginTop: 96 }}>
+            <CodingQuestionBuilder
+              assessmentId={assessmentId}
+              assessmentTitle={assessment.title}
+              sectionName={sectionName ?? "Coding"}
+              backHref={backHref}
+              progressLabel={`${assessment.questions.length} question${assessment.questions.length !== 1 ? "s" : ""} added`}
+              existing={
+                existingQ
+                  ? {
+                      ...existingQ,
+                      testCases: existingQ.testCases.map((tc) => ({ ...tc, label: tc.label, weight: tc.weight })),
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        </AppShell>
       );
     }
 
@@ -232,57 +235,61 @@ export default async function CompanyAssessmentsPage({
       return { name, kind, shuffleEnabled: !!shuffleMap[name], questions };
     });
 
-    // ---------- Step 4: Review & Publish (separate Assessment Portal design set — keep as-is) ----------
+    // ---------- Step 4: Review & Publish (own indigo builder header below the normal top nav) ----------
     if (step === "4") {
       const draftCodingQuestions = assessment.questions.filter((q) => q.questionType === "CODING" && q.status !== "VALIDATED");
       return (
-        <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
-          <ReviewPublishScreen
-            assessment={assessment}
-            backHref={backHref}
-            sections={sections.map((s) => ({
-              name: s.name,
-              questionCount: s.questions.length,
-              totalMarks: s.questions.reduce((m, q) => m + q.marks, 0),
-            }))}
-            draftCodingQuestions={draftCodingQuestions.map((q) => ({ id: q.id, questionText: q.title || q.questionText, sectionName: q.sectionName }))}
-          />
-        </DashboardShell>
+        <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title={assessment.title}>
+          <div style={{ marginTop: 96 }}>
+            <ReviewPublishScreen
+              assessment={assessment}
+              backHref={backHref}
+              sections={sections.map((s) => ({
+                name: s.name,
+                questionCount: s.questions.length,
+                totalMarks: s.questions.reduce((m, q) => m + q.marks, 0),
+              }))}
+              draftCodingQuestions={draftCodingQuestions.map((q) => ({ id: q.id, questionText: q.title || q.questionText, sectionName: q.sectionName }))}
+            />
+          </div>
+        </AppShell>
       );
     }
 
     // ---------- Default: Screen 1 (Details + Sections & Questions + Proctoring & Rules) — the
-    // assessment-builder wizard renders its own header to match the separate Assessment Portal
-    // design set, so it keeps DashboardShell as-is. ----------
+    // assessment-builder wizard renders its own indigo header band below the normal top nav,
+    // so you keep the step-by-step builder look without losing the way out. ----------
     return (
-      <DashboardShell title="" subtitle="" navLinks={navLinks} hideTitleBlock>
-        {assessment.published && (
-          <div className="mx-auto mb-3 max-w-6xl">
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Published</Badge>
-          </div>
-        )}
-        <CreateAssessmentWizard
-          assessment={{
-            id: assessment.id,
-            title: assessment.title,
-            description: assessment.description,
-            durationMinutes: assessment.durationMinutes,
-            assessmentCode: assessment.assessmentCode,
-            passMark: assessment.passMark,
-            availableFrom: assessment.availableFrom?.toISOString() ?? null,
-            availableUntil: assessment.availableUntil?.toISOString() ?? null,
-            proctoringEnabled: assessment.proctoringEnabled,
-            requireFaceMatch: assessment.requireFaceMatch,
-            requireScreenShare: assessment.requireScreenShare,
-            blockCopyPaste: assessment.blockCopyPaste,
-            tabSwitchLimit: assessment.tabSwitchLimit,
-            instructionsTemplate: assessment.instructionsTemplate,
-            submissionMessage: assessment.submissionMessage,
-          }}
-          sections={sections}
-          backHref={backHref}
-        />
-      </DashboardShell>
+      <AppShell nav={nav} active="assessments" user={shellUser} hasUnread={hasUnread} crumb="Assessments" title={assessment.title}>
+        <div style={{ marginTop: 96 }}>
+          {assessment.published && (
+            <div className="mx-auto mb-3 max-w-6xl">
+              <span className="pill success">Published</span>
+            </div>
+          )}
+          <CreateAssessmentWizard
+            assessment={{
+              id: assessment.id,
+              title: assessment.title,
+              description: assessment.description,
+              durationMinutes: assessment.durationMinutes,
+              assessmentCode: assessment.assessmentCode,
+              passMark: assessment.passMark,
+              availableFrom: assessment.availableFrom?.toISOString() ?? null,
+              availableUntil: assessment.availableUntil?.toISOString() ?? null,
+              proctoringEnabled: assessment.proctoringEnabled,
+              requireFaceMatch: assessment.requireFaceMatch,
+              requireScreenShare: assessment.requireScreenShare,
+              blockCopyPaste: assessment.blockCopyPaste,
+              tabSwitchLimit: assessment.tabSwitchLimit,
+              instructionsTemplate: assessment.instructionsTemplate,
+              submissionMessage: assessment.submissionMessage,
+            }}
+            sections={sections}
+            backHref={backHref}
+          />
+        </div>
+      </AppShell>
     );
   }
 
@@ -433,7 +440,7 @@ export default async function CompanyAssessmentsPage({
           <p className="empty">No assessments created yet.</p>
         ) : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table m-cards" style={{ minWidth: 900 }}>
               <thead>
                 <tr>
                   <th>Assessment</th>
@@ -441,35 +448,33 @@ export default async function CompanyAssessmentsPage({
                   <th>Questions</th>
                   <th>Window</th>
                   <th>Sent</th>
-                  <th className="actions">Action</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {recent.map((a) => (
                   <tr key={a.id}>
-                    <td className="strong">{a.title}</td>
-                    <td>
+                    <td className="strong" data-label="Assessment">{a.title}</td>
+                    <td data-label="Category">
                       <span className="pill">{TYPE_LABELS[a.type].replace(" Assessment", "")}</span>
                     </td>
-                    <td>{a._count.questions}</td>
-                    <td>{a.availableFrom && a.availableUntil ? `${format(a.availableFrom, "MMM d, h:mm a")} – ${format(a.availableUntil, "MMM d, h:mm a")}` : "—"}</td>
-                    <td>{a._count.assignments}</td>
-                    <td className="actions">
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                        <Link className="btn btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}`}>
-                          Edit questions
-                        </Link>
-                        {a._count.questions > 0 &&
-                          (a._count.assignments > 0 ? (
-                            <Link className="btn btn-sm" href="/lms/company/assessments/submissions">
-                              Results
-                            </Link>
-                          ) : (
-                            <Link className="btn btn-primary btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}&mode=send`}>
-                              Send
-                            </Link>
-                          ))}
-                      </div>
+                    <td data-label="Questions">{a._count.questions}</td>
+                    <td data-label="Window">{a.availableFrom && a.availableUntil ? `${format(a.availableFrom, "MMM d, h:mm a")} – ${format(a.availableUntil, "MMM d, h:mm a")}` : "—"}</td>
+                    <td data-label="Sent">{a._count.assignments}</td>
+                    <td data-label="" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <Link className="btn btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}`}>
+                        Edit questions
+                      </Link>
+                      {a._count.questions > 0 &&
+                        (a._count.assignments > 0 ? (
+                          <Link className="btn btn-sm" href="/lms/company/assessments/submissions">
+                            Results
+                          </Link>
+                        ) : (
+                          <Link className="btn btn-primary btn-sm" href={`/lms/company/assessments?assessmentId=${a.id}&mode=send`}>
+                            Send
+                          </Link>
+                        ))}
                     </td>
                   </tr>
                 ))}

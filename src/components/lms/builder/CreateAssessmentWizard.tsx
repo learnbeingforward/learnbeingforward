@@ -75,6 +75,8 @@ export function CreateAssessmentWizard({
   return (
     <div>
       <BuilderHeader
+        backHref="/lms/company/assessments"
+        backLabel="Back to Assessments"
         breadcrumb="Assessments › Edit"
         title={assessment.title}
         rightSlot={
