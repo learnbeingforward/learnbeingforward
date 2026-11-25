@@ -113,14 +113,17 @@ export function BulkStudentUploadForm({ colleges }: { colleges?: College[] }) {
       {colleges && (
         <label className="field">
           <span>College</span>
-          <select className="select" name="collegeId" defaultValue="">
-            <option value="">Select college</option>
+          <select className="select" name="collegeId" defaultValue="" required>
+            <option value="" disabled>
+              Select college
+            </option>
             {colleges.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
+          <span className="small muted">Every student in this file is added to this one college — there's no per-row college column.</span>
         </label>
       )}
 

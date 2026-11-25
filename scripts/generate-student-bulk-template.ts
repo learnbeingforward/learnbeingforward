@@ -39,6 +39,28 @@ async function main() {
     password: "Welcome@123",
   });
 
+  // Branch gets a dropdown of the same branches used elsewhere on the site,
+  // plus "Other" — but it's not locked to the list (no error alert), so
+  // typing something else by hand still works, it just won't be suggested.
+  // The options live on their own sheet and are referenced by range rather
+  // than as an inline comma-joined string, which Excel caps at 255 characters
+  // — easy to blow past with branch names this long.
+  const branchChoices = [...BRANCH_OPTIONS, "Other"];
+  const branchSheet = workbook.addWorksheet("Branches");
+  branchSheet.state = "veryHidden";
+  branchChoices.forEach((b, i) => branchSheet.getCell(`A${i + 1}`).value = b);
+
+  const branchColumn = sheet.getColumn("branch").letter;
+  const branchListFormula = `Branches!$A$1:$A$${branchChoices.length}`;
+  for (let r = 2; r <= 500; r++) {
+    sheet.getCell(`${branchColumn}${r}`).dataValidation = {
+      type: "list",
+      allowBlank: true,
+      showErrorMessage: false,
+      formulae: [branchListFormula],
+    };
+  }
+
   const notes = workbook.addWorksheet("Read Me");
   notes.columns = [{ width: 90 }];
   notes.addRows([
@@ -51,6 +73,10 @@ async function main() {
     ["4. If you fill in Password, that exact password is used for the account (must be 8+ characters)."],
     ["5. Duplicate emails (within this file or already in the system) are skipped, not overwritten."],
     ["6. Delete the two example rows on the 'Students' sheet before uploading your real list."],
+    ["7. Branch has a dropdown with the common branches, plus \"Other\" — if yours isn't listed, just type"],
+    ["   it in directly, the cell isn't locked to the list."],
+    ["8. One upload = one college: whichever college you pick on the upload screen is used for every"],
+    ["   student in this file. To upload for more than one college, upload one file per college."],
   ]);
   notes.getCell("A1").font = { bold: true, size: 13 };
 

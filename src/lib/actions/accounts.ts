@@ -169,6 +169,25 @@ function normalizeHeader(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// A cell's .value isn't always a plain string — Excel represents a cell typed
+// with mixed formatting (common after copy-pasting from Word or another
+// sheet) as a { richText: [...] } object, a linked cell as { text, hyperlink },
+// and a formula cell as { formula, result }. Reading any of those with plain
+// String(...) gives "[object Object]" instead of the text someone actually
+// sees in the spreadsheet — silently turning a perfectly good row into
+// garbage (an "[object Object]" email fails the format check and the whole
+// row gets skipped with no obvious reason why).
+function cellToString(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") {
+    if ("richText" in value) return (value as { richText: { text: string }[] }).richText.map((r) => r.text).join("");
+    if ("text" in value) return String((value as { text: unknown }).text ?? "");
+    if ("result" in value) return cellToString((value as { result: unknown }).result);
+    if (value instanceof Date) return value.toLocaleDateString();
+  }
+  return String(value);
+}
+
 export async function bulkCreateStudents(
   _prevState: BulkCreateStudentsState,
   formData: FormData
@@ -205,15 +224,32 @@ export async function bulkCreateStudents(
   }
 
   const colMap: Record<string, number> = {};
+  const headerLabels: string[] = [];
   sheet.getRow(1).eachCell((cell, colNumber) => {
-    const canonical = HEADER_ALIASES[normalizeHeader(String(cell.value ?? ""))];
+    const raw = cellToString(cell.value);
+    if (raw.trim()) headerLabels.push(raw.trim());
+    const canonical = HEADER_ALIASES[normalizeHeader(raw)];
     if (canonical) colMap[canonical] = colNumber;
   });
+
+  // Fall back to a loose substring match for the two required columns, so a
+  // header we don't have an exact alias for (e.g. "Student's Full Name")
+  // still resolves instead of failing the whole upload.
+  if (!colMap.name || !colMap.email) {
+    sheet.getRow(1).eachCell((cell, colNumber) => {
+      const normalized = normalizeHeader(cellToString(cell.value));
+      if (!colMap.name && normalized.includes("name") && !normalized.includes("father")) colMap.name = colNumber;
+      if (!colMap.email && (normalized.includes("email") || normalized.includes("mail"))) colMap.email = colNumber;
+    });
+  }
 
   if (!colMap.name || !colMap.email) {
     return {
       ok: false,
-      error: "The file must have Name and Email columns — download the sample template for the expected format.",
+      error:
+        headerLabels.length > 0
+          ? `Couldn't find Name and Email columns in this file's header row (found: ${headerLabels.join(", ")}) — download the sample template for the expected format.`
+          : "The file must have Name and Email columns — download the sample template for the expected format.",
     };
   }
 
@@ -232,7 +268,7 @@ export async function bulkCreateStudents(
   const parsedRows: ParsedRow[] = [];
   for (let r = 2; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
-    const cellText = (col?: number) => (col ? String(row.getCell(col).value ?? "").trim() : "");
+    const cellText = (col?: number) => (col ? cellToString(row.getCell(col).value).trim() : "");
     const name = cellText(colMap.name);
     const email = cellText(colMap.email).toLowerCase();
     if (!name && !email) continue;
@@ -293,6 +329,14 @@ export async function bulkCreateStudents(
   const collegeIdInput = String(formData.get("collegeId") ?? "").trim();
   const collegeId = isCollegeAdmin ? session.user.collegeId : collegeIdInput || null;
 
+  // Every row in one upload goes to the same college — there's no per-row
+  // College column — so without one picked here, every account created would
+  // silently have no college at all, which is easy to mistake for "nothing
+  // was created" when it's not visible on a college-scoped page afterwards.
+  if (!isCollegeAdmin && !collegeId) {
+    return { ok: false, error: "Choose which college these students belong to before uploading." };
+  }
+
   for (const r of validRows) {
     if (existingEmails.has(r.email)) {
       skipped.push({ row: r.row, email: r.email, reason: "An account with this email already exists." });
@@ -333,7 +377,8 @@ export async function bulkCreateStudents(
         });
         created.push({ row: r.row, name: r.name, email: r.email, password: generated, status: "active" });
       }
-    } catch {
+    } catch (err) {
+      console.error(`[bulkCreateStudents] Row ${r.row} (${r.email}) failed:`, err);
       skipped.push({ row: r.row, email: r.email, reason: "Failed to create this account — please retry this row." });
     }
   }
