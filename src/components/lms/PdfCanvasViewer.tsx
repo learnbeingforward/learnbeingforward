@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/lbf/icons";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+
+const PAGE_GAP = 16;
 
 // Canvas-rendered PDF viewer, not an <iframe src="...pdf">. An iframe pointed
 // at a PDF falls back — on a lot of mobile browsers especially — to the
@@ -17,21 +19,20 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 // of being squeezed back down by CSS.
 export function PdfCanvasViewer({ src, title }: { src: string; title: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
   const loadingTaskRef = useRef<import("pdfjs-dist").PDFDocumentLoadingTask | null>(null);
 
   const [numPages, setNumPages] = useState(0);
   // Every page's unscaled (scale=1) size, read once from page 1 — almost
   // every real document uses one page size throughout, so this is enough to
-  // size every page's placeholder instantly and synchronously. Without this,
-  // each of the (possibly hundreds of) pages would size itself asynchronously
-  // on mount, so most of them would briefly collapse to zero height at once —
-  // which both tanks performance and makes the "page N of M" tracker land on
-  // whichever page's lookup happened to resolve last, essentially at random.
+  // size every page's placeholder instantly and synchronously, and to work
+  // out which page number is on screen from scroll position alone.
   const [baseSize, setBaseSize] = useState<{ width: number; height: number } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.25);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [loadPercent, setLoadPercent] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -39,14 +40,45 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
 
     async function load() {
       setStatus("loading");
+      setLoadPercent(null);
       try {
         const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
+        // pdf.js can fetch the URL itself for streaming, but that relies on
+        // the server supporting HTTP range requests — ours doesn't, and
+        // pdf.js silently mis-reads page offsets against a server that just
+        // returns the whole file for every "ranged" request instead of a
+        // real 206 response, showing the wrong page entirely. So: fetch the
+        // whole file ourselves (same as before), just with a manual reader
+        // loop instead of res.arrayBuffer() so we can show real progress
+        // instead of nothing happening until every byte has arrived.
         const res = await fetch(src, { credentials: "same-origin" });
         if (!res.ok) throw new Error("Couldn't load the document.");
-        const data = await res.arrayBuffer();
+        const total = Number(res.headers.get("content-length")) || 0;
+        const reader = res.body?.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+        if (reader) {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              chunks.push(value);
+              received += value.length;
+              if (total) setLoadPercent(Math.min(99, Math.round((received / total) * 100)));
+            }
+          }
+        }
         if (cancelled) return;
+        const data = reader ? new Uint8Array(received) : new Uint8Array(await res.arrayBuffer());
+        if (reader) {
+          let offset = 0;
+          for (const chunk of chunks) {
+            data.set(chunk, offset);
+            offset += chunk.length;
+          }
+        }
 
         const loadingTask = pdfjsLib.getDocument({ data });
         loadingTaskRef.current = loadingTask;
@@ -62,6 +94,9 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
         setNumPages(doc.numPages);
         setCurrentPage(1);
         setStatus("ready");
+        // Defensive: start at the very top regardless of any scroll position
+        // a browser might otherwise try to restore for this URL.
+        scrollRef.current?.scrollTo(0, 0);
       } catch (err) {
         console.error("[PdfCanvasViewer] Failed to load document:", err);
         if (!cancelled) setStatus("error");
@@ -76,6 +111,24 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
       pdfDocRef.current = null;
     };
   }, [src]);
+
+  // The page counter comes straight from scroll position, not from a pile of
+  // independent per-page observers racing each other — those could fire out
+  // of order as each page's canvas finished rendering and nudged the layout,
+  // so the number shown could land on the wrong page even when the right one
+  // was what was actually on screen.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !baseSize) return;
+    const pageHeight = baseSize.height * scale + PAGE_GAP;
+    function onScroll() {
+      if (!el) return;
+      const page = Math.min(numPages, Math.max(1, Math.round(el.scrollTop / pageHeight) + 1));
+      setCurrentPage(page);
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [baseSize, scale, numPages]);
 
   useEffect(() => {
     function onFullscreenChange() {
@@ -94,8 +147,6 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
       (el.requestFullscreen ?? (el as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen)?.call(el);
     }
   }
-
-  const handlePageVisible = useCallback((pageNum: number) => setCurrentPage(pageNum), []);
 
   return (
     <div
@@ -126,6 +177,7 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
         </div>
       </div>
       <div
+        ref={scrollRef}
         className="cv-stage"
         style={{
           flex: isFullscreen ? 1 : undefined,
@@ -134,14 +186,24 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
           overflow: "auto",
           background: "var(--surface, #EDE7D8)",
           padding: "16px 0",
-          // .cv-stage is a flex row by default (built for a single centered
-          // page) — this view scrolls through every page stacked instead, so
-          // override to a column; each page's own width still centers it.
+          // .cv-stage is a flex row with justify-content:center by default
+          // (built for a single centered page). For a long stack of pages,
+          // centering an element taller than the container centers the
+          // whole overflowing stack — pushing roughly the first half of the
+          // pages into negative scroll space above the visible area, so
+          // scrollTop 0 opens somewhere in the middle of the document
+          // instead of page 1. Override both to a plain top-aligned column;
+          // each page's own width still centers it horizontally.
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "flex-start",
         }}
       >
-        {status === "loading" && <p className="muted" style={{ padding: 24, textAlign: "center" }}>Loading…</p>}
+        {status === "loading" && (
+          <p className="muted" style={{ padding: 24, textAlign: "center" }}>
+            Loading{loadPercent !== null ? ` — ${loadPercent}%` : "…"}
+          </p>
+        )}
         {status === "error" && (
           <p className="error-text" style={{ padding: 24, textAlign: "center" }}>
             Couldn&apos;t load this document. Try again in a moment.
@@ -159,7 +221,6 @@ export function PdfCanvasViewer({ src, title }: { src: string; title: string }) 
               estimatedWidth={baseSize.width * scale}
               estimatedHeight={baseSize.height * scale}
               title={title}
-              onVisible={handlePageVisible}
             />
           ))}
       </div>
@@ -174,7 +235,6 @@ function PdfPage({
   estimatedWidth,
   estimatedHeight,
   title,
-  onVisible,
 }: {
   doc: PDFDocumentProxy;
   pageNum: number;
@@ -182,7 +242,6 @@ function PdfPage({
   estimatedWidth: number;
   estimatedHeight: number;
   title: string;
-  onVisible: (pageNum: number) => void;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -192,18 +251,14 @@ function PdfPage({
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setHasEnteredView(true);
-          if (entry.intersectionRatio >= 0.5) onVisible(pageNum);
-        }
-      },
-      { rootMargin: "500px 0px", threshold: [0, 0.5] }
-    );
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) setHasEnteredView(true);
+      }
+    }, { rootMargin: "400px 0px" });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [pageNum, onVisible]);
+  }, [pageNum]);
 
   useEffect(() => {
     if (!hasEnteredView) return;
@@ -217,11 +272,23 @@ function PdfPage({
       const context = canvas?.getContext("2d");
       if (!canvas || !context) return;
 
-      renderTaskRef.current?.cancel();
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      // Render at the screen's real pixel density, not just PDF "CSS" pixels
+      // — on a phone (devicePixelRatio 2–3) a canvas sized only to
+      // viewport.width looks visibly soft once the browser stretches it to
+      // fill the same on-screen space.
+      const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+      canvas.width = Math.floor(viewport.width * dpr);
+      canvas.height = Math.floor(viewport.height * dpr);
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
 
-      const task = page.render({ canvas, canvasContext: context, viewport });
+      renderTaskRef.current?.cancel();
+      const task = page.render({
+        canvas,
+        canvasContext: context,
+        viewport,
+        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
+      });
       renderTaskRef.current = task;
       try {
         await task.promise;
@@ -243,20 +310,13 @@ function PdfPage({
       style={{
         width: estimatedWidth,
         height: estimatedHeight,
-        margin: "0 auto 16px",
+        margin: `0 auto ${PAGE_GAP}px`,
         background: "#fff",
         boxShadow: "0 2px 12px rgba(0,0,0,.15)",
         flex: "none",
       }}
     >
-      {hasEnteredView && (
-        <canvas
-          ref={canvasRef}
-          title={`${title} — page ${pageNum}`}
-          onContextMenu={(e) => e.preventDefault()}
-          style={{ display: "block", width: "100%", height: "100%" }}
-        />
-      )}
+      {hasEnteredView && <canvas ref={canvasRef} title={`${title} — page ${pageNum}`} onContextMenu={(e) => e.preventDefault()} style={{ display: "block" }} />}
     </div>
   );
 }
