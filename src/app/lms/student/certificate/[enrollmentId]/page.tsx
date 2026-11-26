@@ -37,9 +37,21 @@ export default async function CertificatePage({
   return (
     <>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Eczar:wght@400;500&family=Dancing+Script:wght@600&display=swap" />
-      <div style={{ background: "#E9E4D8", margin: 0, minHeight: "100vh" }}>
+      {/* cert.css is ported verbatim from the design file and only covers the
+          .ct certificate card itself — this page's own toolbar and padding
+          around it aren't part of that file, so printing previously put the
+          whole page (navy toolbar, cream background, padding) on the PDF
+          instead of just the certificate. These rules are local to this page. */}
+      <style>{`
+        @media print {
+          .cert-toolbar { display: none !important; }
+          .cert-page-bg { background: none !important; min-height: 0 !important; }
+          .cert-wrap { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+        }
+      `}</style>
+      <div className="cert-page-bg" style={{ background: "#E9E4D8", margin: 0, minHeight: "100vh" }}>
         <div
-          className="cbar"
+          className="cert-toolbar"
           style={{
             position: "sticky",
             top: 0,
@@ -68,7 +80,7 @@ export default async function CertificatePage({
           </div>
         </div>
 
-        <div className="cwrap" style={{ padding: "24px 14px 60px", maxWidth: 1160, margin: "0 auto" }}>
+        <div className="cert-wrap" style={{ padding: "24px 14px 60px", maxWidth: 1160, margin: "0 auto" }}>
           <div className="ct">
             <div className="ct-c tl" />
             <div className="ct-c tr" />
@@ -105,15 +117,29 @@ export default async function CertificatePage({
                 Certificate
               </div>
               <svg className="ct-seal" viewBox="0 0 220 220" role="img" aria-label="Learn Being Forward seal">
+                <defs>
+                  <path id="ct-seal-top" d="M 27,110 A 83,83 0 1 1 193,110" />
+                  <path id="ct-seal-bottom" d="M 27,110 A 83,83 0 1 0 193,110" />
+                </defs>
                 <circle cx="110" cy="110" r="96" fill="none" stroke="#1C2B4A" strokeWidth="3" />
-                <circle cx="110" cy="110" r="82" fill="none" stroke="#C9973C" strokeWidth="2" />
-                <text x="110" y="100" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="15" fontWeight="700" fill="#1C2B4A">
+                <circle cx="110" cy="110" r="70" fill="none" stroke="#C9973C" strokeWidth="2" />
+                <text fontFamily="Poppins, sans-serif" fontSize="12" fontWeight="700" letterSpacing="2.5" fill="#1C2B4A">
+                  <textPath href="#ct-seal-top" startOffset="50%" textAnchor="middle">
+                    LEARN BEING FORWARD
+                  </textPath>
+                </text>
+                <text fontFamily="Poppins, sans-serif" fontSize="12" fontWeight="700" letterSpacing="2.5" fill="#1C2B4A">
+                  <textPath href="#ct-seal-bottom" startOffset="50%" textAnchor="middle">
+                    ALWAYS BE FORWARD
+                  </textPath>
+                </text>
+                <text x="110" y="100" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="14" fontWeight="700" fill="#1C2B4A">
                   LEARN BEING
                 </text>
-                <text x="110" y="122" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="15" fontWeight="700" fill="#1C2B4A">
+                <text x="110" y="121" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="14" fontWeight="700" fill="#1C2B4A">
                   FORWARD
                 </text>
-                <text x="110" y="145" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="9" letterSpacing="2" fill="#C9973C">
+                <text x="110" y="141" textAnchor="middle" fontFamily="Poppins, sans-serif" fontSize="8" letterSpacing="2" fill="#C9973C">
                   EST. LEARNING
                 </text>
               </svg>
