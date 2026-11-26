@@ -105,7 +105,7 @@ export function BulkStudentUploadForm({ colleges }: { colleges?: College[] }) {
           </a>
           <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
             Browse
-            <input name="file" type="file" accept=".xlsx,.xls" required style={{ display: "none" }} />
+            <input name="file" type="file" accept=".xlsx" required style={{ display: "none" }} />
           </label>
         </div>
       </div>

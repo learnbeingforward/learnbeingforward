@@ -207,9 +207,23 @@ export async function bulkCreateStudents(
     return { ok: false, error: "Please choose an Excel file to upload." };
   }
 
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  // The upload button accepts both .xlsx and the old .xls format, but the
+  // parser below (exceljs) only reads the modern, zip-based .xlsx format —
+  // a real .xls (the old binary/OLE2 format, signature D0 CF 11 E0 A1 B1 1A E1,
+  // still what Excel's own "Save As" defaults to on some older setups) fails
+  // to load with no useful detail, so it's detected up front for a clear message.
+  const isLegacyXls = buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]));
+  if (isLegacyXls) {
+    return {
+      ok: false,
+      error: 'That file is an old-style .xls file, which this upload can\'t read. Open it in Excel and use "Save As" → "Excel Workbook (.xlsx)", then upload that instead.',
+    };
+  }
+
   const workbook = new ExcelJS.Workbook();
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
     // exceljs's bundled .d.ts declares its own outdated ambient `Buffer` type that
     // conflicts with modern @types/node's generic Buffer — real Buffer at runtime.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
