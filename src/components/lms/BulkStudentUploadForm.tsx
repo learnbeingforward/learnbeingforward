@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Icon } from "@/components/lbf/icons";
 import { bulkCreateStudents, type BulkCreateStudentsState } from "@/lib/actions/accounts";
 
@@ -34,6 +34,7 @@ export function BulkStudentUploadForm({ colleges }: { colleges?: College[] }) {
     bulkCreateStudents,
     null
   );
+  const [fileName, setFileName] = useState<string | null>(null);
 
   if (state?.ok) {
     return (
@@ -105,9 +106,37 @@ export function BulkStudentUploadForm({ colleges }: { colleges?: College[] }) {
           </a>
           <label className="btn btn-primary btn-sm" style={{ cursor: "pointer" }}>
             Browse
-            <input name="file" type="file" accept=".xlsx" required style={{ display: "none" }} />
+            <input
+              name="file"
+              type="file"
+              accept=".xlsx"
+              required
+              style={{ display: "none" }}
+              onChange={(e) => setFileName(e.currentTarget.files?.[0]?.name ?? null)}
+            />
           </label>
         </div>
+        {/* The file input itself is visually hidden (styled via the label above),
+            and a hidden input is excluded from HTML's own required-field
+            validation — so without this, clicking submit with no file chosen
+            did nothing to stop it; tracking the chosen name here both shows
+            the user their file was picked up and lets the submit button below
+            enforce "required" for real. */}
+        {fileName ? (
+          <div
+            className="small"
+            style={{ marginTop: 10, color: "var(--on-surface)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          >
+            <Icon name="check" size={14} />
+            <span>
+              Selected: <strong>{fileName}</strong>
+            </span>
+          </div>
+        ) : (
+          <p className="small muted" style={{ marginTop: 10 }}>
+            No file selected yet.
+          </p>
+        )}
       </div>
 
       {colleges && (
@@ -129,7 +158,7 @@ export function BulkStudentUploadForm({ colleges }: { colleges?: College[] }) {
 
       {state?.error && <span className="error-text">{state.error}</span>}
 
-      <button className="btn btn-primary" type="submit" disabled={isPending}>
+      <button className="btn btn-primary" type="submit" disabled={isPending || !fileName}>
         {isPending ? "Uploading…" : "Upload & create accounts"}
       </button>
     </form>
