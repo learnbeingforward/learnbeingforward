@@ -72,10 +72,13 @@ export default async function BuyModulePage({ params }: { params: Promise<{ cour
                 </div>
               </div>
               {moduleLock?.previewFileUrl ? (
-                <a className="btn" href={moduleLock.previewFileUrl} target="_blank" rel="noopener noreferrer">
+                <Link
+                  className="btn"
+                  href={`/buy/preview?src=${encodeURIComponent(moduleLock.previewFileUrl)}&title=${encodeURIComponent(mod.mainPdfTitle ?? mod.title)}&back=${encodeURIComponent(`/buy/${course.slug}/${moduleId}`)}`}
+                >
                   <Icon name="eye" size={16} />
                   Read {moduleLock.previewPages} free pages
-                </a>
+                </Link>
               ) : (
                 <span className="pill">
                   <Icon name="lock" size={12} /> Full access after purchase
@@ -105,9 +108,12 @@ export default async function BuyModulePage({ params }: { params: Promise<{ cour
                         <div className="small muted">Notes, code and practice</div>
                       </div>
                       {lock?.previewFileUrl ? (
-                        <a className="btn btn-sm" href={lock.previewFileUrl} target="_blank" rel="noopener noreferrer">
+                        <Link
+                          className="btn btn-sm"
+                          href={`/buy/preview?src=${encodeURIComponent(lock.previewFileUrl)}&title=${encodeURIComponent(title)}&back=${encodeURIComponent(`/buy/${course.slug}/${moduleId}`)}`}
+                        >
                           Preview {lock.previewPages} pages
-                        </a>
+                        </Link>
                       ) : (
                         <span className="pill">
                           <Icon name="lock" size={12} /> Full access after purchase
