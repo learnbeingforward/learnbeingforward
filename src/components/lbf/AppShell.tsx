@@ -31,6 +31,7 @@ export function AppShell({
   actions,
   hasUnread,
   children,
+  immersive,
 }: {
   nav: NavConfig;
   /** Page key within the active group, e.g. "dashboard", "all-students". */
@@ -42,6 +43,12 @@ export function AppShell({
   actions?: React.ReactNode;
   hasUnread?: boolean;
   children: React.ReactNode;
+  /** Full-bleed mode for a page that provides its own complete screen (the
+   * PDF viewer): keeps only the brand/role/menu rows, and skips the gold
+   * sub-nav pills, breadcrumb/title block, "Powered by" footer and phone tab
+   * bar entirely rather than hiding them with CSS, so there's no flash of
+   * them before anything can react to the route. */
+  immersive?: boolean;
 }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -148,7 +155,7 @@ export function AppShell({
             ))}
           </nav>
 
-          {group.pages.length > 1 && (
+          {!immersive && group.pages.length > 1 && (
             <nav className="sub-nav" aria-label={`${group.label} pages`}>
               {group.pages.map((p) => (
                 <Link key={p.key} href={p.href} className={p.key === active ? "active" : ""}>
@@ -158,47 +165,51 @@ export function AppShell({
             </nav>
           )}
 
-          <div className="page-head">
-            <div>
-              {crumbParts.length > 0 && (
-                <div className="crumb">
-                  {crumbParts.map((part, i) => {
-                    const href = i < crumbParts.length - 1 ? crumbHrefByLabel[part] : undefined;
-                    return (
-                      <span key={i}>
-                        {i > 0 && " › "}
-                        {href ? <Link href={href}>{part}</Link> : part}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-              <h1>{title}</h1>
-              {subtitle && <p>{subtitle}</p>}
+          {!immersive && (
+            <div className="page-head">
+              <div>
+                {crumbParts.length > 0 && (
+                  <div className="crumb">
+                    {crumbParts.map((part, i) => {
+                      const href = i < crumbParts.length - 1 ? crumbHrefByLabel[part] : undefined;
+                      return (
+                        <span key={i}>
+                          {i > 0 && " › "}
+                          {href ? <Link href={href}>{part}</Link> : part}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <h1>{title}</h1>
+                {subtitle && <p>{subtitle}</p>}
+              </div>
+              {actions && <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{actions}</div>}
             </div>
-            {actions && <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{actions}</div>}
-          </div>
+          )}
         </div>
       </header>
 
-      <main className="container">
-        <div className="lift stack">{children}</div>
+      <main className={immersive ? "container app-main-immersive" : "container"}>
+        {immersive ? children : <div className="lift stack">{children}</div>}
       </main>
 
-      <p className="app-footer">Powered by Learn Being Forward</p>
+      {!immersive && <p className="app-footer">Powered by Learn Being Forward</p>}
 
-      <nav className="m-tabs" aria-label={`${nav.label} quick menu`}>
-        {tabs.map((g) => (
-          <Link key={g.key} href={g.pages[0].href} className={g.key === group.key ? "active" : ""}>
-            <Icon name={g.icon} size={20} />
-            <span>{SHORT_LABEL[g.label] ?? g.label}</span>
-          </Link>
-        ))}
-        <button type="button" className={inTabs ? "" : "active"} onClick={() => setDrawerOpen(true)}>
-          <Icon name="grid" size={20} />
-          <span>More</span>
-        </button>
-      </nav>
+      {!immersive && (
+        <nav className="m-tabs" aria-label={`${nav.label} quick menu`}>
+          {tabs.map((g) => (
+            <Link key={g.key} href={g.pages[0].href} className={g.key === group.key ? "active" : ""}>
+              <Icon name={g.icon} size={20} />
+              <span>{SHORT_LABEL[g.label] ?? g.label}</span>
+            </Link>
+          ))}
+          <button type="button" className={inTabs ? "" : "active"} onClick={() => setDrawerOpen(true)}>
+            <Icon name="grid" size={20} />
+            <span>More</span>
+          </button>
+        </nav>
+      )}
 
       <div className="m-scrim" hidden={!drawerOpen} onClick={() => setDrawerOpen(false)} />
       <aside className="m-drawer" aria-label={`${nav.label} menu`} hidden={!drawerOpen}>

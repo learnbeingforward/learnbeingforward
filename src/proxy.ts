@@ -10,8 +10,9 @@ const STAFF_ROLES = new Set(["SUPER_ADMIN", "ADMIN2", "EMPLOYEE", "COLLEGE_ADMIN
  * student can be denied "Request access" there and still just open the raw
  * link). This blocks direct requests to that one subtree for anyone who
  * isn't company/college/trainer staff; students and anonymous visitors get a
- * plain 403 and have to go through /api/content/view instead, which re-checks
- * the same per-student approval before streaming the file.
+ * plain 403 and have to go through /api/content/view or /api/content/:id/file
+ * instead, which re-check the same per-student approval before streaming the
+ * file.
  */
 export default auth((req) => {
   if (req.nextUrl.pathname.startsWith("/uploads/course-content")) {
