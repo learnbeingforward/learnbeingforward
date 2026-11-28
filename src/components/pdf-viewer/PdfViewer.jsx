@@ -92,7 +92,12 @@ export default function PdfViewer({ pdfUrl, title, subtitle, backHref, watermark
         if (!cancelled) setError('This document could not be opened. Check your connection and try again.');
       }
     })();
-    return () => { cancelled = true; viewer?.destroy(); doc?.destroy(); };
+    // doc is a PDFDocumentProxy, which has no destroy() of its own in this
+    // pdfjs-dist version — only its loadingTask does (same as the existing
+    // PdfCanvasViewer component already does). doc.destroy() throwing here
+    // crashed every unmount, which from a Link click (a soft, client-side
+    // navigation) surfaced as an uncaught error instead of leaving the page.
+    return () => { cancelled = true; viewer?.destroy(); doc?.loadingTask?.destroy(); };
   }, [pdfUrl, watermark]);
 
   return (

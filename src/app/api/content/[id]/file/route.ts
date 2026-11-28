@@ -1,13 +1,14 @@
 /**
  * GET /api/content/:id/file — streams a course-content PDF only to a student
- * who is actually allowed to see it, re-checked on every request. Paired with
- * proxy.ts, which blocks direct requests to /uploads/course-content/** for
- * anyone who isn't staff, so this is the only way in for a student.
+ * or buyer who is actually allowed to see it, re-checked on every request.
+ * Paired with proxy.ts, which blocks direct requests to
+ * /uploads/course-content/** for anyone who isn't staff, so this is the only
+ * way in for either of them.
  *
- * :id is whichever row the student's "View" link points at — a CourseContent
- * item, a CourseModule's whole course book, or a trainer's SessionContent —
- * resolved here by trying each table in turn, since the three live in
- * separate id spaces but share this one URL shape for the PDF viewer.
+ * :id is whichever row the "View" link points at — a CourseContent item, a
+ * CourseModule's whole course book, or (students only) a trainer's
+ * SessionContent — resolved here by trying each table in turn, since they
+ * live in separate id spaces but share this one URL shape for the PDF viewer.
  *
  * Supports HTTP Range requests so pdfjs-dist only pulls the bytes for the
  * pages actually being viewed instead of the whole file up front.
@@ -64,13 +65,44 @@ async function resolveForStudent(id: string, studentId: string): Promise<Resolut
   return { kind: "not_found" };
 }
 
+async function buyerHasCourse(buyerUserId: string, courseId: string) {
+  const order = await prisma.courseOrder.findFirst({
+    where: { buyerUserId, status: "PAID", buyListing: { courseId } },
+  });
+  return !!order;
+}
+
+// A buyer paid for the whole course, not individual items — there's no
+// per-content approval to check, just whether their order covers the course
+// this row belongs to. They never see trainer-shared SessionContent.
+async function resolveForBuyer(id: string, buyerUserId: string): Promise<Resolution> {
+  const content = await prisma.courseContent.findUnique({ where: { id } });
+  if (content) {
+    const paid = await buyerHasCourse(buyerUserId, content.courseId);
+    return paid ? { kind: "ok", fileUrl: content.fileUrl } : { kind: "forbidden" };
+  }
+
+  const courseModule = await prisma.courseModule.findUnique({ where: { id } });
+  if (courseModule) {
+    if (!courseModule.mainPdfUrl) return { kind: "not_found" };
+    const paid = await buyerHasCourse(buyerUserId, courseModule.courseId);
+    return paid ? { kind: "ok", fileUrl: courseModule.mainPdfUrl } : { kind: "forbidden" };
+  }
+
+  return { kind: "not_found" };
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
   if (!session?.user) return new NextResponse("Not signed in", { status: 401 });
-  if (session.user.role !== "STUDENT") return new NextResponse("Not allowed", { status: 403 });
 
-  const resolved = await resolveForStudent(id, session.user.id);
+  const resolved =
+    session.user.role === "STUDENT"
+      ? await resolveForStudent(id, session.user.id)
+      : session.user.role === "BUYER"
+        ? await resolveForBuyer(id, session.user.id)
+        : ({ kind: "forbidden" } as const);
   if (resolved.kind === "not_found") return new NextResponse("Not found", { status: 404 });
   if (resolved.kind === "forbidden") return new NextResponse("Not allowed", { status: 403 });
 
